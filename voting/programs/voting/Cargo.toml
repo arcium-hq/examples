@@ -1,0 +1,27 @@
+[package]
+name = "voting"
+version = "0.1.0"
+description = "Created with Arcium & Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "voting"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { version = "0.30.2-alpha.1", registry = "arcium" }
+anchor-spl = { version = "0.30.2-alpha.1", registry = "arcium" }
+
+arcium-client = { default-features = false, version = "0.1.23", registry = "arcium" }
+arcium-macros = { version = "0.1.23", registry = "arcium" }
+arcium-anchor = { version = "0.1.23", registry = "arcium" }
+confidential-ixs = { path = "../../confidential-ixs", features = ["solana"], default-features = false }
+arcis = { version = "0.1.23", registry = "arcium", features = ["interface-gen"], default-features = false }

@@ -1,0 +1,36 @@
+2024-12-04T20:43:06.376616Z  INFO logger: Logger initialized
+2024-12-04T20:43:06.379209Z  INFO arx: Starting ARX node
+2024-12-04T20:43:06.415178Z  INFO arx::manager::arx_execution_manager: NODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"
+2024-12-04T20:43:06.512528Z  INFO arx::manager::arx_execution_manager::circuit_retrieval_unit: Creating circuit retrieval unit.
+2024-12-04T20:43:06.518566Z  INFO arx::manager::arx_execution_manager::circuit_retrieval_unit: Creating mock circuit retrieval unit.
+2024-12-04T20:43:06.580426Z  INFO arx::manager::arx_execution_manager: Creating arx execution manager: is_mock: true
+2024-12-04T20:43:06.612450Z  INFO arx::manager::arx_observation_manager::peer_unit: Creating peer unit.
+2024-12-04T20:43:07.209984Z  INFO arx::manager::arx_key_manager: Successfully activated arx node account. Signature: 5tVnNo8PBWJPf4qSFkcVXvQEqLS1ydbwifJ4ibCZ8fsnViYN1sJDiYEosGdR5KyFXenw5wu7u3XyvGHrGj6cpG6h
+2024-12-04T20:43:07.212158Z  INFO components::node: Starting node
+2024-12-04T20:43:07.212899Z  INFO arx::manager::arx_execution_manager::circuit_retrieval_unit: Starting the circuit retrieval unit.
+2024-12-04T20:43:07.216558Z  INFO arx::manager::arx_execution_manager::circuit_retrieval_unit: Starting the mock circuit retrieval unit.
+2024-12-04T20:43:07.229423Z  INFO arx::manager::arx_execution_manager::preprocessing_unit: The preprocessing unit started.
+2024-12-04T20:43:07.234229Z  INFO arx::manager::arx_execution_manager::online_phase_unit: The online phase unit started.
+2024-12-04T20:43:07.236443Z  INFO arx::manager::arx_execution_manager::online_phase_unit: The mock online phase unit started.
+2024-12-04T20:43:07.238966Z  INFO arx::manager::arx_execution_manager::mock_server_unit: The mock server unit started.
+2024-12-04T20:43:07.242531Z  INFO arx::manager::arx_execution_manager: Arx execution manager started.
+2024-12-04T20:43:07.242685Z  INFO arx::manager::arx_execution_manager::preprocessing_unit: The preprocessing unit stopped.
+2024-12-04T20:43:07.249453Z  INFO arx::unit::computation_tx_unit: The comp tx unit started.
+2024-12-04T20:43:07.253288Z  INFO arx::manager::arx_key_manager: Arx key manager started.
+2024-12-04T20:43:07.255917Z  INFO arx::manager::arx_observation_manager::cluster_unit: The cluster observation unit started.
+2024-12-04T20:43:07.257669Z  INFO arx::manager::arx_observation_manager::mxe_unit: The mxe observation unit started.
+2024-12-04T20:43:07.259902Z  INFO arx::manager::arx_observation_manager::peer_unit: The peer unit started.
+2024-12-04T20:43:07.264531Z  INFO arx::manager::arx_observation_manager::comp_def_unit: The comp def observation unit started.
+2024-12-04T20:43:07.267896Z  INFO arx::manager::arx_observation_manager::mempool_unit: The mempool observation unit started.
+2024-12-04T20:43:07.271643Z  INFO components::unit::map_persistence_unit: The map persistence unit started.
+2024-12-04T20:43:07.271647Z  INFO arx::manager::arx_observation_manager::executing_pool_unit: The executing pool observation unit started.
+2024-12-04T20:43:07.275925Z  INFO arx::manager::arx_observation_manager: Arx observation manager started.
+2024-12-04T20:43:07.277181Z  INFO components::unit::map_persistence_unit: The map persistence unit started.
+2024-12-04T20:43:07.283909Z  INFO arx::unit::computation_persistence_unit: The computation persistence unit started.
+2024-12-04T20:43:07.301432Z  INFO arx::manager::arx_persistence_manager: Arx persistence manager started.
+2024-12-04T20:43:07.306555Z  INFO arx::unit::resources_unit: The resources unit started
+2024-12-04T20:43:07.311806Z  INFO arx::manager::arx_state_manager: Arx state manager running.
+2024-12-04T20:43:07.527841Z  INFO arx::manager::arx_observation_manager::mempool_unit: Subscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX
+2024-12-04T20:43:07.527856Z  INFO arx::manager::arx_observation_manager::mxe_unit: Subscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs
+2024-12-04T20:43:07.527933Z  INFO arx::manager::arx_observation_manager::executing_pool_unit: Subscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7
+2024-12-04T20:43:07.538701Z  INFO arx::manager::arx_observation_manager::mxe_unit: Setting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"]

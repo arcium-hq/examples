@@ -1,0 +1,21 @@
+[network_config]
+node_addr = "127.0.0.1"
+node_port = 3000
+
+[node_config]
+adjust_localhost_urls_for_docker = true
+ending_epoch = 9223372036854775807
+hardware_claim = 1
+node_offset = 0
+starting_epoch = 0
+
+[solana_config]
+cluster = "Localnet"
+solana_endpoint_rpc = "http://host.docker.internal:8899"
+solana_endpoint_wss = "ws://host.docker.internal:8900"
+
+[solana_config.tx_commitment_config]
+commitment = "confirmed"
+
+[temp_config]
+is_mock = true
