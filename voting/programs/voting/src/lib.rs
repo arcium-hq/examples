@@ -85,24 +85,17 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        id: u32,
-        vote_state: OffChainReference,
-    ) -> Result<()> {
+    pub fn reveal_result(ctx: Context<RevealVotingResult>, id: u32) -> Result<()> {
         require!(
             ctx.accounts.payer.key() == ctx.accounts.poll_acc.authority,
             ErrorCode::InvalidAuthority
         );
 
-        msg!(
-            "Revealing voting result for poll with id {}",
-            ctx.accounts.poll_acc.id
-        );
+        msg!("Revealing voting result for poll with id {}", id);
 
         queue_computation(
             ctx.accounts,
-            Some(vote_state),
+            None,
             vec![ctx.accounts.poll_acc.id],
             vec![ctx.accounts.vote_state.to_account_info()],
             vec![],

@@ -86,18 +86,8 @@ describe("Voting", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    // Reveal the result
-    const revealInput: ConfidentialInstructionInputs<RevealResult> = [
-      {
-        offset: 0,
-        isMutable: true,
-      },
-    ];
-    const revealReq = buildOffchainRefRequest(revealInput, cluster_da_info);
-    const revealOref = await daNodeClient.postOffchainReference(revealReq);
-
     const revealQueueSig = await program.methods
-      .revealResult(POLL_ID, revealOref)
+      .revealResult(POLL_ID)
       .accounts({})
       .rpc({ commitment: "confirmed" });
     console.log("Reveal queue sig is ", revealQueueSig);
