@@ -78,36 +78,36 @@ describe("Voting", () => {
       .rpc({ commitment: "confirmed" });
     console.log("Voting queue sig is ", queueSig);
 
-    // const finalizeSig = await trackComputationProgress(
-    //   provider.connection,
-    //   queueSig,
-    //   program.programId,
-    //   "confirmed"
-    // );
-    // console.log("Finalize sig is ", finalizeSig);
+    const finalizeSig = await trackComputationProgress(
+      provider.connection,
+      queueSig,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize sig is ", finalizeSig);
 
-    // // Reveal the result
-    // const revealInput: ConfidentialInstructionInputs<RevealResult> = [
-    //   {
-    //     offset: 0,
-    //     isMutable: true,
-    //   },
-    // ];
-    // const revealReq = buildOffchainRefRequest(inputVal, cluster_da_info);
-    // const revealOref = await daNodeClient.postOffchainReference(req);
+    // Reveal the result
+    const revealInput: ConfidentialInstructionInputs<RevealResult> = [
+      {
+        offset: 0,
+        isMutable: true,
+      },
+    ];
+    const revealReq = buildOffchainRefRequest(revealInput, cluster_da_info);
+    const revealOref = await daNodeClient.postOffchainReference(revealReq);
 
-    // const revealQueueSig = await program.methods
-    //   .revealResult(POLL_ID, revealOref)
-    //   .accounts({})
-    //   .rpc({ commitment: "confirmed" });
-    // console.log("Reveal queue sig is ", revealQueueSig);
-    // const revealFinalizeSig = await trackComputationProgress(
-    //   provider.connection,
-    //   revealQueueSig,
-    //   program.programId,
-    //   "confirmed"
-    // );
-    // console.log("Reveal finalize sig is ", revealFinalizeSig);
+    const revealQueueSig = await program.methods
+      .revealResult(POLL_ID, revealOref)
+      .accounts({})
+      .rpc({ commitment: "confirmed" });
+    console.log("Reveal queue sig is ", revealQueueSig);
+    const revealFinalizeSig = await trackComputationProgress(
+      provider.connection,
+      revealQueueSig,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Reveal finalize sig is ", revealFinalizeSig);
   });
 
   async function initVoteCompDef(

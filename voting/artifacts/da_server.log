@@ -3959,3 +3959,1221 @@
 [stderr] db-1                | 2024-12-04 20:43:16.573 UTC [1] LOG:  database system is shut down
 [stdout] [Kdb-1 exited with code 0
 [stdout] [Karx-node-0-1 exited with code 137
+[stderr]  Container artifacts-db-1  Created
+[stderr]  Container artifacts-arcium-da-server-1  Created
+[stderr]  Container artifacts-arx-node-0-1  Recreate
+[stderr]  arx-node-0 The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested 
+[stderr]  Container artifacts-arx-node-0-1  Recreated
+[stdout] Attaching to arcium-da-server-1, arx-node-0-1, db-1
+[stdout] db-1                | 
+[stdout] db-1                | PostgreSQL Database directory appears to contain a database; Skipping initialization
+[stdout] db-1                | 
+[stderr] db-1                | 2024-12-05 08:16:38.202 UTC [1] LOG:  starting PostgreSQL 15.10 (Debian 15.10-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+[stderr] db-1                | 2024-12-05 08:16:38.203 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+[stderr] db-1                | 2024-12-05 08:16:38.203 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+[stderr] db-1                | 2024-12-05 08:16:38.205 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+[stderr] db-1                | 2024-12-05 08:16:38.207 UTC [29] LOG:  database system was shut down at 2024-12-04 20:43:16 UTC
+[stderr] db-1                | 2024-12-05 08:16:38.214 UTC [1] LOG:  database system is ready to accept connections
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.323635Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.329324Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.364688Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.444064Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.449792Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.510821Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:38.545069Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.149217Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully activated arx node account. Signature: 5rRDoPf6Dx9ZKoiogHf16H7V9mwkjm6PT65db7oXuFXfSwpYbvsTgSdf7Bn4bryRpiSFAHGNjCoAe8EofEyAqhci[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:220
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.151805Z[0m [32m INFO[0m [1;32mcomponents::node[0m[32m: [32mStarting node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/node.rs:209
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.152573Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:112
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.157912Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:151
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.169973Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:86
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.174345Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:134
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.176893Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe mock online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:218
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.179040Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mThe mock server unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:582
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.182981Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mArx execution manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:373
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.183329Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit stopped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:108
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.189837Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mThe comp tx unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:288
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.194504Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mArx key manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:245
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.196822Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::cluster_unit[0m[32m: [32mThe cluster observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/cluster_unit.rs:125
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.198813Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mThe mxe observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:150
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.201148Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mThe peer unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:92
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.205504Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::comp_def_unit[0m[32m: [32mThe comp def observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/comp_def_unit.rs:149
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.208401Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mThe mempool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.212519Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mThe executing pool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.212660Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.216867Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mArx observation manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.218597Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.224996Z[0m [32m INFO[0m [1;32marx::unit::computation_persistence_unit[0m[32m: [32mThe computation persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_persistence_unit.rs:133
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.241976Z[0m [32m INFO[0m [1;32marx::manager::arx_persistence_manager[0m[32m: [32mArx persistence manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_persistence_manager.rs:144
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.248240Z[0m [32m INFO[0m [1;32marx::unit::resources_unit[0m[32m: [32mThe resources unit started[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/resources_unit.rs:62
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.254768Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mArx state manager running.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:227
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.585021Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mSubscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:221
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.585074Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSubscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:181
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.585096Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mSubscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:199
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:16:39.597415Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSetting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:203
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing DA server...
+[stdout] arcium-da-server-1  | Loaded environment variables
+[stdout] arcium-da-server-1  | Attempting to connect to database...
+[stdout] arcium-da-server-1  | Database connection established
+[stdout] arcium-da-server-1  | Running migrations...
+[stdout] arcium-da-server-1  | Migrations completed
+[stdout] arcium-da-server-1  | Starting DA server on 0.0.0.0:8080
+[stdout] [Karcium-da-server-1 exited with code 0
+[stderr] db-1                | 2024-12-05 08:16:44.754 UTC [1] LOG:  received fast shutdown request
+[stderr] db-1                | 2024-12-05 08:16:44.755 UTC [1] LOG:  aborting any active transactions
+[stderr] db-1                | 2024-12-05 08:16:44.756 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+[stderr] db-1                | 2024-12-05 08:16:44.756 UTC [27] LOG:  shutting down
+[stderr] db-1                | 2024-12-05 08:16:44.757 UTC [27] LOG:  checkpoint starting: shutdown immediate
+[stderr] db-1                | 2024-12-05 08:16:44.763 UTC [27] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.003 s, sync=0.001 s, total=0.007 s; sync files=2, longest=0.001 s, average=0.001 s; distance=0 kB, estimate=0 kB
+[stderr] db-1                | 2024-12-05 08:16:44.764 UTC [1] LOG:  database system is shut down
+[stdout] [Kdb-1 exited with code 0
+[stdout] [Karx-node-0-1 exited with code 137
+[stderr]  Container artifacts-db-1  Created
+[stderr]  Container artifacts-arx-node-0-1  Created
+[stderr]  Container artifacts-arcium-da-server-1  Created
+[stdout] Attaching to arcium-da-server-1, arx-node-0-1, db-1
+[stdout] db-1                | 
+[stdout] db-1                | PostgreSQL Database directory appears to contain a database; Skipping initialization
+[stdout] db-1                | 
+[stderr] db-1                | 2024-12-05 08:17:09.793 UTC [1] LOG:  starting PostgreSQL 15.10 (Debian 15.10-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+[stderr] db-1                | 2024-12-05 08:17:09.794 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+[stderr] db-1                | 2024-12-05 08:17:09.794 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+[stderr] db-1                | 2024-12-05 08:17:09.795 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+[stderr] db-1                | 2024-12-05 08:17:09.797 UTC [29] LOG:  database system was shut down at 2024-12-05 08:16:44 UTC
+[stderr] db-1                | 2024-12-05 08:17:09.798 UTC [1] LOG:  database system is ready to accept connections
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:09.961051Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:09.997879Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.027345Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.121331Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.128796Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.184019Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.211189Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stderr] arx-node-0-1        | thread 'main' panicked at /usr/arx-node/arx/src/manager/arx_key_manager.rs:219:14:
+[stderr] arx-node-0-1        | Failed to activate arx node account.: SolanaClientError(Error { request: Some(SendTransaction), kind: RpcError(RpcResponseError { code: -32002, message: "Transaction simulation failed: Error processing Instruction 0: invalid account data for instruction", data: SendTransactionPreflightFailure(RpcSimulateTransactionResult { err: Some(InstructionError(0, InvalidAccountData)), logs: Some(["Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs invoke [1]", "Program is not deployed", "Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs failed: invalid account data for instruction"]), accounts: None, units_consumed: Some(0), return_data: None, inner_instructions: None }) }) })
+[stderr] arx-node-0-1        | note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.300209Z[0m [32m INFO[0m [1;32mnetwork::router::network_router[0m[32m: [32mRouter dropped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m /usr/local/cargo/git/checkouts/async-mpc-2480b83cc31a17e9/0ef682c/network/src/router/network_router.rs:307
+[stdout] arx-node-0-1        | 
+[stdout] [Karx-node-0-1 exited with code 101
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.724323Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.728550Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.745389Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.805126Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.811472Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.859213Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:10.885674Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.478660Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully activated arx node account. Signature: 2PqQXfgCgahRRiwxXqHNPPYDj8DYTVodJVzmh6QLLQTkbGZ76M5U6x62LE1iyW5hFkAKeyJqVxuLe2YyJRPkLoMd[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:220
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.480744Z[0m [32m INFO[0m [1;32mcomponents::node[0m[32m: [32mStarting node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/node.rs:209
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.481242Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:112
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.482325Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:151
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.492136Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:86
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.495891Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:134
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.499472Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe mock online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:218
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.502252Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mThe mock server unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:582
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.506197Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mArx execution manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:373
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.506676Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit stopped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:108
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.513532Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mThe comp tx unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:288
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.517221Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mArx key manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:245
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.520422Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::cluster_unit[0m[32m: [32mThe cluster observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/cluster_unit.rs:125
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.523434Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mThe mxe observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:150
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.526422Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mThe peer unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:92
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.532156Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::comp_def_unit[0m[32m: [32mThe comp def observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/comp_def_unit.rs:149
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.536338Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mThe mempool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.541552Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mThe executing pool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.541686Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.546991Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mArx observation manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.549085Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.557539Z[0m [32m INFO[0m [1;32marx::unit::computation_persistence_unit[0m[32m: [32mThe computation persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_persistence_unit.rs:133
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.579028Z[0m [32m INFO[0m [1;32marx::manager::arx_persistence_manager[0m[32m: [32mArx persistence manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_persistence_manager.rs:144
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.585296Z[0m [32m INFO[0m [1;32marx::unit::resources_unit[0m[32m: [32mThe resources unit started[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/resources_unit.rs:62
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.592188Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mArx state manager running.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:227
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.820014Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mSubscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:221
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.820046Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mSubscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:199
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.820122Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSubscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:181
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:11.831371Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSetting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:203
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing DA server...
+[stdout] arcium-da-server-1  | Loaded environment variables
+[stdout] arcium-da-server-1  | Attempting to connect to database...
+[stdout] arcium-da-server-1  | Database connection established
+[stdout] arcium-da-server-1  | Running migrations...
+[stdout] arcium-da-server-1  | Migrations completed
+[stdout] arcium-da-server-1  | Starting DA server on 0.0.0.0:8080
+[stdout] arcium-da-server-1  | Initializing data object with hash: "6AfevnhschLbu2d9dpJYXqiHVw8yU5gDHFz975uG/ZA=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 2 shares
+[stdout] arcium-da-server-1  | Initializing data object with hash: "eSgGlF6o7/9qEJl/ycxRKNQE5kPJMwbAIC28kN1vEZw=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 1 shares
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:19.887565Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [121, 40, 6, 148, 94, 168, 239, 255, 106, 16, 153, 127, 201, 204, 81, 40, 212, 4, 230, 67, 201, 51, 6, 192, 32, 45, 188, 144, 221, 111, 17, 156], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_removed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.681510Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend init tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [121, 40, 6, 148, 94, 168, 239, 255, 106, 16, 153, 127, 201, 204, 81, 40, 212, 4, 230, 67, 201, 51, 6, 192, 32, 45, 188, 144, 221, 111, 17, 156], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:315
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.684552Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mProcessing Init Computation message[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:252
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.687277Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.688635Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mInit computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:305
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.691845Z[0m [33m WARN[0m [1;33marx::unit::computation_tx_unit[0m[33m: [33mFailed to get comp def data for init computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:138
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.693436Z[0m [31mERROR[0m [1;31marx::manager::arx_key_manager[0m[31m: [31mSent Init computation to unit & failure![0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:279
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:20.694907Z[0m [31mERROR[0m [1;31marx::manager::arx_state_manager[0m[31m: [31mFailed to initialize computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [121, 40, 6, 148, 94, 168, 239, 255, 106, 16, 153, 127, 201, 204, 81, 40, 212, 4, 230, 67, 201, 51, 6, 192, 32, 45, 188, 144, 221, 111, 17, 156], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:318
+[stdout] arx-node-0-1        | 
+[stdout] [Karcium-da-server-1 exited with code 0
+[stderr] db-1                | 2024-12-05 08:17:20.962 UTC [1] LOG:  received fast shutdown request
+[stderr] db-1                | 2024-12-05 08:17:20.963 UTC [1] LOG:  aborting any active transactions
+[stderr] db-1                | 2024-12-05 08:17:20.964 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+[stderr] db-1                | 2024-12-05 08:17:20.964 UTC [27] LOG:  shutting down
+[stderr] db-1                | 2024-12-05 08:17:20.965 UTC [27] LOG:  checkpoint starting: shutdown immediate
+[stderr] db-1                | 2024-12-05 08:17:20.969 UTC [27] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.005 s; sync files=13, longest=0.001 s, average=0.001 s; distance=36 kB, estimate=36 kB
+[stderr] db-1                | 2024-12-05 08:17:20.971 UTC [1] LOG:  database system is shut down
+[stdout] [Kdb-1 exited with code 0
+[stdout] [Karx-node-0-1 exited with code 137
+[stderr]  Container artifacts-db-1  Created
+[stderr]  Container artifacts-arx-node-0-1  Created
+[stderr]  Container artifacts-arcium-da-server-1  Created
+[stdout] Attaching to arcium-da-server-1, arx-node-0-1, db-1
+[stdout] db-1                | 
+[stdout] db-1                | PostgreSQL Database directory appears to contain a database; Skipping initialization
+[stdout] db-1                | 
+[stderr] db-1                | 2024-12-05 08:17:43.350 UTC [1] LOG:  starting PostgreSQL 15.10 (Debian 15.10-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+[stderr] db-1                | 2024-12-05 08:17:43.350 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+[stderr] db-1                | 2024-12-05 08:17:43.350 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+[stderr] db-1                | 2024-12-05 08:17:43.351 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+[stderr] db-1                | 2024-12-05 08:17:43.353 UTC [29] LOG:  database system was shut down at 2024-12-05 08:17:20 UTC
+[stderr] db-1                | 2024-12-05 08:17:43.354 UTC [1] LOG:  database system is ready to accept connections
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.473835Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.478616Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.497317Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.565857Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.574285Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.627930Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.657294Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stderr] arx-node-0-1        | thread 'main' panicked at /usr/arx-node/arx/src/manager/arx_key_manager.rs:219:14:
+[stderr] arx-node-0-1        | Failed to activate arx node account.: SolanaClientError(Error { request: Some(SendTransaction), kind: RpcError(RpcResponseError { code: -32002, message: "Transaction simulation failed: Error processing Instruction 0: invalid account data for instruction", data: SendTransactionPreflightFailure(RpcSimulateTransactionResult { err: Some(InstructionError(0, InvalidAccountData)), logs: Some(["Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs invoke [1]", "Program is not deployed", "Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs failed: invalid account data for instruction"]), accounts: None, units_consumed: Some(0), return_data: None, inner_instructions: None }) }) })
+[stderr] arx-node-0-1        | note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:43.737866Z[0m [32m INFO[0m [1;32mnetwork::router::network_router[0m[32m: [32mRouter dropped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m /usr/local/cargo/git/checkouts/async-mpc-2480b83cc31a17e9/0ef682c/network/src/router/network_router.rs:307
+[stdout] arx-node-0-1        | 
+[stdout] [Karx-node-0-1 exited with code 101
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.128823Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.132888Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.148690Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.201914Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.208240Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.255167Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.279151Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.864173Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully activated arx node account. Signature: 53YaYqUBFGFs1XT7j9Ryq6QLViHszpbRKAXFJ23MVrSgzYhiHhkChtJdFQi1FBr8zmVNm5oAGJPQHKpV2ksHSH7A[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:220
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.866264Z[0m [32m INFO[0m [1;32mcomponents::node[0m[32m: [32mStarting node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/node.rs:209
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.866765Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:112
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.867841Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:151
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.875140Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:86
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.877991Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:134
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.880454Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe mock online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:218
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.882534Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mThe mock server unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:582
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.885672Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mArx execution manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:373
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.885951Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit stopped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:108
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.891212Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mThe comp tx unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:288
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.895248Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mArx key manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:245
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.898487Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::cluster_unit[0m[32m: [32mThe cluster observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/cluster_unit.rs:125
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.901506Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mThe mxe observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:150
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.904781Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mThe peer unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:92
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.911441Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::comp_def_unit[0m[32m: [32mThe comp def observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/comp_def_unit.rs:149
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.915701Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mThe mempool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.920856Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mThe executing pool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.920877Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.926137Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mArx observation manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.928006Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.936659Z[0m [32m INFO[0m [1;32marx::unit::computation_persistence_unit[0m[32m: [32mThe computation persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_persistence_unit.rs:133
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.958533Z[0m [32m INFO[0m [1;32marx::manager::arx_persistence_manager[0m[32m: [32mArx persistence manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_persistence_manager.rs:144
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.964999Z[0m [32m INFO[0m [1;32marx::unit::resources_unit[0m[32m: [32mThe resources unit started[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/resources_unit.rs:62
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:44.971819Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mArx state manager running.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:227
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:45.197236Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mSubscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:221
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:45.197451Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSubscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:181
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:45.197343Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mSubscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:199
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:45.208665Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSetting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:203
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing DA server...
+[stdout] arcium-da-server-1  | Loaded environment variables
+[stdout] arcium-da-server-1  | Attempting to connect to database...
+[stdout] arcium-da-server-1  | Database connection established
+[stdout] arcium-da-server-1  | Running migrations...
+[stdout] arcium-da-server-1  | Migrations completed
+[stdout] arcium-da-server-1  | Starting DA server on 0.0.0.0:8080
+[stdout] arcium-da-server-1  | Initializing data object with hash: "RxWXeEzKOd9znZzMsLfAEjV8w5WUtPo2j3CF09T4pQg=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 2 shares
+[stdout] arcium-da-server-1  | Initializing data object with hash: "i2gun+Zoem2b5hFHH/aDuMQ3Vnx+OlODqCvBRSflMFA=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 1 shares
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:52.657635Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_removed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.067146Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend init tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:315
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.073904Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mProcessing Init Computation message[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:252
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.080624Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.083001Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mInit computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:305
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.646220Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {}, new_removed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:53.651128Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_completed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.123225Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent init computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig 3CwJTPtpepXdxVkqgnDoD2kQWJ1P4mXHJxsUupcAUF3HjiWHpH1dRVT6Pp2Sfs1vSr8y6CF7Z7dXfsWzj6qqQ9ca[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.127586Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSent Init computation to unit & success with signature 3CwJTPtpepXdxVkqgnDoD2kQWJ1P4mXHJxsUupcAUF3HjiWHpH1dRVT6Pp2Sfs1vSr8y6CF7Z7dXfsWzj6qqQ9ca![0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:271
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.132050Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch data for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:334
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.140916Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mFetching data objects from da server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:414
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.143941Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.147521Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "i2gun+Zoem2b5hFHH/aDuMQ3Vnx+OlODqCvBRSflMFA="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.147759Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.205539Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mWires: [Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:436
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.211342Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.211420Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "RxWXeEzKOd9znZzMsLfAEjV8w5WUtPo2j3CF09T4pQg="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.211483Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.216243Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch circuit for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:339
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.218915Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mProcessing circuit retrieval unit message: CircuitRetrievalUnitMessage { computation_definition_offset: Offset(1950623659) }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:60
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.224727Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart preprocessing for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:344
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.225632Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:349
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.225966Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mComputation data: ExecutionData { data_objects_data: Some([Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))]), comp_def_info: Some(([7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 208, 62, 93, 207, 165, 49, 38, 129, 101, 205, 121, 47, 234, 157, 239, 77, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 29, 149, 152, 141, 116, 49, 236, 214, 112, 207, 125, 115, 244, 91, 239, 198, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 15, 5, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0], [0])), preprocesed_data: Some(()), result: None }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:713
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.226436Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mretrieving cluster data for cluster acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:734
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.227316Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCluster data: ClusterData { peer_number: 0, peer_number_peer_id_map: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:753
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.229618Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mDeserializing circuit data[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.232644Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mExecuting the circuit MockCircuit { ops: {0: ScalarShareInput, 1: ScalarShareInput, 2: ScalarMulConstant { x: 1, c: ScalarField(0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ec) }, 3: ScalarAdd { x: 2, y: 0 }, 4: ScalarAddConstant { x: 3, c: ScalarField(0x0000000000000000000000000000000000000000000000000000000000000001) }, 5: ScalarShareInput, 6: ScalarAdd { x: 1, y: 5 }}, input_gates: [1, 5, 0], output_gates: [6, 4] } with input [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:185
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.237794Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mResults: [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.239147Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mMock execution completed with result: [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:786
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.239359Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mOnline phase completed. Results [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:823
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.239579Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart post-online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:354
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.243797Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.243998Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to post secret shares[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:609
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.255453Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.255654Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to check if all participants are done participating[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:624
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.262925Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend finalize tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:379
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.263582Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.263912Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mFinalize computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:310
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.723654Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {}, new_completed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [139, 104, 46, 159, 230, 104, 122, 109, 155, 230, 17, 71, 31, 246, 131, 184, 196, 55, 86, 124, 126, 58, 83, 131, 168, 43, 193, 69, 39, 229, 48, 80], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing data object with hash: "i2gun+Zoem2b5hFHH/aDuMQ3Vnx+OlODqCvBRSflMFA=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stderr] db-1                | 2024-12-05 08:17:54.733 UTC [41] ERROR:  duplicate key value violates unique constraint "data_objects_pkey"
+[stderr] db-1                | 2024-12-05 08:17:54.733 UTC [41] DETAIL:  Key (hash)=(\x8b682e9fe6687a6d9be611471ff683b8c437567c7e3a5383a82bc14527e53050) already exists.
+[stderr] db-1                | 2024-12-05 08:17:54.733 UTC [41] STATEMENT:  INSERT INTO data_objects (hash, shares_per_piece, piece_count) VALUES ($1, $2, $3)
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.779310Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent finalize computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig 4bQn315jM1e2ipdPrkQXCQtjHuEK3qkQFFguRXF6fGLhLJMuuJgmaX4kECm227e71Ytp5ZuPgDBG8b5EioTxXA71[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:247
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:17:54.780514Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully finalized computation with sig 4bQn315jM1e2ipdPrkQXCQtjHuEK3qkQFFguRXF6fGLhLJMuuJgmaX4kECm227e71Ytp5ZuPgDBG8b5EioTxXA71[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:320
+[stdout] arx-node-0-1        | 
+[stdout] [Karcium-da-server-1 exited with code 0
+[stderr] db-1                | 2024-12-05 08:18:04.383 UTC [1] LOG:  received fast shutdown request
+[stderr] db-1                | 2024-12-05 08:18:04.385 UTC [1] LOG:  aborting any active transactions
+[stderr] db-1                | 2024-12-05 08:18:04.386 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+[stderr] db-1                | 2024-12-05 08:18:04.386 UTC [27] LOG:  shutting down
+[stderr] db-1                | 2024-12-05 08:18:04.387 UTC [27] LOG:  checkpoint starting: shutdown immediate
+[stderr] db-1                | 2024-12-05 08:18:04.391 UTC [27] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.005 s; sync files=13, longest=0.001 s, average=0.001 s; distance=40 kB, estimate=40 kB
+[stderr] db-1                | 2024-12-05 08:18:04.393 UTC [1] LOG:  database system is shut down
+[stdout] [Kdb-1 exited with code 0
+[stdout] [Karx-node-0-1 exited with code 137
+[stderr]  Container artifacts-db-1  Created
+[stderr]  Container artifacts-arx-node-0-1  Created
+[stderr]  Container artifacts-arcium-da-server-1  Created
+[stdout] Attaching to arcium-da-server-1, arx-node-0-1, db-1
+[stdout] db-1                | 
+[stdout] db-1                | PostgreSQL Database directory appears to contain a database; Skipping initialization
+[stdout] db-1                | 
+[stderr] db-1                | 2024-12-05 08:20:46.067 UTC [1] LOG:  starting PostgreSQL 15.10 (Debian 15.10-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+[stderr] db-1                | 2024-12-05 08:20:46.067 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+[stderr] db-1                | 2024-12-05 08:20:46.067 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+[stderr] db-1                | 2024-12-05 08:20:46.068 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+[stderr] db-1                | 2024-12-05 08:20:46.069 UTC [29] LOG:  database system was shut down at 2024-12-05 08:18:04 UTC
+[stderr] db-1                | 2024-12-05 08:20:46.071 UTC [1] LOG:  database system is ready to accept connections
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.230296Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.234957Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.254046Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.316219Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.320900Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.370886Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.396534Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stderr] arx-node-0-1        | thread 'main' panicked at /usr/arx-node/arx/src/manager/arx_key_manager.rs:219:14:
+[stderr] arx-node-0-1        | Failed to activate arx node account.: SolanaClientError(Error { request: Some(SendTransaction), kind: RpcError(RpcResponseError { code: -32002, message: "Transaction simulation failed: Error processing Instruction 0: invalid account data for instruction", data: SendTransactionPreflightFailure(RpcSimulateTransactionResult { err: Some(InstructionError(0, InvalidAccountData)), logs: Some(["Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs invoke [1]", "Program is not deployed", "Program CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs failed: invalid account data for instruction"]), accounts: None, units_consumed: Some(0), return_data: None, inner_instructions: None }) }) })
+[stderr] arx-node-0-1        | note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.472617Z[0m [32m INFO[0m [1;32mnetwork::router::network_router[0m[32m: [32mRouter dropped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m /usr/local/cargo/git/checkouts/async-mpc-2480b83cc31a17e9/0ef682c/network/src/router/network_router.rs:307
+[stdout] arx-node-0-1        | 
+[stdout] [Karx-node-0-1 exited with code 101
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.884364Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.888367Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.903188Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.952133Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:46.959592Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.003970Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.027825Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.607039Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully activated arx node account. Signature: 2wiH4dcmAUxXnKwnLNysomGRSAXkmzwXdarNED8UYmaijxfCWygAv5xv7GWnXeLQY8fBeHTYdjfHpwacjdEBukAC[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:220
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.610546Z[0m [32m INFO[0m [1;32mcomponents::node[0m[32m: [32mStarting node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/node.rs:209
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.611457Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:112
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.612743Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:151
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.624177Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:86
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.628224Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:134
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.631710Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe mock online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:218
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.634892Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mThe mock server unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:582
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.638456Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mArx execution manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:373
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.638911Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit stopped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:108
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.645243Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mThe comp tx unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:288
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.649362Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mArx key manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:245
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.652441Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::cluster_unit[0m[32m: [32mThe cluster observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/cluster_unit.rs:125
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.655716Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mThe mxe observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:150
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.658661Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mThe peer unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:92
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.664360Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::comp_def_unit[0m[32m: [32mThe comp def observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/comp_def_unit.rs:149
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.667645Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mThe mempool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.673037Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mThe executing pool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.673106Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.678268Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mArx observation manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.680512Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.688948Z[0m [32m INFO[0m [1;32marx::unit::computation_persistence_unit[0m[32m: [32mThe computation persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_persistence_unit.rs:133
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.710506Z[0m [32m INFO[0m [1;32marx::manager::arx_persistence_manager[0m[32m: [32mArx persistence manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_persistence_manager.rs:144
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.716549Z[0m [32m INFO[0m [1;32marx::unit::resources_unit[0m[32m: [32mThe resources unit started[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/resources_unit.rs:62
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.723441Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mArx state manager running.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:227
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.958403Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSubscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:181
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.958373Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mSubscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:199
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.958297Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mSubscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:221
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:47.969207Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSetting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:203
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing DA server...
+[stdout] arcium-da-server-1  | Loaded environment variables
+[stdout] arcium-da-server-1  | Attempting to connect to database...
+[stdout] arcium-da-server-1  | Database connection established
+[stdout] arcium-da-server-1  | Running migrations...
+[stdout] arcium-da-server-1  | Migrations completed
+[stdout] arcium-da-server-1  | Starting DA server on 0.0.0.0:8080
+[stdout] arcium-da-server-1  | Initializing data object with hash: "i230ZkO2Qj2DM8lKr7R/dc99w+ncujwTu3v1e9w1e68=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 2 shares
+[stdout] arcium-da-server-1  | Initializing data object with hash: "jSW6wNqhAwYScI55Wf0fcgek+Q/7GJXAsHSqa61gkuA=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 1 shares
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:55.320779Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_removed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:55.818938Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend init tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:315
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:55.824411Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mProcessing Init Computation message[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:252
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:55.829937Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:55.832349Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mInit computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:305
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.262759Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {}, new_removed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.265496Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_completed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.354890Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent init computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig 2rPvWzAbKCspD9wPJ91NxhPUepyxgTzUZzZrDZHHREcKf2fNfJypsYye8zPeu1CfY82NzJQy6hQCLE6QXR5BrU2v[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.359393Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSent Init computation to unit & success with signature 2rPvWzAbKCspD9wPJ91NxhPUepyxgTzUZzZrDZHHREcKf2fNfJypsYye8zPeu1CfY82NzJQy6hQCLE6QXR5BrU2v![0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:271
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.364988Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch data for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:334
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.372770Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mFetching data objects from da server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:414
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.377319Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.381624Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "jSW6wNqhAwYScI55Wf0fcgek+Q/7GJXAsHSqa61gkuA="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.381904Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.436642Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mWires: [Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:436
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.442483Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.442559Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "i230ZkO2Qj2DM8lKr7R/dc99w+ncujwTu3v1e9w1e68="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.442582Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.447570Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch circuit for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:339
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.450280Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mProcessing circuit retrieval unit message: CircuitRetrievalUnitMessage { computation_definition_offset: Offset(1950623659) }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:60
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.456557Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart preprocessing for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:344
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.457388Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:349
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.457695Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mComputation data: ExecutionData { data_objects_data: Some([Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))]), comp_def_info: Some(([7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 208, 62, 93, 207, 165, 49, 38, 129, 101, 205, 121, 47, 234, 157, 239, 77, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 29, 149, 152, 141, 116, 49, 236, 214, 112, 207, 125, 115, 244, 91, 239, 198, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 15, 5, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0], [0])), preprocesed_data: Some(()), result: None }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:713
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.458541Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mretrieving cluster data for cluster acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:734
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.459427Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCluster data: ClusterData { peer_number: 0, peer_number_peer_id_map: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:753
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.461534Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mDeserializing circuit data[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.464498Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mExecuting the circuit MockCircuit { ops: {0: ScalarShareInput, 1: ScalarShareInput, 2: ScalarMulConstant { x: 1, c: ScalarField(0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ec) }, 3: ScalarAdd { x: 2, y: 0 }, 4: ScalarAddConstant { x: 3, c: ScalarField(0x0000000000000000000000000000000000000000000000000000000000000001) }, 5: ScalarShareInput, 6: ScalarAdd { x: 1, y: 5 }}, input_gates: [1, 5, 0], output_gates: [6, 4] } with input [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:185
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.468983Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mResults: [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.470298Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mMock execution completed with result: [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:786
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.470494Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mOnline phase completed. Results [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:823
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.470657Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart post-online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:354
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.474472Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.474757Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to post secret shares[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:609
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.486595Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.486764Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to check if all participants are done participating[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:624
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.492903Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend finalize tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:379
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.493455Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.493623Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mFinalize computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:310
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:56.737838Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {}, new_completed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [141, 37, 186, 192, 218, 161, 3, 6, 18, 112, 142, 121, 89, 253, 31, 114, 7, 164, 249, 15, 251, 24, 149, 192, 176, 116, 170, 107, 173, 96, 146, 224], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing data object with hash: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:57.012825Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent finalize computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig 5B8t4mp9cJVvY3oShEhYmbPQPvkAMuRVi5qQcnTpSfTMsShxbsJBagatMVu1puCmJwm8MNfdqBfBBzEPnomF8oAB[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:247
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:20:57.014478Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully finalized computation with sig 5B8t4mp9cJVvY3oShEhYmbPQPvkAMuRVi5qQcnTpSfTMsShxbsJBagatMVu1puCmJwm8MNfdqBfBBzEPnomF8oAB[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:320
+[stdout] arx-node-0-1        | 
+[stdout] [Karcium-da-server-1 exited with code 0
+[stderr] db-1                | 2024-12-05 08:21:06.490 UTC [1] LOG:  received fast shutdown request
+[stderr] db-1                | 2024-12-05 08:21:06.491 UTC [1] LOG:  aborting any active transactions
+[stderr] db-1                | 2024-12-05 08:21:06.492 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+[stderr] db-1                | 2024-12-05 08:21:06.493 UTC [27] LOG:  shutting down
+[stderr] db-1                | 2024-12-05 08:21:06.493 UTC [27] LOG:  checkpoint starting: shutdown immediate
+[stderr] db-1                | 2024-12-05 08:21:06.499 UTC [27] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.006 s; sync files=13, longest=0.001 s, average=0.001 s; distance=43 kB, estimate=43 kB
+[stderr] db-1                | 2024-12-05 08:21:06.500 UTC [1] LOG:  database system is shut down
+[stdout] [Kdb-1 exited with code 0
+[stdout] [Karx-node-0-1 exited with code 137
+[stderr]  Container artifacts-db-1  Created
+[stderr]  Container artifacts-arx-node-0-1  Running
+[stderr]  Container artifacts-arcium-da-server-1  Created
+[stdout] Attaching to arcium-da-server-1, arx-node-0-1, db-1
+[stdout] db-1                | 
+[stdout] db-1                | PostgreSQL Database directory appears to contain a database; Skipping initialization
+[stdout] db-1                | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:15.824348Z[0m [32m INFO[0m [1;32mlogger[0m[32m: [32mLogger initialized[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m logger/src/lib.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:15.830170Z[0m [32m INFO[0m [1;32marx[0m[32m: [32mStarting ARX node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/main.rs:17
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:15.865760Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mNODE KEYPAIR RECEIVED: "/usr/arx-node/node-keys/node_keypair.json"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:240
+[stdout] arx-node-0-1        | 
+[stderr] db-1                | 2024-12-05 08:37:15.898 UTC [1] LOG:  starting PostgreSQL 15.10 (Debian 15.10-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+[stderr] db-1                | 2024-12-05 08:37:15.900 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+[stderr] db-1                | 2024-12-05 08:37:15.900 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+[stderr] db-1                | 2024-12-05 08:37:15.901 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+[stderr] db-1                | 2024-12-05 08:37:15.904 UTC [29] LOG:  database system was shut down at 2024-12-05 08:21:06 UTC
+[stderr] db-1                | 2024-12-05 08:37:15.912 UTC [1] LOG:  database system is ready to accept connections
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:15.953434Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:101
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:15.958869Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mCreating mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:145
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.022266Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCreating arx execution manager: is_mock: true[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:341
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.052898Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mCreating peer unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:74
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.638769Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully activated arx node account. Signature: xHp3Wsjnk55tMvLfWAWSEmv2Dty8QzZm4WMHJFetVvSguWyi8knTEN9Z3QPg3zR3Whz8YSBm3mrMo3hs8kZD2wj[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:220
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.641578Z[0m [32m INFO[0m [1;32mcomponents::node[0m[32m: [32mStarting node[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/node.rs:209
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.642350Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:112
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.646448Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mStarting the mock circuit retrieval unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:151
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.658992Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:86
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.663771Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:134
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.666384Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mThe mock online phase unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:218
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.668813Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mThe mock server unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:582
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.672677Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mArx execution manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:373
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.672956Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::preprocessing_unit[0m[32m: [32mThe preprocessing unit stopped.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/preprocessing_unit.rs:108
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.679550Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mThe comp tx unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:288
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.683777Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mArx key manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:245
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.685901Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::cluster_unit[0m[32m: [32mThe cluster observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/cluster_unit.rs:125
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.687579Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mThe mxe observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:150
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.690399Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::peer_unit[0m[32m: [32mThe peer unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/peer_unit.rs:92
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.695654Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::comp_def_unit[0m[32m: [32mThe comp def observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/comp_def_unit.rs:149
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.698503Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mThe mempool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.702509Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mThe executing pool observation unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.702557Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.706944Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mArx observation manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.708385Z[0m [32m INFO[0m [1;32mcomponents::unit::map_persistence_unit[0m[32m: [32mThe map persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m components/src/unit/map_persistence_unit.rs:107
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.714740Z[0m [32m INFO[0m [1;32marx::unit::computation_persistence_unit[0m[32m: [32mThe computation persistence unit started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_persistence_unit.rs:133
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.731753Z[0m [32m INFO[0m [1;32marx::manager::arx_persistence_manager[0m[32m: [32mArx persistence manager started.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_persistence_manager.rs:144
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.736892Z[0m [32m INFO[0m [1;32marx::unit::resources_unit[0m[32m: [32mThe resources unit started[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/resources_unit.rs:62
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.743227Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mArx state manager running.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:227
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.960711Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mempool_unit[0m[32m: [32mSubscribed to mempool account J2ymBp3RWjAHR34oyjeqviSkAxet1TUDRWxsAs5VkDpX[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mempool_unit.rs:221
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.960771Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSubscribed to cluster account EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:181
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.960801Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::executing_pool_unit[0m[32m: [32mSubscribed to executing pool account GdWJpVcGtvhvKr8XrbAMeiCNjMC8gbsySLd5mnpgbJw7[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/executing_pool_unit.rs:199
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:16.971725Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager::mxe_unit[0m[32m: [32mSetting initial mxe accs: ["6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY"][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager/mxe_unit.rs:203
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing DA server...
+[stdout] arcium-da-server-1  | Loaded environment variables
+[stdout] arcium-da-server-1  | Attempting to connect to database...
+[stdout] arcium-da-server-1  | Database connection established
+[stdout] arcium-da-server-1  | Running migrations...
+[stdout] arcium-da-server-1  | Migrations completed
+[stdout] arcium-da-server-1  | Starting DA server on 0.0.0.0:8080
+[stdout] arcium-da-server-1  | Initializing data object with hash: "bmvzwVagg56G9ZhLb547H4Fj6U8M7wt5h2N6/RMtE7Q=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 2 shares
+[stdout] arcium-da-server-1  | Initializing data object with hash: "utN1Y/Duo5m89lpeZbMgkRgApduM1d5qMWFwwHJMCBw=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | DataObject initialized successfully with 1 shares
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:25.738813Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_removed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:25.831949Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend init tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:315
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:25.838094Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mProcessing Init Computation message[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:252
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:25.844315Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:25.847803Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mInit computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:305
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.206617Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing mempool update MempoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_queued_computations: {}, new_removed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:417
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.210697Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })}, new_completed_computations: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.376269Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent init computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig S799XgvBgE92CivwHn1S12Kx4EwJHqbKH1KBEkwivQEga47QBCaQrtjARBjTLLUaHaibJ63UNfiiHN3PNAEXQih[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:170
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.381136Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSent Init computation to unit & success with signature S799XgvBgE92CivwHn1S12Kx4EwJHqbKH1KBEkwivQEga47QBCaQrtjARBjTLLUaHaibJ63UNfiiHN3PNAEXQih![0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:271
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.386513Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch data for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:334
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.396703Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mFetching data objects from da server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:414
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.400142Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.403617Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "utN1Y/Duo5m89lpeZbMgkRgApduM1d5qMWFwwHJMCBw="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.403854Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.461372Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mWires: [Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:436
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.467270Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.467373Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mpayload: [("hash", "bmvzwVagg56G9ZhLb547H4Fj6U8M7wt5h2N6/RMtE7Q="), ("public_key", "Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw=")][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:293
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.467411Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32moref.source: "http://127.0.0.1:8080"[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:294
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arcium-da-server-1  | Encoding bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.472568Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mFetch circuit for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:339
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.475189Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::circuit_retrieval_unit[0m[32m: [32mProcessing circuit retrieval unit message: CircuitRetrievalUnitMessage { computation_definition_offset: Offset(1950623659) }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/circuit_retrieval_unit.rs:60
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.480754Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart preprocessing for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:344
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.481639Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:349
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.481961Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mComputation data: ExecutionData { data_objects_data: Some([Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000001)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))]), comp_def_info: Some(([7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 208, 62, 93, 207, 165, 49, 38, 129, 101, 205, 121, 47, 234, 157, 239, 77, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 29, 149, 152, 141, 116, 49, 236, 214, 112, 207, 125, 115, 244, 91, 239, 198, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 15, 5, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0], [0])), preprocesed_data: Some(()), result: None }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:713
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.482490Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mretrieving cluster data for cluster acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:734
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.483353Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mCluster data: ClusterData { peer_number: 0, peer_number_peer_id_map: {} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:753
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.485516Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mDeserializing circuit data[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:178
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.488429Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mExecuting the circuit MockCircuit { ops: {0: ScalarShareInput, 1: ScalarShareInput, 2: ScalarMulConstant { x: 1, c: ScalarField(0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ec) }, 3: ScalarAdd { x: 2, y: 0 }, 4: ScalarAddConstant { x: 3, c: ScalarField(0x0000000000000000000000000000000000000000000000000000000000000001) }, 5: ScalarShareInput, 6: ScalarAdd { x: 1, y: 5 }}, input_gates: [1, 5, 0], output_gates: [6, 4] } with input [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:185
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.492973Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::online_phase_unit[0m[32m: [32mResults: [[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/online_phase_unit.rs:193
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.494330Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mMock execution completed with result: [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:786
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.494541Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager[0m[32m: [32mOnline phase completed. Results [Scalar(Scalar(Scalar(Uint(0x0100000000000000000000000000000000000000000000000000000000000000)))), Scalar(Scalar(Scalar(Uint(0x0000000000000000000000000000000000000000000000000000000000000000))))][0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager.rs:823
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.494713Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mStart post-online phase for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:354
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.498613Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.498781Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to post secret shares[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:609
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arcium-da-server-1  | Decoded bytes of len 76
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.512214Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mReceived a message inside mock server unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:591
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.512405Z[0m [32m INFO[0m [1;32marx::manager::arx_execution_manager::mock_server_unit[0m[32m: [32mPOST: make request to check if all participants are done participating[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_execution_manager/mock_server_unit.rs:624
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.519657Z[0m [32m INFO[0m [1;32marx::manager::arx_state_manager[0m[32m: [32mSend finalize tx for computation: ArxComputation { protocol_id: 309851562619418497284741232631938225387, computation_definition_offset: Offset(1950623659), mempool_id: 0, arguments: ArgumentsWrapper(Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] }), cluster_acc: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_state_manager.rs:379
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.520167Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mReceived a message inside comp tx unit.[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:297
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.520490Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mFinalize computation[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:310
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:26.672866Z[0m [32m INFO[0m [1;32marx::manager::arx_observation_manager[0m[32m: [32mProcessing executing pool update ExecutingPoolUnitOutMessage { cluster: EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs, new_active_computations: {}, new_completed_computations: {ComputationWrapper(Computation { cluster_index: None, computation_definition_offset: 1950623659, execution_fee: ExecutionFee { base_fee: 0, priority_fee: 0, input_delivery_fee: 0, output_delivery_fee: 0 }, mempool_id: 0, arguments: Arguments { input_data: OffChainReference { source: "http://127.0.0.1:8080", hash: [186, 211, 117, 99, 240, 238, 163, 153, 188, 246, 90, 94, 101, 179, 32, 145, 24, 0, 165, 219, 140, 213, 222, 106, 49, 97, 112, 192, 114, 76, 8, 28], len_scalars: 1 }, data_object_offsets: [420], callback_acc_dyn_offsets: [] } })} }[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_observation_manager.rs:452
+[stdout] arx-node-0-1        | 
+[stdout] arcium-da-server-1  | Initializing data object with hash: "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=" and owners: ["Xe3XqTuZZAMC+JjzERVkkbSllqybjLxuZGuFIK55lNw="]
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:27.041438Z[0m [32m INFO[0m [1;32marx::unit::computation_tx_unit[0m[32m: [32mSent finalize computation tx for mxe 6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY with sig 3i95w5y97tzU73EHcGXr8iGd2ypagBSMtgBSci44XR3LEf3NUe4zWk8ZaDpTPBrukroGX7GQB5HVahcFYE9vWYvL[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/unit/computation_tx_unit.rs:247
+[stdout] arx-node-0-1        | 
+[stdout] arx-node-0-1        |   [2m2024-12-05T08:37:27.043412Z[0m [32m INFO[0m [1;32marx::manager::arx_key_manager[0m[32m: [32mSuccessfully finalized computation with sig 3i95w5y97tzU73EHcGXr8iGd2ypagBSMtgBSci44XR3LEf3NUe4zWk8ZaDpTPBrukroGX7GQB5HVahcFYE9vWYvL[0m
+[stdout] arx-node-0-1        |     [2;3mat[0m arx/src/manager/arx_key_manager.rs:320
+[stdout] arx-node-0-1        | 
+[stdout] [Karcium-da-server-1 exited with code 0
+[stderr] db-1                | 2024-12-05 08:37:36.408 UTC [1] LOG:  received fast shutdown request
+[stderr] db-1                | 2024-12-05 08:37:36.409 UTC [1] LOG:  aborting any active transactions
+[stderr] db-1                | 2024-12-05 08:37:36.410 UTC [1] LOG:  background worker "logical replication launcher" (PID 32) exited with exit code 1
+[stderr] db-1                | 2024-12-05 08:37:36.410 UTC [27] LOG:  shutting down
+[stderr] db-1                | 2024-12-05 08:37:36.411 UTC [27] LOG:  checkpoint starting: shutdown immediate
+[stderr] db-1                | 2024-12-05 08:37:36.417 UTC [27] LOG:  checkpoint complete: wrote 14 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.003 s, total=0.008 s; sync files=13, longest=0.002 s, average=0.001 s; distance=46 kB, estimate=46 kB
+[stderr] db-1                | 2024-12-05 08:37:36.419 UTC [1] LOG:  database system is shut down
+[stdout] [Kdb-1 exited with code 0
+[stdout] [Karx-node-0-1 exited with code 137

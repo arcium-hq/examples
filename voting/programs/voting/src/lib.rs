@@ -219,6 +219,7 @@ pub struct Vote<'info> {
     )]
     pub poll_acc: Account<'info, PollAccount>,
     #[account(
+        mut,
         seeds = [DA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         owner = ARCIUM_PROG_ID,
@@ -331,6 +332,7 @@ pub struct RevealVotingResult<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
+        mut,
         seeds = [DA_OBJ_PDA_SEED, poll_acc.authority.key().as_ref(), poll_acc.id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         owner = ARCIUM_PROG_ID,

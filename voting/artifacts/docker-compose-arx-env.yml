@@ -43,20 +43,20 @@ services:
         delay: 5s
     volumes:
       - type: bind
-        source: /Users/arihantbansal/Developer/arcium/arcium-test/voting/artifacts/node_config_0.toml
+        source: /Users/arihantbansal/Developer/arcium/examples/voting/artifacts/node_config_0.toml
         target: /usr/arx-node/arx/node_config.toml
         read_only: false
       - type: bind
-        source: /Users/arihantbansal/Developer/arcium/arcium-test/voting/artifacts/localnet/node_0.json
+        source: /Users/arihantbansal/Developer/arcium/examples/voting/artifacts/localnet/node_0.json
         target: /usr/arx-node/node-keys/node_keypair.json
       - type: bind
-        source: /Users/arihantbansal/Developer/arcium/arcium-test/voting/artifacts/localnet/node_0.json
+        source: /Users/arihantbansal/Developer/arcium/examples/voting/artifacts/localnet/node_0.json
         target: /usr/arx-node/node-keys/operator_keypair.json
       - type: bind
-        source: /Users/arihantbansal/Developer/arcium/arcium-test/voting/artifacts/localnet/identity_0.pem
+        source: /Users/arihantbansal/Developer/arcium/examples/voting/artifacts/localnet/identity_0.pem
         target: /usr/arx-node/node-keys/node_identity.pem
       - type: bind
-        source: /Users/arihantbansal/Developer/arcium/arcium-test/voting/artifacts/arx_node_logs/node_0.log
+        source: /Users/arihantbansal/Developer/arcium/examples/voting/artifacts/arx_node_logs/node_0.log
         target: /usr/arx-node/arx/logs/info
 
     extra_hosts:
