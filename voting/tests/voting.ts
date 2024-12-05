@@ -20,7 +20,6 @@ import {
 } from "@elusiv-privacy/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
-import { RevealResult } from "../confidential-ixs/build/reveal_result";
 
 describe("Voting", () => {
   // Configure the client to use the local cluster.
@@ -84,7 +83,7 @@ describe("Voting", () => {
       program.programId,
       "confirmed"
     );
-    console.log("Finalize sig is ", finalizeSig);
+    console.log("Finalize voting sig is ", finalizeSig);
 
     const revealQueueSig = await program.methods
       .revealResult(POLL_ID)

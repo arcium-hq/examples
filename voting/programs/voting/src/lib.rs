@@ -326,7 +326,7 @@ pub struct RevealVotingResult<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         mut,
-        seeds = [DA_OBJ_PDA_SEED, poll_acc.authority.key().as_ref(), poll_acc.id.to_le_bytes().as_ref()],
+        seeds = [DA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         owner = ARCIUM_PROG_ID,
         bump = vote_state.bump,
