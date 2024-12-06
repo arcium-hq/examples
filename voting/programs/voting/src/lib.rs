@@ -263,7 +263,7 @@ pub struct RevealVotingResult<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [b"poll", poll_acc.authority.key().as_ref(), id.to_le_bytes().as_ref()],
+        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
         bump = poll_acc.bump
     )]
     pub poll_acc: Account<'info, PollAccount>,
