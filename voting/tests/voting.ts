@@ -17,7 +17,7 @@ import {
   trackComputationProgress,
   getDataObjPDA,
   MBoolean,
-} from "@elusiv-privacy/arcium-sdk";
+} from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
 
