@@ -12,11 +12,11 @@ import {
   DANodeClient,
   getArciumAccountBaseSeed,
   getArciumProgAddress,
-  NodeDAInfo,
   uploadCircuit,
   getCompDefAccOffset,
   getDataObjPDA,
   buildFinalizeCompDefTx,
+  trackComputationProgress,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -58,11 +58,12 @@ describe("Dark pool", () => {
   const arciumEnv = getArciumEnv();
   const daNodeClient = new DANodeClient(arciumEnv.DANodeURL);
 
-  it("Is initialized!", async () => {
+  it("initialize dark pool, and add encrypted order!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
     const initProgramSig = await initProgram(program, daNodeClient);
     const initAOSig = await initAddOrderCompDef(program, owner, false);
     const initNMSig = await initFindNextMatchCompDef(program, owner, false);
+    console.log("comp def initialized");
 
     const inputVal: RawConfidentialInstructionInputs<AddOrder> = [
       { value: [BigInt(1) as MScalar, true, BigInt(3) as MScalar] },
@@ -73,18 +74,25 @@ describe("Dark pool", () => {
     );
     const req = buildOffchainRefRequest(inputVal, cluster_da_info);
     const oref = await daNodeClient.postOffchainReference(req);
-    const queueRawTx = await program.methods
+    const queueSig = await program.methods
       .addOrder(oref)
       .accounts({ payer: owner.publicKey })
-      .rpc();
-    const correctObPDA = getDataObjPDA(getArciumProgAddress(), 42);
+      .rpc({ commitment: "confirmed" });
+
+    const finalizeSig = await trackComputationProgress(
+      provider.connection,
+      queueSig,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize add order to dark pool sig is ", finalizeSig);
   });
 
   async function initProgram(
     program: Program<DarkPool>,
     daNodeClient: DANodeClient
   ): Promise<string> {
-    const oderBookPDA = getDataObjPDA(getArciumProgAddress(), 42);
+    const orderBookPDA = getDataObjPDA(getArciumProgAddress(), 42);
 
     // Empty orderbook is 16 orders times three scalars per order = 48 scalars
     const emptyBook: { value: bigint }[] = new Array(48).fill({
@@ -97,7 +105,7 @@ describe("Dark pool", () => {
     const req = buildOffchainRefRequest(emptyBook, cluster_da_info);
     const oref = await daNodeClient.postOffchainReference(req);
 
-    return program.methods.init(oref).accounts({ ob: oderBookPDA }).rpc();
+    return program.methods.init(oref).accounts({ ob: orderBookPDA }).rpc();
   }
 
   async function initFindNextMatchCompDef(

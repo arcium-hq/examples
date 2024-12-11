@@ -35,7 +35,7 @@ const COMP_DEF_OFFSET_FIND_MATCH: u32 = comp_def_offset("find_next_match");
 
 const ORDERBOOK_DATA_OBJ_OFFSET: u32 = 42;
 
-declare_id!("FkdM3cAbA91fgYKHeXJBoHb4y313boyKBSCLh8EtMyTe");
+declare_id!("Fv5bBYfBi4VPDMrAhRE6HPU3eDd9HNpRxprCRvhpqWtB");
 
 #[arcium_program]
 pub mod dark_pool {
@@ -48,6 +48,7 @@ pub mod dark_pool {
         // vault.token_b = ctx.accounts.token_b_mint.key();
         vault.token_a = ctx.accounts.token_program.key();
         vault.token_b = ctx.accounts.token_program.key();
+        vault.bump = ctx.bumps.vault;
 
         // Initialize the orderbook data object
         init_da_object(
@@ -140,7 +141,7 @@ pub mod dark_pool {
         };
         let cpi_program = ctx.accounts.token_program.to_account_info();
 
-        let vault_bump: &[u8; 1] = &[ctx.bumps.vault];
+        let vault_bump: &[u8; 1] = &[ctx.accounts.vault.bump];
 
         let signer_seeds = &[&[
             b"vault".as_ref(),
@@ -219,7 +220,7 @@ pub struct AddOrder<'info> {
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, &ID.to_bytes()],
+        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = mempool_account.bump
     )]
@@ -290,7 +291,7 @@ pub struct NextMatch<'info> {
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, &ID.to_bytes()],
+        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = mempool_account.bump
     )]
@@ -356,7 +357,7 @@ pub struct Init<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 32 + 32,
+        space = 8 + 32 + 32 + 8,
         seeds = [b"vault"],
         bump
     )]
@@ -425,7 +426,7 @@ pub struct Deposit<'info> {
     #[account(
         mut,
         seeds = [b"vault"],
-        bump
+        bump = vault.bump
     )]
     pub vault: Account<'info, Vault>,
     pub deposit_token_mint: Account<'info, Mint>,
@@ -487,6 +488,7 @@ pub struct Withdraw<'info> {
 pub struct Vault {
     pub token_a: Pubkey,
     pub token_b: Pubkey,
+    pub bump: u8,
 }
 
 #[account]

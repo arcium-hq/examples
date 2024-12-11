@@ -249,7 +249,11 @@ checksum = "8405e69a5cff8aed2f6efa8c5cbffb05179e5fee83e89043fd36e4b2495edcad"
 dependencies = [
  "anchor-lang",
  "spl-associated-token-account",
+ "spl-pod",
  "spl-token",
+ "spl-token-2022",
+ "spl-token-group-interface",
+ "spl-token-metadata-interface",
 ]
 
 [[package]]
@@ -1021,6 +1025,7 @@ name = "dark_pool"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "anchor-spl",
  "arcis",
  "arcium-anchor",
  "arcium-client",
