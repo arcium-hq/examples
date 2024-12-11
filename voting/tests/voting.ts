@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { Voting } from "../target/types/voting";
 import { Vote } from "../confidential-ixs/build/vote";
 import {
-  ConfidentialInstructionInputs,
+  RawConfidentialInstructionInputs,
   getClusterDAInfo,
   getArciumEnv,
   buildOffchainRefRequest,
@@ -30,7 +30,7 @@ describe("Voting", () => {
   const arciumEnv = getArciumEnv();
   const daNodeClient = new DANodeClient(arciumEnv.DANodeURL);
 
-  it("Is initialized and can create new polls!", async () => {
+  it("Initialize confidential voting, create new poll, vote confidentially and reveal result", async () => {
     const POLL_ID = 420;
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
@@ -53,13 +53,9 @@ describe("Voting", () => {
     console.log("Poll created with signature", pollSig);
 
     // Vote on the poll
-    const inputVal: ConfidentialInstructionInputs<Vote> = [
+    const inputVal: RawConfidentialInstructionInputs<Vote> = [
       {
         value: true as MBoolean,
-      },
-      {
-        offset: 0,
-        isMutable: true,
       },
     ];
     const cluster_da_info = await getClusterDAInfo(

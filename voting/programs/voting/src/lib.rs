@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{Mint, Token, TokenAccount};
 use arcium_anchor::{
     comp_def_offset, derive_seed, init_comp_def, init_da_object, queue_computation,
-    ARCIUM_TOKEN_MINT,
 };
 use arcium_client::idl::arcium::{
     accounts::{
@@ -28,7 +26,7 @@ const CLOCK_PDA_SEED: &'static [u8] = derive_seed!(ClockAccount);
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("6efqLVrBAanYujaKqp7b93VWk7YsRhLAo8ERihjuG6EY");
+declare_id!("6GxK9ASmrHBBFJvLkcJRGmkqvmhG4XWFqpDPMdox5uE6");
 
 #[arcium_program]
 pub mod voting {
@@ -137,7 +135,6 @@ pub struct CreateNewPoll<'info> {
     )]
     pub mxe: Account<'info, PersistentMXEAccount>,
     pub arcium_program: Program<'info, Arcium>,
-    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
@@ -146,14 +143,6 @@ pub struct CreateNewPoll<'info> {
 pub struct Vote<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(
-        mut,
-        associated_token::mint = arx_mint,
-        associated_token::authority = payer,
-    )]
-    pub payer_ata: Account<'info, TokenAccount>,
-    #[account(address = ARCIUM_TOKEN_MINT)]
-    pub arx_mint: Account<'info, Mint>,
     #[account(
         seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
@@ -189,18 +178,11 @@ pub struct Vote<'info> {
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        mut,
-        associated_token::mint = arx_mint,
-        associated_token::authority = pool_account,
-    )]
-    pub pool_ata: Account<'info, TokenAccount>,
-    #[account(
         seeds = [CLOCK_PDA_SEED],
         seeds::program = ARCIUM_PROG_ID,
         bump = clock_account.bump
     )]
     pub clock_account: Account<'info, ClockAccount>,
-    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     /// CHECK: Poll authority pubkey
@@ -208,7 +190,7 @@ pub struct Vote<'info> {
     #[account(
         seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
         bump = poll_acc.bump,
-        has_one = authority,
+        has_one = authority
     )]
     pub poll_acc: Account<'info, PollAccount>,
     #[account(
@@ -268,14 +250,6 @@ pub struct RevealVotingResult<'info> {
     )]
     pub poll_acc: Account<'info, PollAccount>,
     #[account(
-        mut,
-        associated_token::mint = arx_mint,
-        associated_token::authority = payer,
-    )]
-    pub payer_ata: Account<'info, TokenAccount>,
-    #[account(address = ARCIUM_TOKEN_MINT)]
-    pub arx_mint: Account<'info, Mint>,
-    #[account(
         seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = mxe_account.bump
@@ -310,18 +284,11 @@ pub struct RevealVotingResult<'info> {
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        mut,
-        associated_token::mint = arx_mint,
-        associated_token::authority = pool_account,
-    )]
-    pub pool_ata: Account<'info, TokenAccount>,
-    #[account(
         seeds = [CLOCK_PDA_SEED],
         seeds::program = ARCIUM_PROG_ID,
         bump = clock_account.bump
     )]
     pub clock_account: Account<'info, ClockAccount>,
-    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
