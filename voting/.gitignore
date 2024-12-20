@@ -1,0 +1,11 @@
+.anchor
+.DS_Store
+target
+**/*.rs.bk
+node_modules
+test-ledger
+.yarn
+confidential-ixs/arcis_temp_target
+confidential-ixs/build
+confidential-ixs/src/main.rs
+artifacts/
