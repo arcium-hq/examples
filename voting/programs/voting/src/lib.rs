@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, derive_seed, init_comp_def, init_da_object, queue_computation,
+    comp_def_offset, init_comp_def, init_da_object, queue_computation, CLOCK_PDA_SEED,
+    CLUSTER_PDA_SEED, COMP_DEF_PDA_SEED, DATA_OBJ_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
+    POOL_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
@@ -8,6 +10,7 @@ use arcium_client::idl::arcium::{
         PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
+    types::Argument,
     types::OffChainReference,
     ID_CONST as ARCIUM_PROG_ID,
 };
@@ -16,17 +19,10 @@ use arcium_macros::{
     init_data_object_accounts, queue_computation_accounts,
 };
 
-const MXE_PDA_SEED: &'static [u8] = derive_seed!(PersistentMXEAccount);
-const DA_OBJ_PDA_SEED: &'static [u8] = derive_seed!(DataObjectAccount);
-const MEMPOOL_PDA_SEED: &'static [u8] = derive_seed!(Mempool);
-const COMP_DEF_PDA_SEED: &'static [u8] = derive_seed!(ComputationDefinitionAccount);
-const CLUSTER_PDA_SEED: &'static [u8] = derive_seed!(Cluster);
-const POOL_PDA_SEED: &'static [u8] = derive_seed!(StakingPoolAccount);
-const CLOCK_PDA_SEED: &'static [u8] = derive_seed!(ClockAccount);
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("6GxK9ASmrHBBFJvLkcJRGmkqvmhG4XWFqpDPMdox5uE6");
+declare_id!("YFLJWFAbxhRZv4xYET3cgnno85DopTJvKazkmzpUjB2");
 
 #[arcium_program]
 pub mod voting {
@@ -62,10 +58,10 @@ pub mod voting {
     }
 
     pub fn vote(ctx: Context<Vote>, id: u32, vote_state: OffChainReference) -> Result<()> {
+        let args = vec![Argument::MBool(vote_state), Argument::DataObj(id)];
         queue_computation(
             ctx.accounts,
-            Some(vote_state),
-            vec![id],
+            args,
             vec![ctx.accounts.vote_state.to_account_info()],
             vec![],
         )?;
@@ -91,10 +87,11 @@ pub mod voting {
 
         msg!("Revealing voting result for poll with id {}", id);
 
+        let args = vec![Argument::DataObj(id)];
+
         queue_computation(
             ctx.accounts,
-            None,
-            vec![ctx.accounts.poll_acc.id],
+            args,
             vec![ctx.accounts.vote_state.to_account_info()],
             vec![],
         )?;
@@ -124,7 +121,7 @@ pub struct CreateNewPoll<'info> {
         bump,
     )]
     pub poll_acc: Account<'info, PollAccount>,
-    /// CHECK:
+    /// CHECK: Vote state data object will be initialized by CPI
     #[account(mut)]
     pub vote_state: UncheckedAccount<'info>,
     #[account(
@@ -164,8 +161,7 @@ pub struct Vote<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        // TODO: Replace with actual cluster offset
-        seeds = [CLUSTER_PDA_SEED, 0u32.to_le_bytes().as_ref()],
+        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = cluster_account.bump
     )]
@@ -195,7 +191,7 @@ pub struct Vote<'info> {
     pub poll_acc: Account<'info, PollAccount>,
     #[account(
         mut,
-        seeds = [DA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
+        seeds = [DATA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         owner = ARCIUM_PROG_ID,
         bump = vote_state.bump,
@@ -270,8 +266,7 @@ pub struct RevealVotingResult<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        // TODO: Replace with actual cluster offset
-        seeds = [CLUSTER_PDA_SEED, 0u32.to_le_bytes().as_ref()],
+        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = cluster_account.bump
     )]
@@ -293,7 +288,7 @@ pub struct RevealVotingResult<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         mut,
-        seeds = [DA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
+        seeds = [DATA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         owner = ARCIUM_PROG_ID,
         bump = vote_state.bump,

@@ -2,20 +2,17 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Voting } from "../target/types/voting";
-import { Vote } from "../confidential-ixs/build/vote";
 import {
-  RawConfidentialInstructionInputs,
   getClusterDAInfo,
   getArciumEnv,
-  buildOffchainRefRequest,
+  encryptAndEncodeInput,
   DANodeClient,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgAddress,
   uploadCircuit,
   buildFinalizeCompDefTx,
-  trackComputationProgress,
-  getDataObjPDA,
+  awaitComputationFinalization,
   MBoolean,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
@@ -30,11 +27,11 @@ describe("Voting", () => {
   const arciumEnv = getArciumEnv();
   const daNodeClient = new DANodeClient(arciumEnv.DANodeURL);
 
-  it("Initialize confidential voting, create new poll, vote confidentially and reveal result", async () => {
+  it("Is initialized!", async () => {
     const POLL_ID = 420;
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log(owner.publicKey.toBase58());
+    console.log("Initializing add together computation definition");
     console.log("Initializing voting computation definition");
     const initVoteSig = await initVoteCompDef(program, owner, false);
     console.log(
@@ -49,55 +46,56 @@ describe("Voting", () => {
       initRRSig
     );
 
-    const pollSig = await createNewPoll(program, daNodeClient, POLL_ID);
-    console.log("Poll created with signature", pollSig);
-
-    // Vote on the poll
-    const inputVal: RawConfidentialInstructionInputs<Vote> = [
-      {
-        value: true as MBoolean,
-      },
-    ];
     const cluster_da_info = await getClusterDAInfo(
       provider.connection,
       arciumEnv.arciumClusterPubkey
     );
-    const req = buildOffchainRefRequest(inputVal, cluster_da_info);
-    const oref = await daNodeClient.postOffchainReference(req);
-    console.log("Built offchain request");
+
+    const vote = true as MBoolean;
+    const voteReq = encryptAndEncodeInput(vote, cluster_da_info);
+    const oref1 = await daNodeClient.postOffchainReference(voteReq);
+
     const queueSig = await program.methods
-      .vote(POLL_ID, oref)
-      .accounts({
-        authority: owner.publicKey,
+      .vote(POLL_ID, oref1)
+      .accountsPartial({
+        clusterAccount: arciumEnv.arciumClusterPubkey,
       })
       .rpc({ commitment: "confirmed" });
-    console.log("Voting queue sig is ", queueSig);
+    console.log("Queue sig is ", queueSig);
 
-    const finalizeSig = await trackComputationProgress(
+    const finalizeSig = await awaitComputationFinalization(
       provider.connection,
       queueSig,
       program.programId,
       "confirmed"
     );
-    console.log("Finalize voting sig is ", finalizeSig);
+    console.log("Finalize sig is ", finalizeSig);
 
     const revealQueueSig = await program.methods
       .revealResult(POLL_ID)
-      .accounts({})
       .rpc({ commitment: "confirmed" });
     console.log("Reveal queue sig is ", revealQueueSig);
-    const revealFinalizeSig = await trackComputationProgress(
+    const revealFinalizeSig = await awaitComputationFinalization(
       provider.connection,
       revealQueueSig,
       program.programId,
       "confirmed"
     );
     console.log("Reveal finalize sig is ", revealFinalizeSig);
+
+    const tx = await provider.connection.getTransaction(
+      revealFinalizeSig.finalizeSignature,
+      {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      }
+    );
+    console.log("Logs are ", tx.meta.logMessages);
   });
 
   async function initVoteCompDef(
     program: Program<Voting>,
-    payer: anchor.web3.Keypair,
+    owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
@@ -106,14 +104,16 @@ describe("Voting", () => {
     const offset = getCompDefAccOffset("vote");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, offset],
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
       getArciumProgAddress()
     )[0];
 
+    console.log("Comp def pda is ", compDefPDA.toBase58());
+
     const sig = await program.methods
       .initVoteCompDef()
-      .accounts({ compDefAcc: compDefPDA, payer: payer.publicKey })
-      .signers([payer])
+      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
@@ -121,16 +121,28 @@ describe("Voting", () => {
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("confidential-ixs/build/vote.arcis");
-      await uploadCircuit(provider.connection, payer, "vote", rawCircuit, true);
+
+      await uploadCircuit(
+        provider.connection,
+        owner,
+        "vote",
+        program.programId,
+        rawCircuit,
+        true
+      );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        payer.publicKey,
-        Buffer.from(offset).readUInt32LE()
+        owner.publicKey,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
       );
+
       const latestBlockhash = await provider.connection.getLatestBlockhash();
       finalizeTx.recentBlockhash = latestBlockhash.blockhash;
       finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(payer);
+
+      finalizeTx.sign(owner);
+
       await provider.sendAndConfirm(finalizeTx);
     }
     return sig;
@@ -138,7 +150,7 @@ describe("Voting", () => {
 
   async function initRRCompDef(
     program: Program<Voting>,
-    payer: anchor.web3.Keypair,
+    owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
@@ -147,14 +159,16 @@ describe("Voting", () => {
     const offset = getCompDefAccOffset("reveal_result");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, offset],
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
       getArciumProgAddress()
     )[0];
 
+    console.log("Comp def pda is ", compDefPDA.toBase58());
+
     const sig = await program.methods
       .initRevealResultCompDef()
-      .accounts({ compDefAcc: compDefPDA, payer: payer.publicKey })
-      .signers([payer])
+      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
@@ -164,55 +178,31 @@ describe("Voting", () => {
       const rawCircuit = fs.readFileSync(
         "confidential-ixs/build/reveal_result.arcis"
       );
+
       await uploadCircuit(
         provider.connection,
-        payer,
+        owner,
         "reveal_result",
+        program.programId,
         rawCircuit,
         true
       );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        payer.publicKey,
-        Buffer.from(offset).readUInt32LE()
+        owner.publicKey,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
       );
+
       const latestBlockhash = await provider.connection.getLatestBlockhash();
       finalizeTx.recentBlockhash = latestBlockhash.blockhash;
       finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(payer);
+
+      finalizeTx.sign(owner);
+
       await provider.sendAndConfirm(finalizeTx);
     }
     return sig;
-  }
-
-  async function createNewPoll(
-    program: Program<Voting>,
-    daNodeClient: DANodeClient,
-    pollId: number
-  ): Promise<string> {
-    const votePDA = getDataObjPDA(getArciumProgAddress(), pollId);
-
-    // Empty vote stats is 2 scalars
-    const emptyVoteState: [{ value: bigint }, { value: bigint }] = [
-      {
-        value: BigInt(0),
-      },
-      {
-        value: BigInt(0),
-      },
-    ];
-
-    const cluster_da_info = await getClusterDAInfo(
-      provider.connection,
-      arciumEnv.arciumClusterPubkey
-    );
-    const req = buildOffchainRefRequest(emptyVoteState, cluster_da_info);
-    const oref = await daNodeClient.postOffchainReference(req);
-
-    return program.methods
-      .createNewPoll(pollId, "$SOL to 500?", oref)
-      .accounts({ voteState: votePDA })
-      .rpc();
   }
 });
 
