@@ -116,7 +116,7 @@ describe("Voting", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Comp def pda is ", compDefPDA.toBase58());
+    console.log("Vote comp def pda is ", compDefPDA.toBase58());
 
     const sig = await program.methods
       .initVoteCompDef()
@@ -171,7 +171,7 @@ describe("Voting", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Comp def pda is ", compDefPDA.toBase58());
+    console.log("RR comp def pda is ", compDefPDA.toBase58());
 
     const sig = await program.methods
       .initRevealResultCompDef()
