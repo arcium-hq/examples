@@ -14,6 +14,9 @@ import {
   buildFinalizeCompDefTx,
   awaitComputationFinalization,
   MBoolean,
+  getDataObjPDA,
+  MScalar,
+  encryptAndEncodeInputArray,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -46,6 +49,9 @@ describe("Voting", () => {
       initRRSig
     );
 
+    const pollSig = await createNewPoll(program, daNodeClient, POLL_ID);
+    console.log("Poll created with signature", pollSig);
+
     const cluster_da_info = await getClusterDAInfo(
       provider.connection,
       arciumEnv.arciumClusterPubkey
@@ -54,11 +60,13 @@ describe("Voting", () => {
     const vote = true as MBoolean;
     const voteReq = encryptAndEncodeInput(vote, cluster_da_info);
     const oref1 = await daNodeClient.postOffchainReference(voteReq);
+    console.log("Oref1 is ", oref1);
 
     const queueSig = await program.methods
       .vote(POLL_ID, oref1)
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        authority: owner.publicKey,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
@@ -203,6 +211,33 @@ describe("Voting", () => {
       await provider.sendAndConfirm(finalizeTx);
     }
     return sig;
+  }
+
+  async function createNewPoll(
+    program: Program<Voting>,
+    daNodeClient: DANodeClient,
+    pollId: number
+  ): Promise<string> {
+    const votePDA = getDataObjPDA(
+      getArciumProgAddress(),
+      program.programId,
+      pollId
+    );
+
+    // Empty vote state is 2 scalars
+    const emptyVoteState: MScalar[] = new Array(2).fill(BigInt(0) as MScalar);
+
+    const cluster_da_info = await getClusterDAInfo(
+      provider.connection,
+      arciumEnv.arciumClusterPubkey
+    );
+    const req = encryptAndEncodeInputArray(emptyVoteState, cluster_da_info);
+    const oref = await daNodeClient.postOffchainReference(req);
+
+    return program.methods
+      .createNewPoll(pollId, "$SOL to 500?", oref)
+      .accounts({ voteState: votePDA })
+      .rpc();
   }
 });
 

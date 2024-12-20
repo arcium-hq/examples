@@ -37,32 +37,32 @@ address = "67caFht6JPaJzkgbT8EJ8rd7efSVVc65dnNJgvQckwNW"
 filename = "artifacts/arcium_pool_ata.json"
 
 [[test.validator.account]]
-address = "GLzE49YuyuAu6kE3LeN48HQjjZHb3wALZv4Cmh57NwFj"
-filename = "artifacts/wallet_acc_GLzE_NwFj.json"
+address = "4dJtXx5eu54jqnBfejb36n3hMw5DrVhR3xbLJ2Dm2D6G"
+filename = "artifacts/wallet_acc_4dJt_2D6G.json"
 
 [[test.validator.account]]
 address = "BoVUVSJAhob2cvM5z4JZTdS6VWRSznh3bbzQD1TFjvDP"
-filename = "artifacts/arx_mint_GLzE_NwFj.json"
+filename = "artifacts/arx_mint_4dJt_2D6G.json"
 
 [[test.validator.account]]
-address = "8Gfn2vkpzDV1FMZrc1ZBBiP4UiiUhBBXxHr29rtnMcZ9"
-filename = "artifacts/arx_ata_user_GLzE_NwFj.json"
+address = "6vVoveTwwrmH2QaM4mHNjb4bQsVxD8Rmf4gQwVkjrLGk"
+filename = "artifacts/arx_ata_user_4dJt_2D6G.json"
 
 [[test.validator.account]]
-address = "3zUi7cJsMpzsQuzgPuhsGmdfz9qSDARyKeu9DowsEZfM"
-filename = "artifacts/primary_stake_acc_GLzE_NwFj.json"
+address = "FvhfWmD88aeWcU9EWjrUkjUYaF9MVPLy6tD5jWTVHNW7"
+filename = "artifacts/primary_stake_acc_4dJt_2D6G.json"
 
 [[test.validator.account]]
-address = "4ZY9mgHinUAXUf8nyTzbn9kF6jQ8spGR4CSmxV3kXMJ4"
-filename = "artifacts/stake_queue_acc_GLzE_NwFj.json"
+address = "87GSJkcMzsQmp3NFPZELRKnhEirsUSvjH1D7Wvh3NFUs"
+filename = "artifacts/stake_queue_acc_4dJt_2D6G.json"
 
 [[test.validator.account]]
-address = "C8ZjGBnnAaWMZeFCtqcVhdrEPjyAGxHpqfG62n4dxTg1"
-filename = "artifacts/operator_acc_GLzE_NwFj.json"
+address = "GBWyVBNdb7vUi73cF2kjyXvdGe66EjKF3dVeU1YDqQhf"
+filename = "artifacts/operator_acc_4dJt_2D6G.json"
 
 [[test.validator.account]]
 address = "7KfGNFoEjWBv3giYW8ZhmJYxZMpDQ8N5VurQV98KAPym"
-filename = "artifacts/arx_node_GLzE_NwFj.json"
+filename = "artifacts/arx_node_4dJt_2D6G.json"
 
 [[test.validator.account]]
 address = "ariZN4ANYnFyfnF12mmUuCchjawFXnepyrWdEQakFtP"

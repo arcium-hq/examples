@@ -57,8 +57,8 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, id: u32, vote_state: OffChainReference) -> Result<()> {
-        let args = vec![Argument::MBool(vote_state), Argument::DataObj(id)];
+    pub fn vote(ctx: Context<Vote>, id: u32, vote: OffChainReference) -> Result<()> {
+        let args = vec![Argument::MBool(vote), Argument::DataObj(id)];
         queue_computation(
             ctx.accounts,
             args,
@@ -182,6 +182,9 @@ pub struct Vote<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     /// CHECK: Poll authority pubkey
+    #[account(
+        address = poll_acc.authority,
+    )]
     pub authority: UncheckedAccount<'info>,
     #[account(
         seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
@@ -191,9 +194,8 @@ pub struct Vote<'info> {
     pub poll_acc: Account<'info, PollAccount>,
     #[account(
         mut,
-        seeds = [DATA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
+        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        owner = ARCIUM_PROG_ID,
         bump = vote_state.bump,
     )]
     pub vote_state: Account<'info, DataObjectAccount>,
@@ -238,7 +240,10 @@ pub struct InitVoteCompDef<'info> {
 #[queue_computation_accounts("reveal_result", payer)]
 #[instruction(id: u32)]
 pub struct RevealVotingResult<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        address = poll_acc.authority,
+    )]
     pub payer: Signer<'info>,
     #[account(
         seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
@@ -290,7 +295,6 @@ pub struct RevealVotingResult<'info> {
         mut,
         seeds = [DATA_OBJ_PDA_SEED, id.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        owner = ARCIUM_PROG_ID,
         bump = vote_state.bump,
     )]
     pub vote_state: Account<'info, DataObjectAccount>,
