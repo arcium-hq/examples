@@ -81,6 +81,9 @@ describe("Voting", () => {
 
     const revealQueueSig = await program.methods
       .revealResult(POLL_ID)
+      .accountsPartial({
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+      })
       .rpc({ commitment: "confirmed" });
     console.log("Reveal queue sig is ", revealQueueSig);
     const revealFinalizeSig = await awaitComputationFinalization(

@@ -154,7 +154,7 @@ pub struct Vote<'info> {
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -207,7 +207,7 @@ pub struct VoteCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -264,7 +264,7 @@ pub struct RevealVotingResult<'info> {
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -306,7 +306,7 @@ pub struct RevealVotingResultCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
