@@ -19,7 +19,7 @@ use arcium_macros::{
 
 const COMP_DEF_OFFSET_PREDICT: u32 = comp_def_offset("predict");
 
-declare_id!("2aa8kGEfyFnfnfDf1rqoWoU3oQZmEWHK5fWHPSAUTHPw");
+declare_id!("GUDuZTaMjdTJtsHqhBBhcsMDpa5jWRHBDzj5QtB6FL4j");
 
 #[arcium_program]
 pub mod predictor {
@@ -32,12 +32,18 @@ pub mod predictor {
 
     pub fn predictor(
         ctx: Context<Predict>,
-        coeff: OffChainReference,
+        coeff_1: OffChainReference,
+        coeff_2: OffChainReference,
+        coeff_3: OffChainReference,
+        coeff_4: OffChainReference,
         intercept: OffChainReference,
         input: OffChainReference,
     ) -> Result<()> {
         let args = vec![
-            Argument::MFloat(coeff),
+            Argument::MFloat(coeff_1),
+            Argument::MFloat(coeff_2),
+            Argument::MFloat(coeff_3),
+            Argument::MFloat(coeff_4),
             Argument::MFloat(intercept),
             Argument::MFloat(input),
         ];

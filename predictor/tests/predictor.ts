@@ -43,20 +43,33 @@ describe("PricePredict", () => {
     );
 
     // Demo values for a logistic regression model
-    // y = 1.1 * x + 0.1
-    const coeff = 1.1 as MFloat;
+    const coeff_1 = 1.1 as MFloat;
+    const coeff_2 = 5.2 as MFloat;
+    const coeff_3 = 3.1 as MFloat;
+    const coeff_4 = 1.9 as MFloat;
+
     const intercept = 0.1 as MFloat;
     const inputVal = 1.0 as MFloat;
-    const req1 = encryptAndEncodeInput(coeff, cluster_da_info);
-    const req2 = encryptAndEncodeInput(intercept, cluster_da_info);
-    const req3 = encryptAndEncodeInput(inputVal, cluster_da_info);
+    const req1 = encryptAndEncodeInput(coeff_1, cluster_da_info);
+    const req2 = encryptAndEncodeInput(coeff_2, cluster_da_info);
+    const req3 = encryptAndEncodeInput(coeff_3, cluster_da_info);
+    const req4 = encryptAndEncodeInput(coeff_4, cluster_da_info);
+
+    const reqIntercept = encryptAndEncodeInput(intercept, cluster_da_info);
+    const reqInput = encryptAndEncodeInput(inputVal, cluster_da_info);
 
     const oref1 = await daNodeClient.postOffchainReference(req1);
     const oref2 = await daNodeClient.postOffchainReference(req2);
     const oref3 = await daNodeClient.postOffchainReference(req3);
+    const oref4 = await daNodeClient.postOffchainReference(req4);
+
+    const orefIntercept = await daNodeClient.postOffchainReference(
+      reqIntercept
+    );
+    const orefInput = await daNodeClient.postOffchainReference(reqInput);
 
     const queueSig = await program.methods
-      .predictor(oref1, oref2, oref3)
+      .predictor(oref1, oref2, oref3, oref4, orefIntercept, orefInput)
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
