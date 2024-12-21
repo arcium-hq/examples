@@ -31,11 +31,18 @@ describe("RockPaperScissors", () => {
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false);
+    console.log("Initializing commit choice computation definition");
+    const initCCSig = await initCommitChoiceCompDef(program, owner, false);
     console.log(
-      "Add together computation definition initialized with signature",
-      initATSig
+      "Commit choice computation definition initialized with signature",
+      initCCSig
+    );
+
+    console.log("Initializing decide winner computation definition");
+    const initDWSig = await initDecideWinnerCompDef(program, owner, false);
+    console.log(
+      "Decide winner computation definition initialized with signature",
+      initDWSig
     );
 
     const cluster_da_info = await getClusterDAInfo(
@@ -76,15 +83,15 @@ describe("RockPaperScissors", () => {
     console.log("Logs are ", tx.meta.logMessages);
   });
 
-  async function initAddTogetherCompDef(
+  async function initCommitChoiceCompDef(
     program: Program<RockPaperScissors>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
+    uploadRawCircuit: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("add_together");
+    const offset = getCompDefAccOffset("commit_choice");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -94,23 +101,23 @@ describe("RockPaperScissors", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initAddTogetherCompDef()
+      .initCommitChoiceCompDef()
       .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init add together computation definition transaction", sig);
+    console.log("Init commit_choice computation definition transaction", sig);
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync(
-        "confidential-ixs/build/add_together.arcis"
+        "confidential-ixs/build/commit_choice.arcis"
       );
 
       await uploadCircuit(
         provider.connection,
         owner,
-        "add_together",
+        "commit_choice",
         program.programId,
         rawCircuit,
         true
@@ -119,7 +126,64 @@ describe("RockPaperScissors", () => {
       const finalizeTx = await buildFinalizeCompDefTx(
         owner.publicKey,
         Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
+
+  async function initDecideWinnerCompDef(
+    program: Program<RockPaperScissors>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("decide_winner");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log("Comp def pda is ", compDefPDA);
+
+    const sig = await program.methods
+      .initDecideWinnerCompDef()
+      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init decide_winner computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync(
+        "confidential-ixs/build/decide_winner.arcis"
+      );
+
+      await uploadCircuit(
+        provider.connection,
+        owner,
+        "decide_winner",
         program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        owner.publicKey,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
       );
 
       const latestBlockhash = await provider.connection.getLatestBlockhash();

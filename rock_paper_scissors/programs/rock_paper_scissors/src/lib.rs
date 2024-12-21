@@ -44,6 +44,11 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    pub fn init_decide_winner_comp_def(ctx: Context<InitDecideWinnerCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts)?;
+        Ok(())
+    }
+
     pub fn commit_choice(ctx: Context<CommitChoice>, choice: OffChainReference) -> Result<()> {
         let args = vec![Argument::MU8(choice), Argument::DataObject()];
         queue_computation(ctx.accounts, args, vec![], vec![])?;
@@ -124,6 +129,23 @@ pub struct CommitChoiceCallback<'info> {
 
 #[init_computation_definition_accounts("commit_choice", payer)]
 pub struct InitCommitChoiceCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_acc.bump
+    )]
+    pub mxe_acc: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    pub comp_def_acc: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[init_computation_definition_accounts("decide_winner", payer)]
+pub struct InitDecideWinnerCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
