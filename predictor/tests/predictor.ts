@@ -21,7 +21,7 @@ import * as os from "os";
 describe("PricePredict", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace.PricePredict as Program<Predictor>;
+  const program = anchor.workspace.Predictor as Program<Predictor>;
   const provider = anchor.getProvider();
 
   const arciumEnv = getArciumEnv();
@@ -82,7 +82,7 @@ describe("PricePredict", () => {
   });
 
   async function initPredictCompDef(
-    program: Program<PricePredict>,
+    program: Program<Predictor>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
   ): Promise<string> {
