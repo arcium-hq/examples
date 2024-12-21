@@ -1740,7 +1740,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "price_predict"
+name = "predictor"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

@@ -22,7 +22,7 @@ const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
 declare_id!("2aa8kGEfyFnfnfDf1rqoWoU3oQZmEWHK5fWHPSAUTHPw");
 
 #[arcium_program]
-pub mod price_predict {
+pub mod predictor {
     use super::*;
 
     pub fn init_predict_comp_def(ctx: Context<InitPredictCompDef>) -> Result<()> {

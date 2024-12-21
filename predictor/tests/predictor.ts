@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { PricePredict } from "../target/types/price_predict";
+import { Predictor } from "../target/types/predictor";
 import {
   getClusterDAInfo,
   getArciumEnv,
@@ -21,7 +21,7 @@ import * as os from "os";
 describe("PricePredict", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace.PricePredict as Program<PricePredict>;
+  const program = anchor.workspace.PricePredict as Program<Predictor>;
   const provider = anchor.getProvider();
 
   const arciumEnv = getArciumEnv();

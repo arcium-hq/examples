@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-price_predict = "2aa8kGEfyFnfnfDf1rqoWoU3oQZmEWHK5fWHPSAUTHPw"
+predictor = "2aa8kGEfyFnfnfDf1rqoWoU3oQZmEWHK5fWHPSAUTHPw"
 
 [registry]
 url = "https://api.apr.dev"
