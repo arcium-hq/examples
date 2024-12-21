@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    comp_def_offset, init_comp_def, init_da_object, queue_computation, CLOCK_PDA_SEED,
+    CLUSTER_PDA_SEED, COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
@@ -23,9 +23,6 @@ declare_id!("2ihd38tySzhfWJmWvQt78zyyCC4ktCKs8HwjwYAXLjqa");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
-    use arcium_anchor::init_da_object;
-    use arcium_client::idl::arcium::cpi::init_data_object;
-
     use super::*;
 
     pub fn create_new_game(
