@@ -16,6 +16,8 @@ use arcium_macros::{
     arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
     init_data_object_accounts, queue_computation_accounts,
 };
+pub mod utils;
+use utils::get_offset;
 
 const COMP_DEF_OFFSET_COMMIT_CHOICE: u32 = comp_def_offset("commit_choice");
 const COMP_DEF_OFFSET_DECIDE_WINNER: u32 = comp_def_offset("decide_winner");
@@ -37,7 +39,7 @@ pub mod rock_paper_scissors {
             ctx.accounts,
             initial_player_acc,
             ctx.accounts.player1_data_obj.to_account_info(),
-            data_obj_offset,
+            get_offset(id, 1),
         )?;
 
         Ok(())
