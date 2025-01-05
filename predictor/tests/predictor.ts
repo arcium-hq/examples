@@ -18,7 +18,7 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 
-describe("PricePredict", () => {
+describe("Predictor", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Predictor as Program<Predictor>;
@@ -43,20 +43,26 @@ describe("PricePredict", () => {
     );
 
     // Demo values for a logistic regression model
-    const coeff_1 = 1.1 as MFloat;
-    const coeff_2 = 5.2 as MFloat;
-    const coeff_3 = 3.1 as MFloat;
-    const coeff_4 = 1.9 as MFloat;
+    const coef_1 = 1.1 as MFloat;
+    const coef_2 = 5.2 as MFloat;
+    const coef_3 = 3.1 as MFloat;
+    const coef_4 = -1.9 as MFloat;
 
     const intercept = 0.1 as MFloat;
-    const inputVal = 1.0 as MFloat;
-    const req1 = encryptAndEncodeInput(coeff_1, cluster_da_info);
-    const req2 = encryptAndEncodeInput(coeff_2, cluster_da_info);
-    const req3 = encryptAndEncodeInput(coeff_3, cluster_da_info);
-    const req4 = encryptAndEncodeInput(coeff_4, cluster_da_info);
+    const inputVal1 = 1.0 as MFloat;
+    const inputVal2 = 2.1 as MFloat;
+    const inputVal3 = -3.3 as MFloat;
+    const inputVal4 = 4.2 as MFloat;
+    const req1 = encryptAndEncodeInput(coef_1, cluster_da_info);
+    const req2 = encryptAndEncodeInput(coef_2, cluster_da_info);
+    const req3 = encryptAndEncodeInput(coef_3, cluster_da_info);
+    const req4 = encryptAndEncodeInput(coef_4, cluster_da_info);
 
     const reqIntercept = encryptAndEncodeInput(intercept, cluster_da_info);
-    const reqInput = encryptAndEncodeInput(inputVal, cluster_da_info);
+    const reqInput1 = encryptAndEncodeInput(inputVal1, cluster_da_info);
+    const reqInput2 = encryptAndEncodeInput(inputVal2, cluster_da_info);
+    const reqInput3 = encryptAndEncodeInput(inputVal3, cluster_da_info);
+    const reqInput4 = encryptAndEncodeInput(inputVal4, cluster_da_info);
 
     const oref1 = await daNodeClient.postOffchainReference(req1);
     const oref2 = await daNodeClient.postOffchainReference(req2);
@@ -66,10 +72,13 @@ describe("PricePredict", () => {
     const orefIntercept = await daNodeClient.postOffchainReference(
       reqIntercept
     );
-    const orefInput = await daNodeClient.postOffchainReference(reqInput);
+    const orefInput1 = await daNodeClient.postOffchainReference(reqInput1);
+    const orefInput2 = await daNodeClient.postOffchainReference(reqInput2);
+    const orefInput3 = await daNodeClient.postOffchainReference(reqInput3);
+    const orefInput4 = await daNodeClient.postOffchainReference(reqInput4);
 
     const queueSig = await program.methods
-      .predictor(oref1, oref2, oref3, oref4, orefIntercept, orefInput)
+      .predictor(oref1, oref2, oref3, oref4, orefIntercept, orefInput1, orefInput2, orefInput3, orefInput4)
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
@@ -102,7 +111,7 @@ describe("PricePredict", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("predict");
+    const offset = getCompDefAccOffset("predict_proba");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -128,7 +137,7 @@ describe("PricePredict", () => {
       await uploadCircuit(
         provider.connection,
         owner,
-        "predict",
+        "predict_proba",
         program.programId,
         rawCircuit,
         true

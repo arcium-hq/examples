@@ -45,32 +45,32 @@ address = "67caFht6JPaJzkgbT8EJ8rd7efSVVc65dnNJgvQckwNW"
 filename = "artifacts/arcium_pool_ata.json"
 
 [[test.validator.account]]
-address = "Hy3G8GVGjGNDLnf6eqBo5gibTiMyjkDYfTgb32VChpq7"
-filename = "artifacts/wallet_acc_Hy3G_hpq7.json"
+address = "AhUd37AYGTbMupvFKe2SJ2esXr6pipikkHcvfycknYjx"
+filename = "artifacts/wallet_acc_AhUd_nYjx.json"
 
 [[test.validator.account]]
 address = "BoVUVSJAhob2cvM5z4JZTdS6VWRSznh3bbzQD1TFjvDP"
-filename = "artifacts/arx_mint_Hy3G_hpq7.json"
+filename = "artifacts/arx_mint_AhUd_nYjx.json"
 
 [[test.validator.account]]
-address = "AP3CPGx51iNZozrtWdwAQi6f1svLJVfzNsPLwf2Ub3Ed"
-filename = "artifacts/arx_ata_user_Hy3G_hpq7.json"
+address = "8xH98sDxDZTSR9qjynm8btcsY1GhZ8XJbrUaYK9aYyAb"
+filename = "artifacts/arx_ata_user_AhUd_nYjx.json"
 
 [[test.validator.account]]
-address = "C73v5qZpa9pgGoCU2WhGb9gtZDF9f5JbxveLirDY4CKc"
-filename = "artifacts/primary_stake_acc_Hy3G_hpq7.json"
+address = "Fd6vKKNb9f2MopiETNfHgQwqWXsKGzQ583etrJtxSUwM"
+filename = "artifacts/primary_stake_acc_AhUd_nYjx.json"
 
 [[test.validator.account]]
-address = "5AskbXFaHmWfcL6Kg4HUVEQ4jfWZWDEXFWcjJvaeM24F"
-filename = "artifacts/stake_queue_acc_Hy3G_hpq7.json"
+address = "Cj1xrn7SjjpXmzxp9KqB2vcytUdPDTgckDNX8hVgw7NK"
+filename = "artifacts/stake_queue_acc_AhUd_nYjx.json"
 
 [[test.validator.account]]
-address = "2Sa2DqTbNmsvJ5ssfgRmesSLPpCo4mcyXWihHdrqVV2y"
-filename = "artifacts/operator_acc_Hy3G_hpq7.json"
+address = "5MqNYwB4wLuMAC8dYh7HkhSujrXF7ZL3TFQQQzWEdk1R"
+filename = "artifacts/operator_acc_AhUd_nYjx.json"
 
 [[test.validator.account]]
 address = "7KfGNFoEjWBv3giYW8ZhmJYxZMpDQ8N5VurQV98KAPym"
-filename = "artifacts/arx_node_Hy3G_hpq7.json"
+filename = "artifacts/arx_node_AhUd_nYjx.json"
 
 [[test.validator.account]]
 address = "ariZN4ANYnFyfnF12mmUuCchjawFXnepyrWdEQakFtP"
@@ -105,8 +105,8 @@ address = "EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs"
 filename = "artifacts/cluster_acc_0.json"
 
 [[test.validator.account]]
-address = "EfgTYR2ryd2CV4hrUDrLoFCM6Yyn8sWsUyrzbX85xSzb"
-filename = "artifacts/predict_raw_circuit_0.json"
+address = "JDYAoE4mWfutBijovjDnw3Vjur7rqoQXdAVJs8UiSWxC"
+filename = "artifacts/predict_proba_raw_circuit_0.json"
 
 [[test.validator.account]]
 address = "F7jnTm6hWXNW6PNSoiSj2i9kfd2XukLFVfaJfabAN966"

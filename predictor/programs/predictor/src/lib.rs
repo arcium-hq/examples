@@ -17,7 +17,7 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_PREDICT: u32 = comp_def_offset("predict");
+const COMP_DEF_OFFSET_PREDICT: u32 = comp_def_offset("predict_proba");
 
 declare_id!("GUDuZTaMjdTJtsHqhBBhcsMDpa5jWRHBDzj5QtB6FL4j");
 
@@ -32,33 +32,39 @@ pub mod predictor {
 
     pub fn predictor(
         ctx: Context<Predict>,
-        coeff_1: OffChainReference,
-        coeff_2: OffChainReference,
-        coeff_3: OffChainReference,
-        coeff_4: OffChainReference,
+        coef_1: OffChainReference,
+        coef_2: OffChainReference,
+        coef_3: OffChainReference,
+        coef_4: OffChainReference,
         intercept: OffChainReference,
-        input: OffChainReference,
+        input_1: OffChainReference,
+        input_2: OffChainReference,
+        input_3: OffChainReference,
+        input_4: OffChainReference,
     ) -> Result<()> {
         let args = vec![
-            Argument::MFloat(coeff_1),
-            Argument::MFloat(coeff_2),
-            Argument::MFloat(coeff_3),
-            Argument::MFloat(coeff_4),
+            Argument::MFloat(coef_1),
+            Argument::MFloat(coef_2),
+            Argument::MFloat(coef_3),
+            Argument::MFloat(coef_4),
             Argument::MFloat(intercept),
-            Argument::MFloat(input),
+            Argument::MFloat(input_1),
+            Argument::MFloat(input_2),
+            Argument::MFloat(input_3),
+            Argument::MFloat(input_4),
         ];
         queue_computation(ctx.accounts, args, vec![], vec![])?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "predict")]
-    pub fn predict_callback(ctx: Context<PredictCallback>, output: Vec<u8>) -> Result<()> {
+    #[arcium_callback(confidential_ix = "predict_proba")]
+    pub fn predict_proba_callback(ctx: Context<PredictCallback>, output: Vec<u8>) -> Result<()> {
         msg!("Prediction: {:?}", output);
         Ok(())
     }
 }
 
-#[queue_computation_accounts("predict", payer)]
+#[queue_computation_accounts("predict_proba", payer)]
 pub struct Predict<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -105,7 +111,7 @@ pub struct Predict<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("predict", payer)]
+#[callback_accounts("predict_proba", payer)]
 pub struct PredictCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -120,7 +126,7 @@ pub struct PredictCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("predict", payer)]
+#[init_computation_definition_accounts("predict_proba", payer)]
 pub struct InitPredictCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
