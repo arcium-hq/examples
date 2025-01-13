@@ -14,7 +14,7 @@ pub fn predict_proba(
     input_2: mf64,
     // input_3: mf64,
     // input_4: mf64,
-) -> mf64 {
+) -> f64 {
     let model = LogisticRegression::new(
         &[
             coef_1, coef_2,
@@ -28,6 +28,5 @@ pub fn predict_proba(
             input_1, input_2,
             // input_3, input_4
         ])
-        .reveal()
-        // .reveal() // Raw encrypted outputs not supported
+        .reveal() // Raw encrypted outputs not supported
 }
