@@ -19,7 +19,7 @@ use arcium_macros::{
 
 const COMP_DEF_OFFSET_PREDICT: u32 = comp_def_offset("predict_proba");
 
-declare_id!("GUDuZTaMjdTJtsHqhBBhcsMDpa5jWRHBDzj5QtB6FL4j");
+declare_id!("7nUHZ4UUTrUDoRYfZBspJv9WWXzex2rgxxt7iyM7wbBS");
 
 #[arcium_program]
 pub mod predictor {
@@ -34,24 +34,24 @@ pub mod predictor {
         ctx: Context<Predict>,
         coef_1: OffChainReference,
         coef_2: OffChainReference,
-        coef_3: OffChainReference,
-        coef_4: OffChainReference,
+        // coef_3: OffChainReference,
+        // coef_4: OffChainReference,
         intercept: OffChainReference,
         input_1: OffChainReference,
         input_2: OffChainReference,
-        input_3: OffChainReference,
-        input_4: OffChainReference,
+        // input_3: OffChainReference,
+        // input_4: OffChainReference,
     ) -> Result<()> {
         let args = vec![
             Argument::MFloat(coef_1),
             Argument::MFloat(coef_2),
-            Argument::MFloat(coef_3),
-            Argument::MFloat(coef_4),
+            // Argument::MFloat(coef_3),
+            // Argument::MFloat(coef_4),
             Argument::MFloat(intercept),
             Argument::MFloat(input_1),
             Argument::MFloat(input_2),
-            Argument::MFloat(input_3),
-            Argument::MFloat(input_4),
+            // Argument::MFloat(input_3),
+            // Argument::MFloat(input_4),
         ];
         queue_computation(ctx.accounts, args, vec![], vec![])?;
         Ok(())
@@ -65,6 +65,7 @@ pub mod predictor {
 }
 
 #[queue_computation_accounts("predict_proba", payer)]
+#[derive(Accounts)]
 pub struct Predict<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -112,6 +113,7 @@ pub struct Predict<'info> {
 }
 
 #[callback_accounts("predict_proba", payer)]
+#[derive(Accounts)]
 pub struct PredictCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -127,6 +129,7 @@ pub struct PredictCallback<'info> {
 }
 
 #[init_computation_definition_accounts("predict_proba", payer)]
+#[derive(Accounts)]
 pub struct InitPredictCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -136,9 +139,11 @@ pub struct InitPredictCompDef<'info> {
         seeds::program = ARCIUM_PROG_ID,
         bump = mxe_acc.bump
     )]
-    pub mxe_acc: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    pub comp_def_acc: UncheckedAccount<'info>,
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }

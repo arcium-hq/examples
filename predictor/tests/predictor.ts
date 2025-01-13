@@ -45,40 +45,49 @@ describe("Predictor", () => {
     // Demo values for a logistic regression model
     const coef_1 = 1.1 as MFloat;
     const coef_2 = 5.2 as MFloat;
-    const coef_3 = 3.1 as MFloat;
-    const coef_4 = -1.9 as MFloat;
+    // const coef_3 = 3.1 as MFloat;
+    // const coef_4 = -1.9 as MFloat;
 
     const intercept = 0.1 as MFloat;
     const inputVal1 = 1.0 as MFloat;
     const inputVal2 = 2.1 as MFloat;
-    const inputVal3 = -3.3 as MFloat;
-    const inputVal4 = 4.2 as MFloat;
+    // const inputVal3 = -3.3 as MFloat;
+    // const inputVal4 = 4.2 as MFloat;
+
     const req1 = encryptAndEncodeInput(coef_1, cluster_da_info);
     const req2 = encryptAndEncodeInput(coef_2, cluster_da_info);
-    const req3 = encryptAndEncodeInput(coef_3, cluster_da_info);
-    const req4 = encryptAndEncodeInput(coef_4, cluster_da_info);
+    // const req3 = encryptAndEncodeInput(coef_3, cluster_da_info);
+    // const req4 = encryptAndEncodeInput(coef_4, cluster_da_info);
 
     const reqIntercept = encryptAndEncodeInput(intercept, cluster_da_info);
     const reqInput1 = encryptAndEncodeInput(inputVal1, cluster_da_info);
     const reqInput2 = encryptAndEncodeInput(inputVal2, cluster_da_info);
-    const reqInput3 = encryptAndEncodeInput(inputVal3, cluster_da_info);
-    const reqInput4 = encryptAndEncodeInput(inputVal4, cluster_da_info);
+    // const reqInput3 = encryptAndEncodeInput(inputVal3, cluster_da_info);
+    // const reqInput4 = encryptAndEncodeInput(inputVal4, cluster_da_info);
 
     const oref1 = await daNodeClient.postOffchainReference(req1);
     const oref2 = await daNodeClient.postOffchainReference(req2);
-    const oref3 = await daNodeClient.postOffchainReference(req3);
-    const oref4 = await daNodeClient.postOffchainReference(req4);
+    // const oref3 = await daNodeClient.postOffchainReference(req3);
+    // const oref4 = await daNodeClient.postOffchainReference(req4);
 
     const orefIntercept = await daNodeClient.postOffchainReference(
       reqIntercept
     );
     const orefInput1 = await daNodeClient.postOffchainReference(reqInput1);
     const orefInput2 = await daNodeClient.postOffchainReference(reqInput2);
-    const orefInput3 = await daNodeClient.postOffchainReference(reqInput3);
-    const orefInput4 = await daNodeClient.postOffchainReference(reqInput4);
+    // const orefInput3 = await daNodeClient.postOffchainReference(reqInput3);
+    // const orefInput4 = await daNodeClient.postOffchainReference(reqInput4);
 
     const queueSig = await program.methods
-      .predictor(oref1, oref2, oref3, oref4, orefIntercept, orefInput1, orefInput2, orefInput3, orefInput4)
+      .predictor(
+        oref1,
+        oref2,
+        // oref3, oref4,
+        orefIntercept,
+        orefInput1,
+        orefInput2
+        // orefInput3, orefInput4,
+      )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
@@ -131,7 +140,7 @@ describe("Predictor", () => {
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync(
-        "confidential-ixs/build/predict.arcis"
+        "confidential-ixs/build/predict_proba.arcis"
       );
 
       await uploadCircuit(
