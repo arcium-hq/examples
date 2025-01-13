@@ -131,7 +131,7 @@ describe("Predictor", () => {
 
     const sig = await program.methods
       .initPredictCompDef()
-      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
       .signers([owner])
       .rpc({
         commitment: "confirmed",

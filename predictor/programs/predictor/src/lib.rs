@@ -124,6 +124,7 @@ pub struct PredictCallback<'info> {
         bump = comp_def_account.bump
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instructions_sysvar: AccountInfo<'info>,
 }
@@ -137,7 +138,7 @@ pub struct InitPredictCompDef<'info> {
         mut,
         seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_acc.bump
+        bump = mxe_account.bump
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
