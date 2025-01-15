@@ -123,7 +123,7 @@ describe("Voting", () => {
 
     const sig = await program.methods
       .initVoteCompDef()
-      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
@@ -178,7 +178,7 @@ describe("Voting", () => {
 
     const sig = await program.methods
       .initRevealResultCompDef()
-      .accounts({ compDefAcc: compDefPDA, payer: owner.publicKey })
+      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
       .signers([owner])
       .rpc({
         commitment: "confirmed",

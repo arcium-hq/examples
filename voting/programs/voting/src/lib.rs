@@ -22,7 +22,7 @@ use arcium_macros::{
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("YFLJWFAbxhRZv4xYET3cgnno85DopTJvKazkmzpUjB2");
+declare_id!("H4q4uke3VaqqepgtM2AC7HSGR8LzFdwmra3qo6mmcYK6");
 
 #[arcium_program]
 pub mod voting {
@@ -109,6 +109,7 @@ pub mod voting {
 }
 
 #[init_data_object_accounts(payer)]
+#[derive(Accounts)]
 #[instruction(id: u32)]
 pub struct CreateNewPoll<'info> {
     #[account(mut)]
@@ -128,14 +129,15 @@ pub struct CreateNewPoll<'info> {
         mut,
         seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        bump = mxe.bump
+        bump = mxe_account.bump
     )]
-    pub mxe: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
 
 #[queue_computation_accounts("vote", payer)]
+#[derive(Accounts)]
 #[instruction(id: u32)]
 pub struct Vote<'info> {
     #[account(mut)]
@@ -202,6 +204,7 @@ pub struct Vote<'info> {
 }
 
 #[callback_accounts("vote", payer)]
+#[derive(Accounts)]
 pub struct VoteCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -212,32 +215,33 @@ pub struct VoteCallback<'info> {
         bump = comp_def_account.bump
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
+#[derive(Accounts)]
 pub struct InitVoteCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        address = ID_CONST
-    )]
-    pub mxe: AccountInfo<'info>,
-    #[account(
         mut,
         seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_acc.bump
+        bump = mxe_account.bump
     )]
-    pub mxe_acc: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    pub comp_def_acc: UncheckedAccount<'info>,
+    /// CHECK: comp_def_account, checked by arcium program. 
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
 
 #[queue_computation_accounts("reveal_result", payer)]
+#[derive(Accounts)]
 #[instruction(id: u32)]
 pub struct RevealVotingResult<'info> {
     #[account(
@@ -301,6 +305,7 @@ pub struct RevealVotingResult<'info> {
 }
 
 #[callback_accounts("reveal_result", payer)]
+#[derive(Accounts)]
 pub struct RevealVotingResultCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -311,27 +316,27 @@ pub struct RevealVotingResultCallback<'info> {
         bump = comp_def_account.bump
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
 #[init_computation_definition_accounts("reveal_result", payer)]
+#[derive(Accounts)]
 pub struct InitRevealResultCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        address = ID_CONST
-    )]
-    pub mxe: AccountInfo<'info>,
-    #[account(
         mut,
         seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_acc.bump
+        bump = mxe_account.bump
     )]
-    pub mxe_acc: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    pub comp_def_acc: UncheckedAccount<'info>,
+    /// CHECK: comp_def_account, checked by arcium program. 
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
