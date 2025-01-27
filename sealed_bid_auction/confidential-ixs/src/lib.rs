@@ -13,19 +13,25 @@ pub struct VickeryAuction {
     snd_highest_bid: mu128,
 }
 
+#[derive(ArcisType)]
+pub struct Bid {
+    price: mu128,
+    bidder: mu128,
+}
+
 #[confidential]
-pub fn bid(price: mu128, bidder: mu128, auction: &mut VickeryAuction) {
-    auction = arcis!(if auction.highest_bid < price {
+pub fn bid(bid: Bid, auction: &mut VickeryAuction) {
+    auction = arcis!(if auction.highest_bid < bid.price {
         VickeryAuction {
-            highest_bid: price,
-            highest_bidder: bidder,
+            highest_bid: bid.price,
+            highest_bidder: bid.bidder,
             snd_highest_bid: auction.highest_bid,
         }
-    } else if auction.snd_highest_bid < price {
+    } else if auction.snd_highest_bid < bid.price {
         VickeryAuction {
             highest_bid: auction.highest_bid,
             highest_bidder: auction.highest_bidder,
-            snd_highest_bid: price,
+            snd_highest_bid: bid.price,
         }
     } else {
         auction

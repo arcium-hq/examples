@@ -17,7 +17,8 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
+const COMP_DEF_OFFSET_BID: u32 = comp_def_offset("bid");
+const COMP_DEF_OFFSET_SELL: u32 = comp_def_offset("sell");
 
 declare_id!("5vMrxtWm3xKVgHjJGbBHmsAk7hwzXt8xmRUkEU5mmqaw");
 
@@ -25,27 +26,49 @@ declare_id!("5vMrxtWm3xKVgHjJGbBHmsAk7hwzXt8xmRUkEU5mmqaw");
 pub mod sealed_bid_auction {
     use super::*;
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
+    pub fn init_bid_comp_def(ctx: Context<InitBidCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
-    pub fn add_together(ctx: Context<AddTogether>, x: OffChainReference, y : OffChainReference) -> Result<()> {
-        let args = vec![Argument::MU8(x), Argument::MU8(y)];
+    pub fn init_sell_comp_def(ctx: Context<InitSellCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts)?;
+        Ok(())
+    }
+
+    pub fn bid(
+        ctx: Context<Bid>,
+        price: OffChainReference,
+        bidder: OffChainReference,
+    ) -> Result<()> {
+        let args = vec![Argument::MU128(price), Argument::MU128(bidder)];
         queue_computation(ctx.accounts, args, vec![], vec![])?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<AddTogetherCallback>, output: Vec<u8>) -> Result<()> {
-        msg!("Sum of the two encrypted numbers: {:?}", output[0]);
+    #[arcium_callback(confidential_ix = "bid")]
+    pub fn bid_callback(ctx: Context<BidCallback>, output: Vec<u8>) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn sell(ctx: Context<Sell>) -> Result<()> {
+        Ok(())
+    }
+
+    #[arcium_callback(confidential_ix = "sell")]
+    pub fn sell_callback(ctx: Context<SellCallback>, output: Vec<u8>) -> Result<()> {
+        emit!(ItemSold {
+            seller: ctx.accounts.seller.key(),
+            price: output[0],
+            buyer: output[1],
+        });
         Ok(())
     }
 }
 
-#[queue_computation_accounts("add_together", payer)]
+#[queue_computation_accounts("bid", payer)]
 #[derive(Accounts)]
-pub struct AddTogether<'info> {
+pub struct Bid<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -62,7 +85,7 @@ pub struct AddTogether<'info> {
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_BID.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -98,7 +121,7 @@ pub struct AddTogetherCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_BID.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -108,9 +131,9 @@ pub struct AddTogetherCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("add_together", payer)]
+#[init_computation_definition_accounts("bid", payer)]
 #[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
+pub struct InitBidCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -121,9 +144,51 @@ pub struct InitAddTogetherCompDef<'info> {
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program. 
+    /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
+}
+
+#[init_computation_definition_accounts("sell", payer)]
+#[derive(Accounts)]
+pub struct InitSellCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Debug, InitSpace)]
+#[account]
+pub struct Auction {
+    pub item: Pubkey,
+    pub seller: Pubkey,
+    pub status: AuctionStatus,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Debug, InitSpace)]
+pub enum AuctionStatus {
+    Open,
+    Closed,
+}
+
+
+#[event]
+pub struct ItemSold {
+    pub seller: Pubkey,
+    pub price: u128,
+    pub buyer: Pubkey,
 }
