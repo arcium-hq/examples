@@ -47,7 +47,10 @@ pub mod sealed_bid_auction {
     }
 
     #[arcium_callback(confidential_ix = "bid")]
-    pub fn bid_callback(ctx: Context<BidCallback>, output: Vec<u8>) -> Result<()> {
+    pub fn bid_callback(ctx: Context<BidCallback>, _output: Vec<u8>) -> Result<()> {
+        emit!(BidRegistered {
+            timestamp: Clock::get()?.unix_timestamp,
+        });
         Ok(())
     }
 
@@ -57,10 +60,13 @@ pub mod sealed_bid_auction {
 
     #[arcium_callback(confidential_ix = "sell")]
     pub fn sell_callback(ctx: Context<SellCallback>, output: Vec<u8>) -> Result<()> {
+        let sell_amount = u128::from_le_bytes(output.as_slice()[0..16].try_into().unwrap());
+        let sold_to = u128::from_le_bytes(output.as_slice()[16..32].try_into().unwrap());
+
         emit!(ItemSold {
             seller: ctx.accounts.seller.key(),
-            price: output[0],
-            buyer: output[1],
+            price: sell_amount,
+            buyer: sold_to,
         });
         Ok(())
     }
@@ -185,10 +191,14 @@ pub enum AuctionStatus {
     Closed,
 }
 
-
 #[event]
 pub struct ItemSold {
     pub seller: Pubkey,
     pub price: u128,
     pub buyer: Pubkey,
+}
+
+#[event]
+pub struct BidRegistered {
+    pub timestamp: i64,
 }
