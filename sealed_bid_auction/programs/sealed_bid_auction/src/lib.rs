@@ -66,7 +66,7 @@ pub mod sealed_bid_auction {
         emit!(ItemSold {
             seller: ctx.accounts.seller.key(),
             price: sell_amount,
-            buyer: sold_to,
+            buyer: Pubkey::try_from_slice(sold_to.to_le_bytes().as_slice()).unwrap(),
         });
         Ok(())
     }
