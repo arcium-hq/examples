@@ -1,0 +1,292 @@
+use anchor_lang::prelude::*;
+use arcium_anchor::{
+    comp_def_offset, init_comp_def, init_da_object, queue_computation, CLOCK_PDA_SEED,
+    CLUSTER_PDA_SEED, COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+};
+use arcium_client::idl::arcium::{
+    accounts::{
+        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
+        StakingPoolAccount,
+    },
+    program::Arcium,
+    types::{Argument, OffChainReference},
+    ID_CONST as ARCIUM_PROG_ID,
+};
+use arcium_macros::{
+    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
+    init_data_object_accounts, queue_computation_accounts,
+};
+
+const COMP_DEF_OFFSET_BID: u32 = comp_def_offset("bid");
+const COMP_DEF_OFFSET_SELL: u32 = comp_def_offset("sell");
+
+declare_id!("5vMrxtWm3xKVgHjJGbBHmsAk7hwzXt8xmRUkEU5mmqaw");
+
+#[arcium_program]
+pub mod sealed_bid_auction {
+    use super::*;
+
+    pub fn init_bid_comp_def(ctx: Context<InitBidCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts)?;
+        Ok(())
+    }
+
+    pub fn init_sell_comp_def(ctx: Context<InitSellCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts)?;
+        Ok(())
+    }
+
+    pub fn init_auction(
+        ctx: Context<InitAuction>,
+        auction_id: u32,
+        initial_auction_state: OffChainReference,
+    ) -> Result<()> {
+        init_da_object(
+            ctx.accounts,
+            initial_auction_state,
+            ctx.accounts.vickery_auction.to_account_info(),
+            auction_id,
+        )?;
+
+        ctx.accounts.auction_acc.seller = ctx.accounts.payer.key();
+        ctx.accounts.auction_acc.status = AuctionStatus::Open;
+        // ctx.accounts.auction_acc.item = ctx.accounts.item.key(); // Add escrow
+        ctx.accounts.auction_acc.bump = ctx.bumps.auction_acc;
+
+        Ok(())
+    }
+
+    pub fn bid(
+        ctx: Context<Bid>,
+        price: OffChainReference,
+        bidder: OffChainReference,
+        auction_id: u32,
+    ) -> Result<()> {
+        let args = vec![
+            Argument::MU128(price),
+            Argument::MU128(bidder),
+            Argument::DataObj(auction_id),
+        ];
+
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![ctx.accounts.vickery_auction.to_account_info()],
+            vec![],
+        )?;
+
+        Ok(())
+    }
+
+    #[arcium_callback(confidential_ix = "bid")]
+    pub fn bid_callback(ctx: Context<BidCallback>, _output: Vec<u8>) -> Result<()> {
+        emit!(BidRegistered {
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
+        Ok(())
+    }
+
+    pub fn sell(ctx: Context<Sell>, auction_id: u32) -> Result<()> {
+        let args = vec![Argument::DataObj(auction_id)];
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![ctx.accounts.vickery_auction.to_account_info()],
+            vec![],
+        )?;
+
+        Ok(())
+    }
+
+    #[arcium_callback(confidential_ix = "sell")]
+    pub fn sell_callback(ctx: Context<SellCallback>, output: Vec<u8>) -> Result<()> {
+        let sell_amount = u128::from_le_bytes(output.as_slice()[0..16].try_into().unwrap());
+        let sold_to = u128::from_le_bytes(output.as_slice()[16..32].try_into().unwrap());
+
+        emit!(ItemSold {
+            seller: ctx.accounts.seller.key(),
+            price: sell_amount,
+            buyer: Pubkey::try_from_slice(sold_to.to_le_bytes().as_slice()).unwrap(),
+        });
+
+        Ok(())
+    }
+}
+
+#[init_data_object_accounts(payer)]
+#[derive(Accounts)]
+#[instruction(auction_id: u32)]
+pub struct InitAuction<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + Auction::INIT_SPACE,
+        seeds = [b"auction", payer.key().as_ref(), auction_id.to_le_bytes().as_ref()],
+        bump,
+    )]
+    pub auction_acc: Account<'info, Auction>,
+    /// CHECK: Auction state data object will be initialized by CPI
+    #[account(mut)]
+    pub vickery_auction: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[queue_computation_accounts("bid", payer)]
+#[derive(Accounts)]
+pub struct Bid<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mempool_account.bump
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_BID.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = comp_def_account.bump
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = cluster_account.bump
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        seeds = [POOL_PDA_SEED],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = pool_account.bump
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        seeds = [CLOCK_PDA_SEED],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = clock_account.bump
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = auction_acc.seller,
+    )]
+    pub seller: UncheckedAccount<'info>,
+    #[account(
+        seeds = [b"auction", seller.key().as_ref(), auction_id.to_le_bytes().as_ref()],
+        bump = auction_acc.bump,
+        has_one = seller,
+    )]
+    pub auction_acc: Account<'info, Auction>,
+    #[account(
+        mut,
+        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), auction_id.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = vickery_auction.bump,
+    )]
+    pub vickery_auction: Account<'info, DataObjectAccount>,
+}
+
+#[callback_accounts("bid", payer)]
+#[derive(Accounts)]
+pub struct BidCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_BID.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = comp_def_account.bump
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[init_computation_definition_accounts("bid", payer)]
+#[derive(Accounts)]
+pub struct InitBidCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[init_computation_definition_accounts("sell", payer)]
+#[derive(Accounts)]
+pub struct InitSellCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Debug, InitSpace)]
+#[account]
+pub struct Auction {
+    pub item: Pubkey,
+    pub seller: Pubkey,
+    pub status: AuctionStatus,
+    pub bump: u8,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Debug, InitSpace)]
+pub enum AuctionStatus {
+    Open,
+    Closed,
+}
+
+#[event]
+pub struct ItemSold {
+    pub seller: Pubkey,
+    pub price: u128,
+    pub buyer: Pubkey,
+}
+
+#[event]
+pub struct BidRegistered {
+    pub timestamp: i64,
+}
