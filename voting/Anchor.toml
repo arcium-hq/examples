@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-voting = "YFLJWFAbxhRZv4xYET3cgnno85DopTJvKazkmzpUjB2"
+voting = "H4q4uke3VaqqepgtM2AC7HSGR8LzFdwmra3qo6mmcYK6"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,102 +16,3 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-
-[test.validator]
-[[test.genesis]]
-address = "CQWpCq6BtFGNovpXrrZWtx7jNWz2XKX6yUneKu7rPZbs"
-program = "artifacts/arcium_program_0.1.32.so"
-
-
-[[test.validator.account]]
-address = "VWNZDN2cTXLxJCHecGWRvY5qPHJus1eAVtkAEDNb9iH"
-filename = "artifacts/arcium_clock.json"
-
-[[test.validator.account]]
-address = "AXih6FLA9s3L5ro73kVKFz9dyYarA1a4hLE7gNqcoKuZ"
-filename = "artifacts/arcium_pool.json"
-
-[[test.validator.account]]
-address = "67caFht6JPaJzkgbT8EJ8rd7efSVVc65dnNJgvQckwNW"
-filename = "artifacts/arcium_pool_ata.json"
-
-[[test.validator.account]]
-address = "4dJtXx5eu54jqnBfejb36n3hMw5DrVhR3xbLJ2Dm2D6G"
-filename = "artifacts/wallet_acc_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "BoVUVSJAhob2cvM5z4JZTdS6VWRSznh3bbzQD1TFjvDP"
-filename = "artifacts/arx_mint_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "6vVoveTwwrmH2QaM4mHNjb4bQsVxD8Rmf4gQwVkjrLGk"
-filename = "artifacts/arx_ata_user_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "FvhfWmD88aeWcU9EWjrUkjUYaF9MVPLy6tD5jWTVHNW7"
-filename = "artifacts/primary_stake_acc_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "87GSJkcMzsQmp3NFPZELRKnhEirsUSvjH1D7Wvh3NFUs"
-filename = "artifacts/stake_queue_acc_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "GBWyVBNdb7vUi73cF2kjyXvdGe66EjKF3dVeU1YDqQhf"
-filename = "artifacts/operator_acc_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "7KfGNFoEjWBv3giYW8ZhmJYxZMpDQ8N5VurQV98KAPym"
-filename = "artifacts/arx_node_4dJt_2D6G.json"
-
-[[test.validator.account]]
-address = "ariZN4ANYnFyfnF12mmUuCchjawFXnepyrWdEQakFtP"
-filename = "artifacts/wallet_acc_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "BoVUVSJAhob2cvM5z4JZTdS6VWRSznh3bbzQD1TFjvDP"
-filename = "artifacts/arx_mint_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "79hykNQMNeXvcpYDM2buEz1kGNnFBgnGvKPTyTUnCAEj"
-filename = "artifacts/arx_ata_user_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "DFgcMv2v6Pofp4efstBgBGUP241B1pHftsEoSVgf1X6b"
-filename = "artifacts/primary_stake_acc_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "G79scK4hrtbacLwtnUsYbhFcbW6R1jxk3GwLDQnVud8f"
-filename = "artifacts/stake_queue_acc_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "4AXAddC82khUkcEpwVDmdvZ1qgQQqai7DU3NT3fHivkc"
-filename = "artifacts/operator_acc_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "6kQZs3uTZy42aV1wjDTPKST1DJRWjeY3VayyoaRDZYnj"
-filename = "artifacts/arx_node_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "EP5C8AfUNTdP1m41gik4oZzFGRud8ES3e3o2CHmqYtqs"
-filename = "artifacts/cluster_acc_0.json"
-
-[[test.validator.account]]
-address = "3hnBptZc6Po9dvPgKsuooG9ApEZrLvkSHPf5uJ3haj5T"
-filename = "artifacts/reveal_result_raw_circuit_0.json"
-
-[[test.validator.account]]
-address = "6tN6Pz4fCncfrkVWfFVTWqTu5fPzpuKNJniSmvvSpTsF"
-filename = "artifacts/vote_raw_circuit_0.json"
-
-[[test.validator.account]]
-address = "2Zn81sPBmYis7bBxcWPoNczen5xctm3DnJHUYMVJHxt7"
-filename = "artifacts/mxe_acc.json"
-
-[[test.validator.account]]
-address = "6tpygjyxFmtE3B68AXEBPVYR9VcxPyhMac8Sz93onb8j"
-filename = "artifacts/mempool_acc.json"
-
-[[test.validator.account]]
-address = "HqdCXWc5fLTyeCfW4H9uh4tHDh775G5NHwiFggyrJ2wi"
-filename = "artifacts/executing_pool_acc.json"
