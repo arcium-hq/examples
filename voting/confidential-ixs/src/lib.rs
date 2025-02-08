@@ -11,7 +11,7 @@ pub struct VoteStats {
 
 #[derive(ArcisType, Copy, Clone, ArcisEncryptable)]
 pub struct Vote {
-    vote: mu8,
+    vote: mbool,
 }
 
 #[confidential]

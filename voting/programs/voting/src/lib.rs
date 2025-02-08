@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, init_da_object, queue_computation, CLOCK_PDA_SEED,
-    CLUSTER_PDA_SEED, COMP_DEF_PDA_SEED, DATA_OBJ_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-    POOL_PDA_SEED,
+    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
@@ -32,22 +31,19 @@ pub mod voting {
         ctx: Context<CreateNewPoll>,
         id: u32,
         question: String,
-        initial_vote_state: OffChainReference,
+        encryption_pubkey: [u8; 32],
+        nonce: u128,
+        initial_vote_state: [[u8; 32]; 2],
     ) -> Result<()> {
         msg!("Creating a new poll");
 
-        init_da_object(
-            ctx.accounts,
-            initial_vote_state,
-            ctx.accounts.vote_state.to_account_info(),
-            id,
-        )?;
-
         ctx.accounts.poll_acc.question = question;
-        ctx.accounts.poll_acc.vote_state_da_obj = ctx.accounts.vote_state.key();
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
         ctx.accounts.poll_acc.authority = ctx.accounts.payer.key();
+        ctx.accounts.poll_acc.encryption_pubkey = encryption_pubkey;
+        ctx.accounts.poll_acc.nonce = nonce;
+        ctx.accounts.poll_acc.vote_state = initial_vote_state;
 
         Ok(())
     }
@@ -57,14 +53,17 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, id: u32, vote: OffChainReference) -> Result<()> {
-        let args = vec![Argument::MBool(vote), Argument::DataObj(id)];
-        queue_computation(
-            ctx.accounts,
-            args,
-            vec![ctx.accounts.vote_state.to_account_info()],
-            vec![],
-        )?;
+    pub fn vote(ctx: Context<Vote>, id: u32, vote: [u8; 32]) -> Result<()> {
+        let args = vec![
+            Argument::EncryptedBool(vote),
+            Argument::Account(
+                ctx.accounts.poll_acc.key(),
+                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce), 32 (encryption pubkey)
+                8 + 1 + (4 + 50) + 4 + 32 + 16 + 32,
+            ),
+        ];
+
+        queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
@@ -87,14 +86,13 @@ pub mod voting {
 
         msg!("Revealing voting result for poll with id {}", id);
 
-        let args = vec![Argument::DataObj(id)];
+        let args = vec![Argument::Account(
+            ctx.accounts.poll_acc.key(),
+            // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce), 32 (encryption pubkey)
+            8 + 1 + (4 + 50) + 4 + 32 + 16 + 32,
+        )];
 
-        queue_computation(
-            ctx.accounts,
-            args,
-            vec![ctx.accounts.vote_state.to_account_info()],
-            vec![],
-        )?;
+        queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
@@ -108,7 +106,6 @@ pub mod voting {
     }
 }
 
-#[init_data_object_accounts(payer)]
 #[derive(Accounts)]
 #[instruction(id: u32)]
 pub struct CreateNewPoll<'info> {
@@ -122,9 +119,6 @@ pub struct CreateNewPoll<'info> {
         bump,
     )]
     pub poll_acc: Account<'info, PollAccount>,
-    /// CHECK: Vote state data object will be initialized by CPI
-    #[account(mut)]
-    pub vote_state: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
@@ -194,13 +188,6 @@ pub struct Vote<'info> {
         has_one = authority
     )]
     pub poll_acc: Account<'info, PollAccount>,
-    #[account(
-        mut,
-        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), id.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = vote_state.bump,
-    )]
-    pub vote_state: Account<'info, DataObjectAccount>,
 }
 
 #[callback_accounts("vote", payer)]
@@ -233,7 +220,7 @@ pub struct InitVoteCompDef<'info> {
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program. 
+    /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
@@ -295,13 +282,6 @@ pub struct RevealVotingResult<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        mut,
-        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), id.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = vote_state.bump,
-    )]
-    pub vote_state: Account<'info, DataObjectAccount>,
 }
 
 #[callback_accounts("reveal_result", payer)]
@@ -334,7 +314,7 @@ pub struct InitRevealResultCompDef<'info> {
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program. 
+    /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
@@ -344,12 +324,15 @@ pub struct InitRevealResultCompDef<'info> {
 #[account]
 #[derive(InitSpace)]
 pub struct PollAccount {
+    pub bump: u8,
     #[max_len(50)]
     pub question: String,
     pub id: u32,
     pub authority: Pubkey,
-    pub vote_state_da_obj: Pubkey,
-    pub bump: u8,
+    pub nonce: u128,
+    pub encryption_pubkey: [u8; 32],
+    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    pub vote_state: [[u8; 32]; 2],
 }
 
 #[error_code]
