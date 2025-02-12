@@ -8,7 +8,7 @@ default = ["arcis/full", "arcis-compiler/full"]
 solana = ["arcis/static-compiler", "arcis/interface-gen"]
 
 [dependencies]
-arcis = { default-features = false, version = "0.1.34", registry = "arcium" }
+arcis = { default-features = false, version = "0.1.35", registry = "arcium" }
 
 [build-dependencies]
-arcis-compiler = { default-features = false, version = "0.1.34", registry = "arcium" }
+arcis-compiler = { default-features = false, version = "0.1.35", registry = "arcium" }

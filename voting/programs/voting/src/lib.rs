@@ -5,23 +5,22 @@ use arcium_anchor::{
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, DataObjectAccount, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
     types::Argument,
-    types::OffChainReference,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
     arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    init_data_object_accounts, queue_computation_accounts,
+    queue_computation_accounts,
 };
 
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("H4q4uke3VaqqepgtM2AC7HSGR8LzFdwmra3qo6mmcYK6");
+declare_id!("FeNshZY2AY1AsRm2MkAob1XSNSNHug3P4d8H14h3JrEy");
 
 #[arcium_program]
 pub mod voting {
@@ -49,18 +48,30 @@ pub mod voting {
     }
 
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, id: u32, vote: [u8; 32]) -> Result<()> {
+    pub fn vote(
+        ctx: Context<Vote>,
+        id: u32,
+        vote: [u8; 32],
+        vote_encryption_pubkey: [u8; 32],
+        vote_nonce: u128,
+        vote_stats_pubkey: [u8; 32],
+        vote_stats_nonce: u128,
+    ) -> Result<()> {
         let args = vec![
             Argument::EncryptedBool(vote),
+            Argument::PublicKey(vote_encryption_pubkey),
+            Argument::PlaintextU128(vote_nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce), 32 (encryption pubkey)
                 8 + 1 + (4 + 50) + 4 + 32 + 16 + 32,
             ),
+            Argument::PublicKey(vote_stats_pubkey),
+            Argument::PlaintextU128(vote_stats_nonce),
         ];
 
         queue_computation(ctx.accounts, args, vec![], None)?;
@@ -69,12 +80,14 @@ pub mod voting {
 
     #[arcium_callback(confidential_ix = "vote")]
     pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
-        msg!("Arcium callback invoked with output {:?}", output);
+        emit!(VoteEvent {
+            output: output,
+        });
         Ok(())
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
@@ -339,4 +352,10 @@ pub struct PollAccount {
 pub enum ErrorCode {
     #[msg("Invalid authority")]
     InvalidAuthority,
+}
+
+
+#[event]
+pub struct VoteEvent {
+    pub output: Vec<u8>,
 }

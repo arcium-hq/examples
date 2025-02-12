@@ -10,7 +10,7 @@ pub struct VoteStats {
 }
 
 #[derive(ArcisType, Copy, Clone, ArcisEncryptable)]
-pub struct Vote {
+pub struct UserVote {
     vote: mbool,
 }
 
@@ -24,13 +24,13 @@ pub fn vote(
     vote_stats_nonce: u128,
 ) {
     let vote_cipher = RescueCipher::new_with_client(vote_public_key);
-    let vote = vote_cipher.decrypt::<1, Vote>(vote, vote_nonce);
+    let user_vote = vote_cipher.decrypt::<1, UserVote>(vote, vote_nonce);
 
     let vote_stats_cipher = RescueCipher::new_with_client(vote_stats_public_key);
-    let vote_stats = vote_stats_cipher.decrypt::<2, VoteStats>(vote_stats, vote_stats_nonce);
+    let mut vote_stats = vote_stats_cipher.decrypt::<2, VoteStats>(vote_stats, vote_stats_nonce);
 
-    vote_stats.yes = vote.select(vote_stats.yes + 1, vote_stats.yes);
-    vote_stats.no = vote.select(vote_stats.no, vote_stats.no + 1);
+    vote_stats.yes = user_vote.vote.select(vote_stats.yes + 1, vote_stats.yes);
+    vote_stats.no = user_vote.vote.select(vote_stats.no, vote_stats.no + 1);
 }
 
 #[confidential]

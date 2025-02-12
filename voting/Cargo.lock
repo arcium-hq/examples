@@ -279,9 +279,9 @@ checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "arcis"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "f8821bf61eaf5d7f7d3c405a01acc59dd3fb87d592a17e18394007e5cbc0fd19"
+checksum = "121257a0f92668a71540fdf40164270c7566dd55f42f38fd973c1f04085ec8c0"
 dependencies = [
  "arcis-derive",
  "arcis-diagnostics",
@@ -304,13 +304,14 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
+ "sha3 0.10.8",
 ]
 
 [[package]]
 name = "arcis-compiler"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "649d31b709b09c2bf1ac41d2d8e44b6a27020951ff0529dc885139ee1089837d"
+checksum = "ae8067ab34df2dbef93678a9d67b54016db2451f5c7ad72695c4014d6f234dd8"
 dependencies = [
  "arcis-linker",
  "arcis-proc-macros",
@@ -322,9 +323,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-derive"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "380109fcadde8546222515446f82b10dba483d8aa86d0d504ebaee16c1669402"
+checksum = "e9f49661102f0bf4c0d21cb6d4c011201c0e5889958c1afc9fa2d0c0ad049110"
 dependencies = [
  "arcis-syn",
  "proc-macro2",
@@ -334,18 +335,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-diagnostics"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ef8848b7257e397a7775e61dac87ba94a963390cf7fd5cb323cc4d2c3b6530e4"
+checksum = "19c2098861b04c2d6a61d9abc0fa55abf06bcbdb526c15fd50d1dbed3904b1c6"
 dependencies = [
  "colored",
 ]
 
 [[package]]
 name = "arcis-internal-expr-macro"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "cda097b93dd053348c33c5fcdf75ba2217f6da6fbac98401190f2286d2a53e5c"
+checksum = "ef0b24a9266df43542244c5d4986683d17f80046946e89d9660066f89fe8fd78"
 dependencies = [
  "indexmap",
  "proc-macro2",
@@ -356,9 +357,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-linker"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "7cd5a8cc0b681b3ea990b5b0ab7c45a581a5ab6eced84a560d3ac25eee97f3e2"
+checksum = "ffe75cc0c37f2a87158e6699c27fe72c81480c5489fc2a959941b7701e4566ad"
 dependencies = [
  "arcis-diagnostics",
  "ctor",
@@ -366,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-proc-macros"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "f6906d16b22f7fccbcf1797dd52600c072eaa907f79ccf6053c8669a80135409"
+checksum = "0e1f4d308b95a22d3066457ea093b4980dbbcd295a187bf6487977cfb0219e32"
 dependencies = [
  "arcis-syn",
  "proc-macro2",
@@ -378,9 +379,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-syn"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "1ca99bffcc1a48d5f2e0e0de507facf3b1943da7cef47c07696a8638f49502a9"
+checksum = "22a51d632325994ba7de0b2132523dcdebce6af10813e2a7a27ea58a7d76e27e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -389,9 +390,9 @@ dependencies = [
 
 [[package]]
 name = "arcium-anchor"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "2e66247050bb0a6c3609587f599266c8179c2cfdd9f629b505e2700b1d29be17"
+checksum = "72218f0c8fa690b0e1dcbf448a47c396913bbe4cdae6b8b4f93d14f95fb77f4e"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -401,18 +402,18 @@ dependencies = [
 
 [[package]]
 name = "arcium-client"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "8fae4b3be9694c9fadd1c995863b43012b7f95adf05dc32079ea036861359b5a"
+checksum = "987b9d47383232717a0c4b8d81c0eaee50629ea1261b90bcfb1725ecaaf57499"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "arcium-macros"
-version = "0.1.34"
+version = "0.1.35"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ec4354a201f7de366f37426f4b88e5235d546ac46cb176fc55cbabb451b24646"
+checksum = "f2888cda6c2062196be1cb8a0e78841e352419a2b4a1ed4fa83928628b3361b6"
 dependencies = [
  "arcis",
  "proc-macro2",

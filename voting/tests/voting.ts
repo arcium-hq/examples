@@ -13,8 +13,7 @@ import {
   RescueCipher,
   x25519RandomPrivateKey,
   x25519GetPublicKey,
-  x25519GetSharedSecretWithCluster,
-  serializeLE,
+  x25519GetSharedSecretWithMXE,
   deserializeLE,
   x25519PrivateKey,
 } from "@arcium-hq/arcium-sdk";
@@ -64,7 +63,7 @@ describe("Voting", () => {
 
     const privateKey = x25519RandomPrivateKey();
     const publicKey = x25519GetPublicKey(privateKey);
-    const clusterPublicKey = [
+    const mxePublicKey = [
       new Uint8Array([
         78, 96, 220, 218, 225, 248, 149, 140, 229, 147, 105, 183, 46, 82, 166,
         248, 146, 35, 137, 78, 122, 181, 200, 220, 217, 97, 20, 11, 71, 9, 113,
@@ -90,28 +89,37 @@ describe("Voting", () => {
       ]),
     ];
 
-    const pollSig = await createNewPoll(
+    const { sig: pollSig, nonce: pollNonce } = await createNewPoll(
       program,
       POLL_ID,
       "$SOL to 500?",
-      privateKey
+      privateKey,
+      mxePublicKey,
+      owner.publicKey
     );
     console.log("Poll created with signature", pollSig);
 
-    const rescueKey = x25519GetSharedSecretWithCluster(
+    const rescueKey = x25519GetSharedSecretWithMXE(
       privateKey,
-      clusterPublicKey
+      mxePublicKey
     );
     const cipher = new RescueCipher(rescueKey);
 
-    const vote = true;
+    const vote = BigInt(true);
     const plaintext = [vote];
 
     const nonce = randomBytes(16);
     const ciphertext = cipher.encrypt(plaintext, nonce);
 
     const queueSig = await program.methods
-      .vote(POLL_ID, ciphertext)
+      .vote(
+        POLL_ID,
+        Array.from(ciphertext[0]),
+        Array.from(publicKey),
+        new anchor.BN(deserializeLE(nonce).toString()),
+        Array.from(publicKey),
+        new anchor.BN(deserializeLE(pollNonce).toString())
+      )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         authority: owner.publicKey,
@@ -120,7 +128,7 @@ describe("Voting", () => {
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
-      provider.connection,
+      provider as anchor.AnchorProvider,
       queueSig,
       program.programId,
       "confirmed"
@@ -136,20 +144,17 @@ describe("Voting", () => {
     console.log("Reveal queue sig is ", revealQueueSig);
 
     const revealFinalizeSig = await awaitComputationFinalization(
-      provider.connection,
+      provider as anchor.AnchorProvider,
       revealQueueSig,
       program.programId,
       "confirmed"
     );
     console.log("Reveal finalize sig is ", revealFinalizeSig);
 
-    const tx = await provider.connection.getTransaction(
-      revealFinalizeSig.finalizeSignature,
-      {
-        commitment: "confirmed",
-        maxSupportedTransactionVersion: 0,
-      }
-    );
+    const tx = await provider.connection.getTransaction(revealFinalizeSig, {
+      commitment: "confirmed",
+      maxSupportedTransactionVersion: 0,
+    });
     console.log("Logs are ", tx.meta.logMessages);
   });
 
@@ -183,8 +188,7 @@ describe("Voting", () => {
       const rawCircuit = fs.readFileSync("confidential-ixs/build/vote.arcis");
 
       await uploadCircuit(
-        provider.connection,
-        owner,
+        provider as anchor.AnchorProvider,
         "vote",
         program.programId,
         rawCircuit,
@@ -192,7 +196,7 @@ describe("Voting", () => {
       );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        owner.publicKey,
+        provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
         program.programId
       );
@@ -240,8 +244,7 @@ describe("Voting", () => {
       );
 
       await uploadCircuit(
-        provider.connection,
-        owner,
+        provider as anchor.AnchorProvider,
         "reveal_result",
         program.programId,
         rawCircuit,
@@ -249,7 +252,7 @@ describe("Voting", () => {
       );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        owner.publicKey,
+        provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
         program.programId
       );
@@ -269,12 +272,14 @@ describe("Voting", () => {
     program: Program<Voting>,
     pollId: number,
     question: string,
-    privateKey: x25519PrivateKey
-  ): Promise<string> {
+    privateKey: x25519PrivateKey,
+    clusterPublicKey: Uint8Array[],
+    owner: PublicKey
+  ): Promise<{ sig: string; nonce: Buffer }> {
     // Empty vote state is 2 scalars
     const emptyVoteState = new Array(2).fill(BigInt(0));
 
-    const rescueKey = x25519GetSharedSecretWithCluster(
+    const rescueKey = x25519GetSharedSecretWithMXE(
       privateKey,
       clusterPublicKey
     );
@@ -283,16 +288,18 @@ describe("Voting", () => {
     const nonce = randomBytes(16);
     const ciphertext = cipher.encrypt(emptyVoteState, nonce);
 
-    return program.methods
+    return { sig: await program.methods
       .createNewPoll(
         pollId,
         question,
         Array.from(x25519GetPublicKey(privateKey)),
         new anchor.BN(deserializeLE(nonce).toString()),
         ciphertext
-      )
-      .accounts({ payer: owner.publicKey })
-      .rpc();
+      ) 
+        .accounts({ payer: owner })
+        .rpc(),
+      nonce: nonce,
+    }
   }
 });
 
