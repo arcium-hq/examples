@@ -1,54 +1,59 @@
-# Confidential Voting Demo
+# Structure of this project
 
-This project demonstrates how to build a confidential voting system using Solana and Arcium. The system allows for private votes where:
-1. Individual votes remain encrypted and confidential
-2. Vote tallying happens on encrypted data
-3. Only the final result (majority vote) is revealed
+**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
+This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
 
-## How It Works
+This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
 
-The voting system consists of two main components:
+- The `programs` dir like normal
+- The `confidential-ixs` dir for confidential computing instructions
 
-1. **Solana Program** (`programs/voting/src/lib.rs`): Handles the on-chain logic for:
-   - Creating new polls
-   - Submitting encrypted votes
-   - Revealing final results (authorized users only)
+When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `confidential-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
 
-2. **Confidential Instructions** (`confidential-ixs/src/lib.rs`): Processes the encrypted votes using:
-   - Encrypted vote counting for yes/no responses
-   - Secure comparison of final tallies
-   - Result revelation only when authorized
+```
+// confidential-ixs/add_together.rs
 
-## User Flow
+use arcis::prelude::*;
 
-1. **Create a Poll**
-   ```bash
-   # An authority creates a new poll with a question
-   create-poll "Should we implement feature X?"
-   ```
+arcis_main!();
 
-2. **Submit Votes**
-   ```bash
-   # Users submit encrypted votes (true for yes, false for no)
-   vote <poll-id> true|false
-   ```
-   - Votes are encrypted before submission
-   - Neither other voters nor the poll creator can see individual votes
-   - Vote tallies are updated confidentially
+// mu8 is a masked u8, i.e. an encrypted u8.
+#[circuit]
+fn add_together(x: mu8, y: mu8) -> mu8 {
+    x + y
+}
 
-3. **Reveal Results**
-   ```bash
-   # Only the poll authority can reveal results
-   reveal-result <poll-id>
-   ```
-   - Returns true if majority voted yes, false otherwise
-   - Individual votes remain confidential
-   - Only the final boolean result is revealed
+// programs/my_program/src/lib.rs
 
-## Technical Details
+use anchor_lang::prelude::*;
+use arcium_anchor::queue_computation;
+use arcium_macros::{arcium_callback, callback_accounts, queue_computation_accounts};
 
-The project uses Arcium's confidential computing network to process encrypted votes. When users vote:
-- Votes are encrypted client-side
-- The `vote()` confidential instruction processes the encrypted vote
-- Vote tallies are maintained in an encrypted `VoteStats` structure
-- The `reveal_result()` instruction only exposes the final boolean outcome
+declare_id!("<some ID>");
+
+#[program]
+pub mod my_program {
+    use super::*;
+
+    pub fn init_computation(_ctx: Context<InitComputation>, input: Vec<u8>) -> Result<()> {
+        queue_computation(_ctx.accounts, input, vec![])?;
+        Ok(())
+    }
+
+    #[arcium_callback(circuit = "add_together")]
+    pub fn add_together_callback(ctx: Context<Callback>, output: Vec<u8>) -> Result<()> {
+        msg!("Arcium callback invoked with output {:?}", output);
+        Ok(())
+    }
+}
+
+#[callback_accounts(circuit = "add_together")]
+pub struct Callback<'info> {
+    pub some_extra_acc: AccountInfo<'info>,
+}
+
+#[queue_computation_accounts(circuit = "add_together")]
+pub struct InitComputation<'info> {
+    pub some_extra_acc: AccountInfo<'info>,
+}
+```

@@ -9,5 +9,5 @@ clusters = [
     [0]
 ]
 
-# number of seconds to wait for the DA server to come online
-localnet_timeout_secs = 200
+# number of seconds to wait for the localnet to come online
+localnet_timeout_secs = 60

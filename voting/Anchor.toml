@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-voting = "FeNshZY2AY1AsRm2MkAob1XSNSNHug3P4d8H14h3JrEy"
+voting = "GPTg3qxKdtm9gZQhY7SwBiuUykmT9WTi8SgjTuQyumkX"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,45 +17,9 @@ wallet = "~/.config/solana/id.json"
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 
-[test]
-startup_wait = 5000
-shutdown_wait = 2000
-upgradeable = false
 
+[test.validator]
 [[test.genesis]]
 address = "BKck65TgoKRokMjQM3datB9oRwJ8rAj2jxPXvHXUvcL6"
 program = "/Users/arihantbansal/Developer/arcium/examples/voting/artifacts/arcium_program_0.1.35.so"
-
-[test.validator]
-bind_address = "0.0.0.0"
-ledger = ".anchor/test-ledger"
-rpc_port = 8899
-
-[[test.validator.account]]
-address = "Dr16uhFh5HDWaWbFyVzqmxbUu2njLhMfXbWkPZA6Avma"
-filename = "artifacts/callback_server_acc_Dr16_Avma.json"
-
-[[test.validator.account]]
-address = "D1LaRfnQmJAhBDqbBUWzsgZJ1tAP2yz9CeQ3xy6keXkj"
-filename = "artifacts/wallet_acc_D1La_eXkj.json"
-
-[[test.validator.account]]
-address = "DuKewSScWvNNMKW1821o63Xp3MxosXLZikBc5eb9vrAT"
-filename = "artifacts/arx_ata_D1La_eXkj.json"
-
-[[test.validator.account]]
-address = "FpeqtXdGzy6E2SeBUi8gWgWu8ZP6zg2CE8ahHuQVwGnV"
-filename = "artifacts/primary_stake_acc_D1La_eXkj.json"
-
-[[test.validator.account]]
-address = "2V3KqFNiFB4Ekq6sND4HPjyzQR5foyZmGvfZsXXrQLAY"
-filename = "artifacts/stake_queue_acc_D1La_eXkj.json"
-
-[[test.validator.account]]
-address = "9cW2fzFfvWjXh6xtjmUYDSeJidtKBHnMsKpDzBjS4XXu"
-filename = "artifacts/operator_acc_D1La_eXkj.json"
-
-[[test.validator.account]]
-address = "ELoRR19zrps1G3UYKcAxr7LKbw3kbqkVUXVY9dETMWN7"
-filename = "artifacts/arx_node_D1La_eXkj.json"
 

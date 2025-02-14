@@ -99,10 +99,7 @@ describe("Voting", () => {
     );
     console.log("Poll created with signature", pollSig);
 
-    const rescueKey = x25519GetSharedSecretWithMXE(
-      privateKey,
-      mxePublicKey
-    );
+    const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
     const cipher = new RescueCipher(rescueKey);
 
     const vote = BigInt(true);
@@ -110,6 +107,8 @@ describe("Voting", () => {
 
     const nonce = randomBytes(16);
     const ciphertext = cipher.encrypt(plaintext, nonce);
+
+    const voteEventPromise = awaitEvent("voteEvent");
 
     const queueSig = await program.methods
       .vote(
@@ -135,6 +134,11 @@ describe("Voting", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
+    const voteEvent = await voteEventPromise;
+    console.log("Vote event is ", voteEvent);
+
+    const revealEventPromise = awaitEvent("revealResultEvent");
+
     const revealQueueSig = await program.methods
       .revealResult(POLL_ID)
       .accountsPartial({
@@ -151,11 +155,10 @@ describe("Voting", () => {
     );
     console.log("Reveal finalize sig is ", revealFinalizeSig);
 
-    const tx = await provider.connection.getTransaction(revealFinalizeSig, {
-      commitment: "confirmed",
-      maxSupportedTransactionVersion: 0,
-    });
-    console.log("Logs are ", tx.meta.logMessages);
+    const revealEvent = await revealEventPromise;
+    console.log("Reveal event is ", revealEvent);
+
+    console.log("Decrypted winner is ", revealEvent.output);
   });
 
   async function initVoteCompDef(
@@ -288,18 +291,19 @@ describe("Voting", () => {
     const nonce = randomBytes(16);
     const ciphertext = cipher.encrypt(emptyVoteState, nonce);
 
-    return { sig: await program.methods
-      .createNewPoll(
-        pollId,
-        question,
-        Array.from(x25519GetPublicKey(privateKey)),
-        new anchor.BN(deserializeLE(nonce).toString()),
-        ciphertext
-      ) 
+    return {
+      sig: await program.methods
+        .createNewPoll(
+          pollId,
+          question,
+          Array.from(x25519GetPublicKey(privateKey)),
+          new anchor.BN(deserializeLE(nonce).toString()),
+          ciphertext
+        )
         .accounts({ payer: owner })
         .rpc(),
       nonce: nonce,
-    }
+    };
   }
 });
 

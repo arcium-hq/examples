@@ -20,7 +20,7 @@ use arcium_macros::{
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("FeNshZY2AY1AsRm2MkAob1XSNSNHug3P4d8H14h3JrEy");
+declare_id!("GPTg3qxKdtm9gZQhY7SwBiuUykmT9WTi8SgjTuQyumkX");
 
 #[arcium_program]
 pub mod voting {
@@ -114,7 +114,9 @@ pub mod voting {
         ctx: Context<RevealVotingResultCallback>,
         output: Vec<u8>,
     ) -> Result<()> {
-        msg!("Arcium callback invoked with output {:?}", output);
+        emit!(RevealResultEvent {
+            output: output,
+        });
         Ok(())
     }
 }
@@ -357,5 +359,10 @@ pub enum ErrorCode {
 
 #[event]
 pub struct VoteEvent {
+    pub output: Vec<u8>,
+}
+
+#[event]
+pub struct RevealResultEvent {
     pub output: Vec<u8>,
 }
