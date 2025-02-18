@@ -22,9 +22,8 @@ pub fn init_vote_stats(vote_stats_nonce: u128) -> [Ciphertext; 2] {
         yes: 0.into(),
         no: 0.into(),
     };
-    let vote_stats_ciphertext = vote_stats_cipher.encrypt::<2, VoteStats>(vote_stats, vote_stats_nonce);
-
-    vote_stats_ciphertext
+    
+    vote_stats_cipher.encrypt::<2, VoteStats>(vote_stats, vote_stats_nonce)
 }
 
 #[confidential]

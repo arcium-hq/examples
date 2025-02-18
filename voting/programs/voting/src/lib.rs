@@ -107,13 +107,34 @@ pub mod voting {
             Argument::PlaintextU128(vote_stats_nonce),
         ];
 
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.poll_acc.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
         Ok(())
     }
 
     #[arcium_callback(confidential_ix = "vote")]
     pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
+        let vote_stats: [[u8; 32]; 2] = output.as_slice()[32..]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let mut poll_acc =
+            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
+        poll_acc.vote_state = vote_stats;
+        poll_acc.serialize(&mut *ctx.accounts.poll_acc.data.borrow_mut())?;
+
         emit!(VoteEvent { output: output });
+
         Ok(())
     }
 
@@ -321,7 +342,7 @@ pub struct VoteCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_INIT_VOTE_STATS.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -329,6 +350,9 @@ pub struct VoteCallback<'info> {
     /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instructions_sysvar: AccountInfo<'info>,
+    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
+    #[account(mut)]
+    pub poll_acc: UncheckedAccount<'info>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
