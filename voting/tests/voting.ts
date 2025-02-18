@@ -15,7 +15,6 @@ import {
   x25519GetPublicKey,
   x25519GetSharedSecretWithMXE,
   deserializeLE,
-  x25519PrivateKey,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -46,7 +45,13 @@ describe("Voting", () => {
     const POLL_ID = 420;
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing add together computation definition");
+    console.log("Initializing vote stats computation definition");
+    const initVoteStatsSig = await initVoteStatsCompDef(program, owner, false);
+    console.log(
+      "Vote stats computation definition initialized with signature",
+      initVoteStatsSig
+    );
+
     console.log("Initializing voting computation definition");
     const initVoteSig = await initVoteCompDef(program, owner, false);
     console.log(
@@ -93,11 +98,17 @@ describe("Voting", () => {
       program,
       POLL_ID,
       "$SOL to 500?",
-      privateKey,
-      mxePublicKey,
       owner.publicKey
     );
     console.log("Poll created with signature", pollSig);
+
+    const finalizePollSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      pollSig,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize poll sig is ", finalizePollSig);
 
     const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
     const cipher = new RescueCipher(rescueKey);
@@ -116,7 +127,6 @@ describe("Voting", () => {
         Array.from(ciphertext[0]),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString()),
-        Array.from(publicKey),
         new anchor.BN(deserializeLE(pollNonce).toString())
       )
       .accountsPartial({
@@ -124,7 +134,7 @@ describe("Voting", () => {
         authority: owner.publicKey,
       })
       .rpc({ commitment: "confirmed" });
-    console.log("Queue sig is ", queueSig);
+    console.log("Vote queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -132,7 +142,7 @@ describe("Voting", () => {
       program.programId,
       "confirmed"
     );
-    console.log("Finalize sig is ", finalizeSig);
+    console.log("Finalize vote sig is ", finalizeSig);
 
     const voteEvent = await voteEventPromise;
     console.log("Vote event is ", voteEvent);
@@ -140,7 +150,7 @@ describe("Voting", () => {
     const revealEventPromise = awaitEvent("revealResultEvent");
 
     const revealQueueSig = await program.methods
-      .revealResult(POLL_ID)
+      .revealResult(POLL_ID, new anchor.BN(deserializeLE(pollNonce).toString()))
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
@@ -160,6 +170,62 @@ describe("Voting", () => {
 
     console.log("Decrypted winner is ", revealEvent.output);
   });
+
+  async function initVoteStatsCompDef(
+    program: Program<Voting>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("init_vote_stats");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log("Vote stats comp def pda is ", compDefPDA.toBase58());
+
+    const sig = await program.methods
+      .initVoteStatsCompDef()
+      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init vote stats computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync(
+        "confidential-ixs/build/init_vote_stats.arcis"
+      );
+
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "init_vote_stats",
+        program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        provider as anchor.AnchorProvider,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
 
   async function initVoteCompDef(
     program: Program<Voting>,
@@ -275,32 +341,21 @@ describe("Voting", () => {
     program: Program<Voting>,
     pollId: number,
     question: string,
-    privateKey: x25519PrivateKey,
-    clusterPublicKey: Uint8Array[],
     owner: PublicKey
   ): Promise<{ sig: string; nonce: Buffer }> {
-    // Empty vote state is 2 scalars
-    const emptyVoteState = new Array(2).fill(BigInt(0));
-
-    const rescueKey = x25519GetSharedSecretWithMXE(
-      privateKey,
-      clusterPublicKey
-    );
-    const cipher = new RescueCipher(rescueKey);
-
     const nonce = randomBytes(16);
-    const ciphertext = cipher.encrypt(emptyVoteState, nonce);
 
     return {
       sig: await program.methods
         .createNewPoll(
           pollId,
           question,
-          Array.from(x25519GetPublicKey(privateKey)),
-          new anchor.BN(deserializeLE(nonce).toString()),
-          ciphertext
+          new anchor.BN(deserializeLE(nonce).toString())
         )
-        .accounts({ payer: owner })
+        .accountsPartial({
+          payer: owner,
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+        })
         .rpc(),
       nonce: nonce,
     };

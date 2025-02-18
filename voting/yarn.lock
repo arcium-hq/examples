@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/arcium-sdk@0.1.35":
-  version "0.1.35"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.35/812d821bebae5286e8869b688a9995388d29457d#812d821bebae5286e8869b688a9995388d29457d"
-  integrity sha512-6ngPlFYG0esdH8xBkgWan4kGp8mTC/ELPxdFKXBf5YCFJmxxr9rMjeiSmBlnPabfgQU92nvZOO/GBR1JQOL77A==
+"@arcium-hq/arcium-sdk@0.1.37":
+  version "0.1.37"
+  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.37/00a4d420388c906d3466f233e54c5511c9f9c947#00a4d420388c906d3466f233e54c5511c9f9c947"
+  integrity sha512-dzzxBKZLgkRqulb77cFKp7rlBzhbRvy1QQ/Gxjsa8YjFOi7RXW8sLsdrKZxJLTI4tDhBw34BeT4UZcyq/mOfww==
   dependencies:
     "@coral-xyz/anchor" "^0.30.1"
     "@noble/curves" "^1.8.1"
@@ -13,9 +13,9 @@
     "@solana/web3.js" "^1.95.4"
 
 "@babel/runtime@^7.25.0":
-  version "7.26.7"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.26.7.tgz#f4e7fe527cd710f8dc0618610b61b4b060c3c341"
-  integrity sha512-AOPI3D+a8dXnja+iwsUqGRjr1BbZIe771sXdapOtYI531gSqpi92vXivKcq2asu/DFpdl1ceFAKZyRzK2PCVcQ==
+  version "7.26.9"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.26.9.tgz#aa4c6facc65b9cb3f87d75125ffd47781b475433"
+  integrity sha512-aA63XwOkcl4xxQa3HjPMqOP6LiK0ZDv3mUPYEFXkpHbaFjtGggE1A61FjFzJnB+p7/oy2gA8E+rcBNl/zC1tMg==
   dependencies:
     regenerator-runtime "^0.14.0"
 
@@ -130,9 +130,9 @@
   integrity sha512-Z61JK7DKDtdKTWwLeElSEBcWGRLY8g95ic5FoQqI9CMx0ns/Ghep3B4DfcEimiKMvtamNVULVNKEsiwV3aQmXw==
 
 "@types/node@*":
-  version "22.13.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.13.2.tgz#6f401c5ccadac75354f5652128e9fcc3b0cf23b7"
-  integrity sha512-Z+r8y3XL9ZpI2EY52YYygAFmo2/oWfNSj4BCpAXE2McAexDk8VcnBMGC9Djn9gTKt4d2T/hhXqmPzo4hfIXtTg==
+  version "22.13.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.13.4.tgz#3fe454d77cd4a2d73c214008b3e331bfaaf5038a"
+  integrity sha512-ywP2X0DYtX3y08eFVx5fNIw7/uIv8hYUKgXoK8oayJlLnKcRfEYCxWMVE1XagUdVtCJlZT1AU4LXEABW+L1Peg==
   dependencies:
     undici-types "~6.20.0"
 

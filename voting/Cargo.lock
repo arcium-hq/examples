@@ -279,9 +279,9 @@ checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 
 [[package]]
 name = "arcis"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "121257a0f92668a71540fdf40164270c7566dd55f42f38fd973c1f04085ec8c0"
+checksum = "64ad70b583e5b62b38b2a1dabe548d720f40093f80a619fe5b767f62fb5a797f"
 dependencies = [
  "arcis-derive",
  "arcis-diagnostics",
@@ -309,9 +309,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-compiler"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ae8067ab34df2dbef93678a9d67b54016db2451f5c7ad72695c4014d6f234dd8"
+checksum = "eefcbe52206c636eb93b76081cdc1f331eb387657a6a820b5396046d00bfc959"
 dependencies = [
  "arcis-linker",
  "arcis-proc-macros",
@@ -323,9 +323,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-derive"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "e9f49661102f0bf4c0d21cb6d4c011201c0e5889958c1afc9fa2d0c0ad049110"
+checksum = "35467d200689f337a4abeb0d1010dc14f8fff43e815ba1ed6b236716824d0957"
 dependencies = [
  "arcis-syn",
  "proc-macro2",
@@ -335,18 +335,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-diagnostics"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "19c2098861b04c2d6a61d9abc0fa55abf06bcbdb526c15fd50d1dbed3904b1c6"
+checksum = "e3efbcb8744c2afb260aded8a0baf0b22a4f233cd80cad02edc9b4c81f0b0d31"
 dependencies = [
  "colored",
 ]
 
 [[package]]
 name = "arcis-internal-expr-macro"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ef0b24a9266df43542244c5d4986683d17f80046946e89d9660066f89fe8fd78"
+checksum = "867ef0e9d5865e95ab44d0acf1e2f8e9ca2ebaf61b8fe6ef57a3937fd98b971e"
 dependencies = [
  "indexmap",
  "proc-macro2",
@@ -357,9 +357,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-linker"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ffe75cc0c37f2a87158e6699c27fe72c81480c5489fc2a959941b7701e4566ad"
+checksum = "976a84650098014b731a81607bb6c769ce684a65140129943985c2e5892746fd"
 dependencies = [
  "arcis-diagnostics",
  "ctor",
@@ -367,9 +367,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-proc-macros"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "0e1f4d308b95a22d3066457ea093b4980dbbcd295a187bf6487977cfb0219e32"
+checksum = "f5a270778b69e323ac6b17c06190dd41fddd1f172b723e0979a29c6e7e7444b9"
 dependencies = [
  "arcis-syn",
  "proc-macro2",
@@ -379,9 +379,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-syn"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "22a51d632325994ba7de0b2132523dcdebce6af10813e2a7a27ea58a7d76e27e"
+checksum = "d69cb7a02810c8af72e62ec42c84f4c350ef6991b8992b3bd283740efce82462"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -390,9 +390,9 @@ dependencies = [
 
 [[package]]
 name = "arcium-anchor"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "72218f0c8fa690b0e1dcbf448a47c396913bbe4cdae6b8b4f93d14f95fb77f4e"
+checksum = "ca715dcd299fb70bae456a733eaccf640030686ee3a180a03d7f732012b3124d"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -402,18 +402,18 @@ dependencies = [
 
 [[package]]
 name = "arcium-client"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "987b9d47383232717a0c4b8d81c0eaee50629ea1261b90bcfb1725ecaaf57499"
+checksum = "3ee6715193c3e1019483cff1e99c607e434f6f66753042c4540296998ae438ce"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "arcium-macros"
-version = "0.1.35"
+version = "0.1.37"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "f2888cda6c2062196be1cb8a0e78841e352419a2b4a1ed4fa83928628b3361b6"
+checksum = "fe35ef1123756c7da68296b586fd42f748e929eaf5919f79e1780044b4f48d79"
 dependencies = [
  "arcis",
  "proc-macro2",
@@ -633,9 +633,9 @@ dependencies = [
 
 [[package]]
 name = "blake3"
-version = "1.5.5"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8ee0c1824c4dea5b5f81736aff91bae041d2c07ee1192bec91054e10e3e601e"
+checksum = "1230237285e3e10cde447185e8975408ae24deaa67205ce684805c25bc0c7937"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -643,6 +643,7 @@ dependencies = [
  "cfg-if",
  "constant_time_eq",
  "digest 0.10.7",
+ "memmap2 0.9.5",
 ]
 
 [[package]]
@@ -852,9 +853,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.13"
+version = "1.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7777341816418c02e033934a09f20dc0ccaf65a5201ef8a450ae0105a573fda"
+checksum = "0c3d1b2e905a3a7b00a6141adb0e4c0bb941d11caf55349d863942a1cc44e3c9"
 dependencies = [
  "jobserver",
  "libc",
@@ -1200,9 +1201,9 @@ dependencies = [
 
 [[package]]
 name = "equivalent"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
+checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "feature-probe"
@@ -1556,6 +1557,15 @@ name = "memmap2"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83faa42c0a078c393f6b29d5db232d8be22776a891f8f56e5284faee4a20b327"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "memmap2"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd3f7eed9d3848f8b98834af67102b720745c4ec028fcd0aa0239277e7de374f"
 dependencies = [
  "libc",
 ]
@@ -2158,9 +2168,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.13.2"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
+checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
 
 [[package]]
 name = "solana-frozen-abi"
@@ -2176,7 +2186,7 @@ dependencies = [
  "im",
  "lazy_static",
  "log",
- "memmap2",
+ "memmap2 0.5.10",
  "rustc_version",
  "serde",
  "serde_bytes",
@@ -2291,7 +2301,7 @@ dependencies = [
  "lazy_static",
  "libsecp256k1",
  "log",
- "memmap2",
+ "memmap2 0.5.10",
  "num-derive",
  "num-traits",
  "num_enum",
