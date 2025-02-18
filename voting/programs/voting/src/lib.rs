@@ -21,7 +21,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("GPTg3qxKdtm9gZQhY7SwBiuUykmT9WTi8SgjTuQyumkX");
+declare_id!("AL25N1v4WjSXdTsszwYG7WA2Ztb6Wj5VAQBFGn8Y4pnz");
 
 #[arcium_program]
 pub mod voting {
@@ -67,7 +67,7 @@ pub mod voting {
         ctx: Context<InitVoteStatsCallback>,
         output: Vec<u8>,
     ) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output.as_slice()[32..]
+        let vote_stats: [[u8; 32]; 2] = output
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -77,7 +77,7 @@ pub mod voting {
         let mut poll_acc =
             PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
         poll_acc.vote_state = vote_stats;
-        poll_acc.serialize(&mut *ctx.accounts.poll_acc.data.borrow_mut())?;
+        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
 
         Ok(())
     }
@@ -121,7 +121,7 @@ pub mod voting {
 
     #[arcium_callback(confidential_ix = "vote")]
     pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output.as_slice()[32..]
+        let vote_stats: [[u8; 32]; 2] = output
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -131,7 +131,7 @@ pub mod voting {
         let mut poll_acc =
             PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
         poll_acc.vote_state = vote_stats;
-        poll_acc.serialize(&mut *ctx.accounts.poll_acc.data.borrow_mut())?;
+        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
 
         emit!(VoteEvent { output: output });
 
@@ -173,7 +173,8 @@ pub mod voting {
         ctx: Context<RevealVotingResultCallback>,
         output: Vec<u8>,
     ) -> Result<()> {
-        emit!(RevealResultEvent { output: output });
+        let result = output[0] != 0;
+        emit!(RevealResultEvent { output: result });
         Ok(())
     }
 }
@@ -242,7 +243,7 @@ pub struct InitVoteStatsCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_INIT_VOTE_STATS.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -342,7 +343,7 @@ pub struct VoteCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_INIT_VOTE_STATS.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -495,5 +496,5 @@ pub struct VoteEvent {
 
 #[event]
 pub struct RevealResultEvent {
-    pub output: Vec<u8>,
+    pub output: bool,
 }

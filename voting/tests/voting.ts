@@ -121,6 +121,15 @@ describe("Voting", () => {
 
     const voteEventPromise = awaitEvent("voteEvent");
 
+    const pollPDA = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("poll"),
+        owner.publicKey.toBuffer(),
+        new anchor.BN(POLL_ID).toArrayLike(Buffer, "le", 4),
+      ],
+      program.programId
+    )[0];
+
     const queueSig = await program.methods
       .vote(
         POLL_ID,
@@ -132,6 +141,7 @@ describe("Voting", () => {
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         authority: owner.publicKey,
+        pollAcc: pollPDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Vote queue sig is ", queueSig);
@@ -166,7 +176,6 @@ describe("Voting", () => {
     console.log("Reveal finalize sig is ", revealFinalizeSig);
 
     const revealEvent = await revealEventPromise;
-    console.log("Reveal event is ", revealEvent);
 
     console.log("Decrypted winner is ", revealEvent.output);
   });
