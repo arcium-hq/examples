@@ -19,8 +19,8 @@ idl-build = ["anchor-lang/idl-build"]
 [dependencies]
 anchor-lang = { version = "0.30.2-alpha.1", registry = "arcium" }
 
-arcium-client = { default-features = false, version = "0.1.34", registry = "arcium" }
-arcium-macros = { version = "0.1.34", registry = "arcium" }
-arcium-anchor = { version = "0.1.34", registry = "arcium" }
+arcium-client = { default-features = false, version = "0.1.37", registry = "arcium" }
+arcium-macros = { version = "0.1.37", registry = "arcium" }
+arcium-anchor = { version = "0.1.37", registry = "arcium" }
 confidential-ixs = { path = "../../confidential-ixs", features = ["solana"], default-features = false }
-arcis = { version = "0.1.34", registry = "arcium", features = ["interface-gen"], default-features = false }
+arcis = { version = "0.1.37", registry = "arcium", features = ["interface-gen"], default-features = false }
