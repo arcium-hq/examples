@@ -15,6 +15,24 @@ struct Hand {
     num_cards: mu8,
 }
 
+#[confidential]
+pub fn init_hand(nonce: u128) -> [Ciphertext; 11] {
+    let cipher = RescueCipher::new_for_mxe();
+
+    cipher.encrypt::<11, _>(
+        Hand {
+            cards: ArcisArray::new(
+                [Card {
+                    rank: 0.into(),
+                    suit: 0.into(),
+                }; 5],
+            ),
+            num_cards: 0.into(),
+        },
+        nonce,
+    )
+}
+
 // Function to calculate hand value
 #[confidential]
 pub fn calculate_hand_value(hand: [Ciphertext; 11], nonce: u128) -> [Ciphertext; 1] {
@@ -74,15 +92,14 @@ pub fn add_card_to_hand(
     let card_cipher = RescueCipher::new_with_client(public_key);
     let new_card = card_cipher.decrypt::<2, Card>(new_card, nonce);
 
-    let current_index = hand.num_cards;
     arcis! {
-        if current_index < 5.into() {
-            let mut n = 0;
-            for i in 0..current_index {
-                n += 1;
+        if hand.num_cards < mu8::from(5) {
+            for i in 0..5 {
+                if hand.cards[i].rank == 0 && hand.cards[i].suit == 0 {
+                    hand.cards[i] = new_card;
+                    hand.num_cards += 1;
+                }
             }
-            hand.cards[n] = new_card;
-            hand.num_cards = n + 1;
         }
     }
 
@@ -91,7 +108,7 @@ pub fn add_card_to_hand(
 
 // Function to show a hand to the user
 #[confidential]
-pub fn show_hand(
+pub fn show_player_hand_to_user(
     hand: [Ciphertext; 11],
     hand_nonce: u128,
     encryption_public_key: PublicKey,
@@ -110,9 +127,21 @@ pub fn show_hand(
 pub fn reveal_dealer_hand(
     hand: [Ciphertext; 11],
     hand_nonce: u128,
-) {
+) -> (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8) {
     let cipher = RescueCipher::new_for_mxe();
     let hand = cipher.decrypt::<11, Hand>(hand, hand_nonce);
 
-    (hand.cards.reveal(), hand.num_cards.reveal())
+    (
+        hand.cards[0].rank.reveal(),
+        hand.cards[0].suit.reveal(),
+        hand.cards[1].rank.reveal(),
+        hand.cards[1].suit.reveal(),
+        hand.cards[2].rank.reveal(),
+        hand.cards[2].suit.reveal(),
+        hand.cards[3].rank.reveal(),
+        hand.cards[3].suit.reveal(),
+        hand.cards[4].rank.reveal(),
+        hand.cards[4].suit.reveal(),
+        hand.num_cards.reveal(),
+    )
 }
