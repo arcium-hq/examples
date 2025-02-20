@@ -2,21 +2,25 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Blackjack } from "../target/types/blackjack";
+import { randomBytes } from "crypto";
 import {
-  getClusterDAInfo,
+  awaitComputationFinalization,
   getArciumEnv,
-  encryptAndEncodeInput,
-  MScalar,
-  DANodeClient,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgAddress,
   uploadCircuit,
   buildFinalizeCompDefTx,
-  awaitComputationFinalization,
+  RescueCipher,
+  x25519RandomPrivateKey,
+  x25519GetPublicKey,
+  x25519GetSharedSecretWithMXE,
+  serializeLE,
+  deserializeLE,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
+import { expect } from "chai";
 
 describe("Blackjack", () => {
   // Configure the client to use the local cluster.
@@ -25,8 +29,20 @@ describe("Blackjack", () => {
     .Blackjack as Program<Blackjack>;
   const provider = anchor.getProvider();
 
+  type Event = anchor.IdlEvents<(typeof program)["idl"]>;
+  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+    let listenerId: number;
+    const event = await new Promise<Event[E]>((res) => {
+      listenerId = program.addEventListener(eventName, (event) => {
+        res(event);
+      });
+    });
+    await program.removeEventListener(listenerId);
+
+    return event;
+  };
+
   const arciumEnv = getArciumEnv();
-  const daNodeClient = new DANodeClient(arciumEnv.DANodeURL);
 
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -38,20 +54,60 @@ describe("Blackjack", () => {
       initATSig
     );
 
-    const cluster_da_info = await getClusterDAInfo(
-      provider.connection,
-      arciumEnv.arciumClusterPubkey
-    );
+    const privateKey = x25519RandomPrivateKey();
+    const publicKey = x25519GetPublicKey(privateKey);
+    const mxePublicKey = [
+      new Uint8Array([
+        78, 96, 220, 218, 225, 248, 149, 140,
+        229, 147, 105, 183, 46, 82, 166, 248,
+        146, 35, 137, 78, 122, 181, 200, 220,
+        217, 97, 20, 11, 71, 9, 113, 6
+      ]),
+      new Uint8Array([
+        155, 202, 231, 73, 215, 1, 94, 193,
+        141, 26, 77, 66, 143, 114, 197, 172,
+        160, 245, 64, 108, 236, 104, 149, 242,
+        103, 140, 199, 94, 70, 61, 162, 118
+      ]),
+      new Uint8Array([
+        231, 24, 19, 12, 184, 40, 139, 11,
+        29, 176, 125, 231, 49, 53, 174, 225,
+        183, 156, 234, 55, 49, 240, 169, 70,
+        252, 141, 70, 28, 113, 255, 70, 20
+      ]),
+      new Uint8Array([
+        120, 66, 73, 239, 247, 13, 25, 149,
+        162, 21, 108, 27, 236, 128, 93, 84,
+        210, 18, 70, 106, 80, 82, 111, 61,
+        12, 178, 182, 23, 96, 12, 9, 1
+      ]),
+      new Uint8Array([
+        112, 133, 255, 66, 62, 138, 251, 232,
+        170, 239, 193, 225, 253, 152, 85, 205,
+        19, 16, 50, 193, 41, 248, 39, 175,
+        49, 87, 207, 79, 54, 122, 78, 125
+      ])
+    ];
+    const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
+    const cipher = new RescueCipher(rescueKey);
 
-    const val1 = BigInt(1) as MScalar;
-    const val2 = BigInt(2) as MScalar;
-    const req1 = encryptAndEncodeInput(val1, cluster_da_info);
-    const req2 = encryptAndEncodeInput(val2, cluster_da_info);
-    const oref1 = await daNodeClient.postOffchainReference(req1);
-    const oref2 = await daNodeClient.postOffchainReference(req2);
+    const val1 = BigInt(1);
+    const val2 = BigInt(2);
+    const plaintext = [val1, val2];
+
+    const nonce = randomBytes(16);
+    const ciphertext = cipher
+      .encrypt(plaintext, nonce);
+
+    const sumEventPromise = awaitEvent("sumEvent");
 
     const queueSig = await program.methods
-      .addTogether(oref1, oref2)
+      .addTogether(
+        Array.from(ciphertext[0]),
+        Array.from(ciphertext[1]),
+        Array.from(publicKey),
+        new anchor.BN(deserializeLE(nonce).toString()),
+      )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
@@ -59,27 +115,22 @@ describe("Blackjack", () => {
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
-      provider.connection,
+      provider as anchor.AnchorProvider,
       queueSig,
       program.programId,
       "confirmed"
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    const tx = await provider.connection.getTransaction(
-      finalizeSig.finalizeSignature,
-      {
-        commitment: "confirmed",
-        maxSupportedTransactionVersion: 0,
-      }
-    );
-    console.log("Logs are ", tx.meta.logMessages);
+    const sumEvent = await sumEventPromise;
+    const decrypted = cipher.decrypt([sumEvent.sum], nonce)[0]
+    expect(decrypted).to.equal(val1 + val2);
   });
 
   async function initAddTogetherCompDef(
     program: Program<Blackjack>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
+    uploadRawCircuit: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -108,8 +159,7 @@ describe("Blackjack", () => {
       );
 
       await uploadCircuit(
-        provider.connection,
-        owner,
+        provider as anchor.AnchorProvider,
         "add_together",
         program.programId,
         rawCircuit,
@@ -117,9 +167,9 @@ describe("Blackjack", () => {
       );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        owner.publicKey,
+        provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
-        program.programId,
+        program.programId
       );
 
       const latestBlockhash = await provider.connection.getLatestBlockhash();

@@ -1,175 +1,191 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, DATA_OBJ_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, DataObjectAccount, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
-    types::{Argument, OffChainReference},
+    types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
     arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    init_data_object_accounts, queue_computation_accounts,
+    queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_SETUP_BLACKJACK_GAME: u32 = comp_def_offset("setup_blackjack_game");
-const COMP_DEF_OFFSET_REVEAL_DEALER_CARD: u32 = comp_def_offset("reveal_dealer_card");
+declare_id!("CX9KuFpPeJzJ9kNWNLgESzys42FFhfZZ9CG2P7frEWgz");
 
-declare_id!("GZFGjRTZnkmBim8gscDoBwEFWodQRAbkPqKv7GT5tG2c");
+const GAME_SEED: &[u8] = b"blackjack_game";
+const PLAYER_HAND_SEED: &[u8] = b"player_hand";
+const DEALER_HAND_SEED: &[u8] = b"dealer_hand";
+
+const COMP_DEF_OFFSET_CALC_VALUE: u32 = comp_def_offset("calculate_hand_value");
+const COMP_DEF_OFFSET_ADD_CARD: u32 = comp_def_offset("add_card_to_hand");
 
 #[arcium_program]
 pub mod blackjack {
-    use arcium_anchor::init_da_object;
-
     use super::*;
 
-    pub fn init_setup_blackjack_game_comp_def(
-        ctx: Context<InitSetupBlackjackGameCompDef>,
-    ) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+    pub fn init_calculate_value_comp_def(ctx: Context<InitCalculateValueCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn init_blackjack_game(
-        ctx: Context<InitBlackjackGame>,
-        id: u32,
-        initial_player_hand: OffChainReference,
-        initial_dealer_hand: OffChainReference,
-    ) -> Result<()> {
-        init_da_object(
-            ctx.accounts,
-            initial_player_hand,
-            ctx.accounts.player_hand.to_account_info(),
-            id + 0,
-        )?;
+    pub fn init_add_card_comp_def(ctx: Context<InitAddCardCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
 
-        init_da_object(
-            ctx.accounts,
-            initial_dealer_hand,
-            ctx.accounts.dealer_hand.to_account_info(),
-            id + 1,
-        )?;
+    pub fn initialize(ctx: Context<Initialize>, bet: u64) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        game.player = ctx.accounts.player.key();
+        game.dealer_pubkey = ctx.accounts.dealer_hand.key();
+        game.status = GameStatus::Active;
+        game.player_bet = bet;
+        game.is_player_turn = true;
+        game.bump = *ctx.bumps.get("game").unwrap();
 
-        ctx.accounts.blackjack_game.state = GameState::Setup;
-        ctx.accounts.blackjack_game.player_hand = ctx.accounts.player_hand.key();
-        ctx.accounts.blackjack_game.dealer_hand = ctx.accounts.dealer_hand.key();
-        ctx.accounts.blackjack_game.bump = ctx.bumps.blackjack_game;
+        let player_hand = &mut ctx.accounts.player_hand;
+        player_hand.owner = ctx.accounts.player.key();
+        player_hand.bump = *ctx.bumps.get("player_hand").unwrap();
+
+        let dealer_hand = &mut ctx.accounts.dealer_hand;
+        dealer_hand.owner = game.dealer_pubkey;
+        dealer_hand.bump = *ctx.bumps.get("dealer_hand").unwrap();
 
         Ok(())
     }
 
-    pub fn setup_blackjack_game(
-        ctx: Context<SetupBlackjackGame>,
-        seed: OffChainReference,
-        id: u32,
-    ) -> Result<()> {
+    pub fn hit(ctx: Context<AddCard>, encrypted_card: [u8; 32], pub_key: [u8; 32], nonce: u128) -> Result<()> {
         let args = vec![
-            Argument::MU8(seed),
-            Argument::DataObj(id + 0),
-            Argument::DataObj(id + 1),
+            Argument::EncryptedU8(ctx.accounts.hand.encrypted_data.try_into().unwrap()),
+            Argument::EncryptedU8(encrypted_card),
+            Argument::PublicKey(pub_key),
+            Argument::PlaintextU128(nonce),
         ];
-
-        queue_computation(
-            ctx.accounts,
-            args,
-            vec![
-                ctx.accounts.player_hand.to_account_info(),
-                ctx.accounts.dealer_hand.to_account_info(),
-            ],
-            vec![],
-        )?;
-
+        
+        queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "setup_blackjack_game")]
-    pub fn setup_blackjack_game_callback(
-        ctx: Context<SetupBlackjackGameCallback>,
-        _output: Vec<u8>,
-    ) -> Result<()> {
-        Ok(())
-    }
-
-    pub fn reveal_dealer_card(
-        ctx: Context<RevealDealerCard>,
-        id: u32,
-        card_index: u8,
-    ) -> Result<()> {
+    pub fn calculate_value(ctx: Context<CalculateValue>, hand_ciphertext: [u8; 32], pub_key: [u8; 32], nonce: u128) -> Result<()> {
         let args = vec![
-            Argument::DataObj(id + 1),
-            Argument::PlaintextU8(card_index),
+            Argument::EncryptedU8(hand_ciphertext),
+            Argument::PublicKey(pub_key),
+            Argument::PlaintextU128(nonce),
         ];
-
-        queue_computation(
-            ctx.accounts,
-            args,
-            vec![ctx.accounts.dealer_hand.to_account_info()],
-            vec![],
-        )?;
-
+        
+        queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "reveal_dealer_card")]
-    pub fn reveal_dealer_card_callback(
-        ctx: Context<RevealDealerCardCallback>,
-        output: Vec<u8>,
-    ) -> Result<()> {
-        let card = output[0];
+    #[arcium_callback(confidential_ix = "add_card_to_hand")]
+    pub fn add_card_callback(ctx: Context<AddCardCallback>, output: Vec<u8>) -> Result<()> {
+        let hand = &mut ctx.accounts.hand;
+        hand.encrypted_data = output;
+        
+        // Queue computation to calculate new hand value
+        let args = vec![
+            Argument::EncryptedU8(output.try_into().unwrap()),
+            Argument::PublicKey(ctx.accounts.game.player.to_bytes()),
+            Argument::PlaintextU128(0), // Use appropriate nonce
+        ];
+        
+        queue_computation(ctx.accounts, args, vec![], None)?;
+        Ok(())
+    }
 
-        emit!(RevealDealerCardEvent { card });
-
+    #[arcium_callback(confidential_ix = "calculate_hand_value")]
+    pub fn calculate_value_callback(ctx: Context<CalculateValueCallback>, output: Vec<u8>) -> Result<()> {
+        let game = &mut ctx.accounts.game;
+        let value = output[0];
+        
+        if value > 21 {
+            game.status = GameStatus::DealerWon;
+            game.is_player_turn = false;
+        }
+        
         Ok(())
     }
 }
 
-#[init_data_object_accounts(payer)]
+// Events
+#[event]
+pub struct HandValueEvent {
+    pub value: [u8; 32],
+}
+
+// Enums
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+pub enum GameStatus {
+    Active,
+    PlayerWon,
+    DealerWon,
+    Push,
+}
+
+// Account Structures
+#[account]
+pub struct GameState {
+    pub player: Pubkey,
+    pub dealer_pubkey: Pubkey,
+    pub status: GameStatus,
+    pub player_bet: u64,
+    pub is_player_turn: bool,
+    pub bump: u8,
+}
+
+#[account]
+pub struct Hand {
+    pub owner: Pubkey,
+    pub encrypted_data: Vec<u8>,
+    pub bump: u8,
+}
+
+// Context Accounts
 #[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct InitBlackjackGame<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
+pub struct Initialize<'info> {
     #[account(
         init,
-        payer = payer,
-        space = 8 + BlackjackGame::INIT_SPACE,
-        seeds = [b"blackjack", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump,
+        payer = player,
+        space = 8 + 32 + 32 + 1 + 8 + 1 + 1,
+        seeds = [GAME_SEED, player.key().as_ref()],
+        bump
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
-    /// CHECK: Player hand data object will be initialized by CPI
-    #[account(mut)]
-    pub player_hand: UncheckedAccount<'info>,
-    /// CHECK: Dealer hand data object will be initialized by CPI
-    #[account(mut)]
-    pub dealer_hand: UncheckedAccount<'info>,
+    pub game: Account<'info, GameState>,
+    
     #[account(
-        mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        init,
+        payer = player,
+        space = 8 + 32 + 200 + 1,
+        seeds = [PLAYER_HAND_SEED, game.key().as_ref()],
+        bump
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
-    pub arcium_program: Program<'info, Arcium>,
+    pub player_hand: Account<'info, Hand>,
+    
+    #[account(
+        init,
+        payer = player,
+        space = 8 + 32 + 200 + 1,
+        seeds = [DEALER_HAND_SEED, game.key().as_ref()],
+        bump
+    )]
+    pub dealer_hand: Account<'info, Hand>,
+    
+    #[account(mut)]
+    pub player: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
-#[queue_computation_accounts("setup_blackjack_game", payer)]
+#[queue_computation_accounts("calculate_hand_value", payer)]
 #[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct SetupBlackjackGame<'info> {
+pub struct CalculateValue<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
-    #[account(
-        seeds = [b"blackjack", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump,
-    )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
     #[account(
         seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
@@ -184,14 +200,14 @@ pub struct SetupBlackjackGame<'info> {
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_SETUP_BLACKJACK_GAME.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_CALC_VALUE.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
+        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = cluster_account.bump
     )]
@@ -211,30 +227,64 @@ pub struct SetupBlackjackGame<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        mut,
-        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), (id + 0).to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = player_hand.bump,
-    )]
-    pub player_hand: Account<'info, DataObjectAccount>,
-    #[account(
-        mut,
-        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), (id + 1).to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = dealer_hand.bump,
-    )]
-    pub dealer_hand: Account<'info, DataObjectAccount>,
 }
 
-#[callback_accounts("setup_blackjack_game", payer)]
+#[queue_computation_accounts("add_card_to_hand", payer)]
 #[derive(Accounts)]
-pub struct SetupBlackjackGameCallback<'info> {
+pub struct AddCard<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mxe_account.bump
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = mempool_account.bump
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_CARD.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = comp_def_account.bump
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = cluster_account.bump
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        seeds = [POOL_PDA_SEED],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = pool_account.bump
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        seeds = [CLOCK_PDA_SEED],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = clock_account.bump
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+}
+
+#[callback_accounts("calculate_hand_value", payer)]
+#[derive(Accounts)]
+pub struct CalculateValueCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_SETUP_BLACKJACK_GAME.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_CALC_VALUE.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -242,11 +292,34 @@ pub struct SetupBlackjackGameCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub game: Account<'info, GameState>,
 }
 
-#[init_computation_definition_accounts("setup_blackjack_game", payer)]
+#[callback_accounts("add_card_to_hand", payer)]
 #[derive(Accounts)]
-pub struct InitSetupBlackjackGameCompDef<'info> {
+pub struct AddCardCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_CARD.to_le_bytes().as_ref()],
+        seeds::program = ARCIUM_PROG_ID,
+        bump = comp_def_account.bump
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub hand: Account<'info, Hand>,
+    #[account(mut)]
+    pub game: Account<'info, GameState>,
+}
+
+#[init_computation_definition_accounts("calculate_hand_value", payer)]
+#[derive(Accounts)]
+pub struct InitCalculateValueCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -257,120 +330,27 @@ pub struct InitSetupBlackjackGameCompDef<'info> {
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
+    /// CHECK: comp_def_account, checked by arcium program
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
 
-#[queue_computation_accounts("reveal_dealer_card", payer)]
+#[init_computation_definition_accounts("add_card_to_hand", payer)]
 #[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct RevealDealerCard<'info> {
+pub struct InitAddCardCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [b"blackjack", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump,
-    )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
-    #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
+        mut,
+        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = mxe_account.bump
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
-    #[account(
-        mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
-    )]
-    pub mempool_account: Account<'info, Mempool>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL_DEALER_CARD.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(
-        mut,
-        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(
-        mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
-    )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
-    #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
-    )]
-    pub clock_account: Account<'info, ClockAccount>,
-    pub system_program: Program<'info, System>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        mut,
-        seeds = [DATA_OBJ_PDA_SEED, &ID_CONST.to_bytes().as_ref(), (id + 1).to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = dealer_hand.bump,
-    )]
-    pub dealer_hand: Account<'info, DataObjectAccount>,
-}
-
-#[callback_accounts("reveal_dealer_card", payer)]
-#[derive(Accounts)]
-pub struct RevealDealerCardCallback<'info> {
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
-    pub payer: Signer<'info>,
+    /// CHECK: comp_def_account, checked by arcium program
+    pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL_DEALER_CARD.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
-}
-
-
-// Game state enum
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Clone, InitSpace)]
-pub enum GameState {
-    Setup,
-    Active,
-    PlayerTurn,
-    DealerTurn,
-    Complete,
-}
-
-// Game actions enum
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, PartialEq, Clone)]
-pub enum PlayerAction {
-    Hit,
-    Stand,
-}
-
-// Main game struct
-#[derive(Debug, InitSpace)]
-#[account]
-pub struct BlackjackGame {
-    state: GameState,
-    player_hand: Pubkey,
-    dealer_hand: Pubkey,
-    bump: u8,
-}
-
-#[event]
-pub struct RevealDealerCardEvent {
-    pub card: u8,
+    pub system_program: Program<'info, System>,
 }
