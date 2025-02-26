@@ -91,21 +91,25 @@ pub fn add_card_to_hand(
     let mut hand = hand_cipher.decrypt::<11, Hand>(hand, hand_nonce);
     let card_cipher = RescueCipher::new_with_client(public_key);
     let new_card = card_cipher.decrypt::<2, Card>(new_card, nonce);
+    let less = arcis! { hand.num_cards < mu8::from(5u8) };
 
-    arcis! {
-        if hand.num_cards < mu8::from(5) {
-            for i in 0..5 {
-                if hand.cards[i].rank == 0 && hand.cards[i].suit == 0 {
-                    hand.cards[i] = new_card;
-                    hand.num_cards += 1;
-                }
-            }
+    for i in 0..5 {
+        arcis! {
+            hand.cards[i] = if less && hand.cards[i].rank == 0 && hand.cards[i].suit == 0 {
+                new_card
+            } else {
+                hand.cards[i]
+            };
+            hand.num_cards = if less && hand.cards[i].rank == 0 && hand.cards[i].suit == 0 {
+                hand.num_cards + 1
+            } else {
+                hand.num_cards
+            };
         }
     }
 
     hand_cipher.encrypt::<11, _>(hand, hand_nonce)
 }
-
 // Function to show a hand to the user
 #[confidential]
 pub fn show_player_hand_to_user(
@@ -124,14 +128,11 @@ pub fn show_player_hand_to_user(
 
 // Function to reveal dealer hand
 #[confidential]
-pub fn reveal_dealer_hand(
-    hand: [Ciphertext; 11],
-    hand_nonce: u128,
-) -> (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8) {
+pub fn reveal_dealer_hand(hand: [Ciphertext; 11], hand_nonce: u128) -> [u8; 11] {
     let cipher = RescueCipher::new_for_mxe();
     let hand = cipher.decrypt::<11, Hand>(hand, hand_nonce);
 
-    (
+    [
         hand.cards[0].rank.reveal(),
         hand.cards[0].suit.reveal(),
         hand.cards[1].rank.reveal(),
@@ -143,5 +144,5 @@ pub fn reveal_dealer_hand(
         hand.cards[4].rank.reveal(),
         hand.cards[4].suit.reveal(),
         hand.num_cards.reveal(),
-    )
+    ]
 }
