@@ -1,0 +1,14 @@
+[package]
+name = "confidential-ixs"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["arcis/full", "arcis-compiler/full"]
+solana = ["arcis/static-compiler", "arcis/interface-gen"]
+
+[dependencies]
+arcis = { default-features = false, version = "0.1.37", registry = "arcium" }
+
+[build-dependencies]
+arcis-compiler = { default-features = false, version = "0.1.37", registry = "arcium" }
