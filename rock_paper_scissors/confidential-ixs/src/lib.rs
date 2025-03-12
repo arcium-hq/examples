@@ -1,19 +1,29 @@
 use arcis_imports::*;
-#[module]
-mod circuits{
+
+#[instruction]
+mod circuits {
     use arcis_imports::*;
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
+    pub struct GameMoves {
+        player_move: u8, // 0 = rock, 1 = paper, 2 = scissors
+        house_move: u8,
     }
 
     // Arcomorphic Encryption (Homomorphic Encryption à la Arcium)
-    #[circuit]
-    pub fn add_together(input_ctxt: Ciphertext<ClientCipher, InputValues>) -> Ciphertext<ClientCipher, u16> {
+    #[encrypted]
+    pub fn compare_moves(input_ctxt: Enc<ClientCipher, GameMoves>) -> u8 {
         let input = input_ctxt.decrypt();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.cipher.encrypt(sum)
+        let mut result = 1;  // Default to player win
+        
+        // 0 = tie, 1 = player wins, 2 = house wins
+        if input.player_move == input.house_move {
+            result = 0;  // tie
+        } else if (input.player_move == 0 && input.house_move == 1) ||    // rock vs paper
+                  (input.player_move == 1 && input.house_move == 2) ||    // paper vs scissors
+                  (input.player_move == 2 && input.house_move == 0) {     // scissors vs rock
+            result = 2;  // house wins
+        }
+        
+        result.reveal()
     }
-
 }

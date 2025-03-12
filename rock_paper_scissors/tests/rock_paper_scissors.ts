@@ -15,7 +15,6 @@ import {
   x25519RandomPrivateKey,
   x25519GetPublicKey,
   x25519GetSharedSecretWithMXE,
-  serializeLE,
   deserializeLE,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
@@ -44,16 +43,17 @@ describe("RockPaperScissors", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("Plays a game of rock paper scissors!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false);
+    console.log("Initializing compare moves computation definition");
+    const initSig = await initCompareMovesCompDef(program, owner, false);
     console.log(
-      "Add together computation definition initialized with signature",
-      initATSig
+      "Compare moves computation definition initialized with signature",
+      initSig
     );
 
+    // Setup encryption
     const privateKey = x25519RandomPrivateKey();
     const publicKey = x25519GetPublicKey(privateKey);
     const mxePublicKey = [
@@ -91,21 +91,20 @@ describe("RockPaperScissors", () => {
     const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
     const cipher = new RescueCipher(rescueKey);
 
-    const val1 = BigInt(1);
-    const val2 = BigInt(2);
-    const plaintext = [val1, val2];
-
+    // Player chooses rock (0)
+    const playerMove = BigInt(0);
+    // House randomly chooses paper (1)
+    const houseMove = BigInt(1);
+    
+    const moves = [playerMove, houseMove];
     const nonce = randomBytes(16);
-    const ciphertext = cipher
-      .encrypt(plaintext, nonce);
+    const ciphertext = cipher.encrypt(moves, nonce);
 
-    const sumEventPromise = awaitEvent("sumEvent");
+    const gameEventPromise = awaitEvent("gameResultEvent");
 
-    // TODO: Remove this sleep once the CI bug is solved
-    await new Promise(resolve => setTimeout(resolve, 100));
-
+    // Queue the game computation
     const queueSig = await program.methods
-      .addTogether(
+      .playGame(
         Array.from(ciphertext[0]),
         Array.from(ciphertext[1]),
         Array.from(publicKey),
@@ -117,6 +116,7 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
+    // Wait for computation to finish
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
       queueSig,
@@ -125,12 +125,15 @@ describe("RockPaperScissors", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    const sumEvent = await sumEventPromise;
-    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0]
-    expect(decrypted).to.equal(val1 + val2);
+    // Get the game result
+    const gameEvent = await gameEventPromise;
+    const result = gameEvent.result;
+    
+    // House should win (2) since paper beats rock
+    expect(result).to.equal(2);
   });
 
-  async function initAddTogetherCompDef(
+  async function initCompareMovesCompDef(
     program: Program<RockPaperScissors>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
@@ -138,7 +141,7 @@ describe("RockPaperScissors", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("add_together");
+    const offset = getCompDefAccOffset("compare_moves");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -148,22 +151,22 @@ describe("RockPaperScissors", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initAddTogetherCompDef()
+      .initCompareMovesCompDef()
       .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init add together computation definition transaction", sig);
+    console.log("Init compare moves computation definition transaction", sig);
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync(
-        "build/add_together.arcis"
+        "build/compare_moves.arcis"
       );
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "add_together",
+        "compare_moves",
         program.programId,
         rawCircuit,
         true

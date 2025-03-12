@@ -17,7 +17,7 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
+const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
 declare_id!("6MoscNZh1jxaAVHRCJEpPMurjrkRz8uaXc4iEXjcXFo4");
 
@@ -25,41 +25,41 @@ declare_id!("6MoscNZh1jxaAVHRCJEpPMurjrkRz8uaXc4iEXjcXFo4");
 pub mod rock_paper_scissors {
     use super::*;
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
+    pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
+    pub fn play_game(
+        ctx: Context<PlayGame>,
+        encrypted_player_move: [u8; 32],
+        encrypted_house_move: [u8; 32],
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
             Argument::PublicKey(pub_key),
             Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
+            Argument::EncryptedU8(encrypted_player_move),
+            Argument::EncryptedU8(encrypted_house_move),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<AddTogetherCallback>, output: Vec<u8>) -> Result<()> {
-        emit!(SumEvent {
-            sum: output[48..].try_into().unwrap(),
-            nonce: output[32..48].try_into().unwrap(),
+    #[arcium_callback(confidential_ix = "compare_moves")]
+    pub fn compare_moves_callback(ctx: Context<CompareMovesCallback>, output: Vec<u8>) -> Result<()> {
+        emit!(GameResultEvent {
+            result: output[0],  // 0 = tie, 1 = player wins, 2 = house wins
+            nonce: output[16..32].try_into().unwrap(),
         });
         Ok(())
     }
 }
 
-#[queue_computation_accounts("add_together", payer)]
+#[queue_computation_accounts("compare_moves", payer)]
 #[derive(Accounts)]
-pub struct AddTogether<'info> {
+pub struct PlayGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -76,7 +76,7 @@ pub struct AddTogether<'info> {
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_COMPARE_MOVES.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -105,14 +105,14 @@ pub struct AddTogether<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("add_together", payer)]
+#[callback_accounts("compare_moves", payer)]
 #[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
+pub struct CompareMovesCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
+        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_COMPARE_MOVES.to_le_bytes().as_ref()],
         seeds::program = ARCIUM_PROG_ID,
         bump = comp_def_account.bump
     )]
@@ -122,9 +122,9 @@ pub struct AddTogetherCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("add_together", payer)]
+#[init_computation_definition_accounts("compare_moves", payer)]
 #[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
+pub struct InitCompareMovesCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -143,7 +143,7 @@ pub struct InitAddTogetherCompDef<'info> {
 }
 
 #[event]
-pub struct SumEvent {
-    pub sum: [u8; 32],
+pub struct GameResultEvent {
+    pub result: u8,  // 0 = tie, 1 = player wins, 2 = house wins
     pub nonce: [u8; 16],
 }
