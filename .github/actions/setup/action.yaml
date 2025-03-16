@@ -21,6 +21,16 @@ runs:
     - run: echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> $GITHUB_ENV
       shell: bash
 
+    # Setup Rust with specific version
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: 1.82.0
+        override: true
+        components: clippy
+    
+    - run: rustup update
+      shell: bash
+
     # Cache cargo registry
     - uses: actions/cache@v4
       name: Cache Cargo Registry

@@ -1,15 +1,14 @@
 name: Clippy Check
 on:
-  workflow_run:
-    workflows: ["Formatting Check"]
-    types:
-      - completed
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup/
