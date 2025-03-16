@@ -1,0 +1,44 @@
+name: Test Program Examples
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  ARCUP_USER: testnet_user_20842437
+  ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
+jobs:
+  test-examples:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Setup all required tools
+      - uses: ./.github/actions/setup/
+      - uses: ./.github/actions/setup-solana/
+      - uses: ./.github/actions/setup-anchor/
+      - uses: ./.github/actions/setup-arcium/
+
+      # Find all example directories
+      - name: Find example directories
+        id: find-examples
+        run: |
+          echo "examples=$(find . -type f -name "Anchor.toml" -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      # Test each example
+      - name: Test examples
+        run: |
+          EXAMPLES=$(echo '${{ steps.find-examples.outputs.examples }}' | jq -r '.[]')
+          for example in $EXAMPLES; do
+            echo "Testing $example"
+            cd $example
+            arcium test
+            cd $GITHUB_WORKSPACE
+          done
+        shell: bash 
