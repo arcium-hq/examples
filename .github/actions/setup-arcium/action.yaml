@@ -1,5 +1,10 @@
 name: "Setup Arcium"
 description: "Setup Arcium CLI using arcup"
+
+env:
+  ARCUP_USER: testnet_user_20842437
+  ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
 runs:
   using: "composite"
   steps:
