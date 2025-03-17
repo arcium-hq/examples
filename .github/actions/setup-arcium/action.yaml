@@ -40,9 +40,12 @@ runs:
     # Install arcup
     - name: Install arcup
       run: |
-        curl -u "${{ env.ARCUP_USER }}:${{ env.ARCUP_TOKEN }}" "https://bin.arcium.com/download/arcup_${ARCUP_TARGET}_0.1.37" -o ~/.cargo/bin/arcup
+        curl -u $ARCUP_USER:$ARCUP_TOKEN "https://bin.arcium.com/download/arcup_${ARCUP_TARGET}_0.1.37" -o ~/.cargo/bin/arcup
         chmod +x ~/.cargo/bin/arcup
       shell: bash
+      with:
+        ARCUP_USER: ${{ env.ARCUP_USER }}
+        ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
 
     # Install Arcium CLI
     - name: Install Arcium CLI
