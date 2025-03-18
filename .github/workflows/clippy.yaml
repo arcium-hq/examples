@@ -18,6 +18,12 @@ jobs:
         with:
           arcup-user: testnet_user_20842437
           arcup-token: ${{ secrets.ARCUP_TOKEN }}
+      
+      - uses: actions-rs/toolchain@v1
+        with: 
+            override: true
+            components: clippy
+      - run: rustup update
 
       # Find all example directories
       - name: Find example directories
