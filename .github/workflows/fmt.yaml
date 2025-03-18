@@ -13,6 +13,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup/
 
+      - uses: actions-rs/toolchain@v1
+        with: 
+            override: true
+            components: rustfmt
+            toolchain: nightly
+      - run: rustup update
+
       # Find all example directories and their Cargo.lock files
       - name: Find example directories
         id: find-examples
