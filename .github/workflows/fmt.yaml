@@ -27,6 +27,6 @@ jobs:
           for example in $EXAMPLES; do
             echo "Checking formatting in $example"
             cd $example
-            cargo fmt --all -- --check
+            cargo +nightly fmt --all --check
             cd $GITHUB_WORKSPACE
           done
