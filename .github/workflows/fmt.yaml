@@ -17,7 +17,7 @@ jobs:
         with: 
             override: true
             components: rustfmt
-            toolchain: nightly
+            toolchain: nightly-2024-03-14
       - run: rustup update
 
       # Find all example directories and their Cargo.lock files
@@ -34,6 +34,6 @@ jobs:
           for example in $EXAMPLES; do
             echo "Checking formatting in $example"
             cd $example
-            cargo +nightly fmt --all --check
+            cargo +nightly-2024-03-14 fmt --all --check
             cd $GITHUB_WORKSPACE
           done
