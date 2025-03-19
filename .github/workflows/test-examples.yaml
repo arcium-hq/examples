@@ -26,9 +26,9 @@ jobs:
       - uses: ./.github/actions/setup-solana/
       - uses: ./.github/actions/setup-anchor/
       - uses: ./.github/actions/setup-arcium/
-        with:
-          ARCUP_USER: testnet_user_20842437
-          ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+        secrets:
+          arcup-user: testnet_user_20842437
+          arcup-token: ${{ secrets.ARCUP_TOKEN }}
 
       # Find all example directories
       - name: Find example directories
