@@ -3,16 +3,13 @@ description: "Setup"
 runs:
   using: "composite"
   steps:
-    # Use the source build for now
-    - run: echo "ANCHOR_VERSION=0" >> $GITHUB_ENV
+    - run: echo "RUST_VERSION=1.85.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ANCHOR_COMMIT_HASH=06527e57c3e59683c36eb0a5c69ee669100b42e5" >> $GITHUB_ENV
+    - run: echo "ANCHOR_VERSION=0.31.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.1.32" >> $GITHUB_ENV
+    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.1.40" >> $GITHUB_ENV
       shell: bash
-    - run: echo "DUMMY_PROGRAM_COMMIT_HASH=17302d9441f114516ad9b11aa5d77fe1a8b942de" >> $GITHUB_ENV
-      shell: bash
-    - run: echo "SOLANA_CLI_VERSION=1.18.17" >> $GITHUB_ENV
+    - run: echo "SOLANA_CLI_VERSION=2.1.6" >> $GITHUB_ENV
       shell: bash
     - run: echo "CARGO_TERM_COLOR=always" >> $GITHUB_ENV
       shell: bash
@@ -20,14 +17,16 @@ runs:
       shell: bash
     - run: echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> $GITHUB_ENV
       shell: bash
+    - run: echo "ARCUP_VERSION=0.1.40" >> $GITHUB_ENV
+      shell: bash
 
     # Setup Rust with specific version
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.82.0
+        toolchain: 1.85.0
         override: true
         components: clippy
-    
+
     - run: rustup update
       shell: bash
 

@@ -1,28 +1,33 @@
 name: Clippy Check
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+# Make sure CI fails on all warnings, including Clippy lints
+env:
+  RUSTFLAGS: "-Dwarnings"
+  CARGO_TERM_COLOR: always
 
 jobs:
   clippy:
     name: Clippy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup/
       - uses: ./.github/actions/setup-solana/
       - uses: ./.github/actions/setup-anchor/
       - uses: ./.github/actions/setup-arcium/
-        secrets:
-          arcup-user: testnet_user_20842437
-          arcup-token: ${{ secrets.ARCUP_TOKEN }}
-      
+        with:
+          ARCUP_USER: testnet_user_20842437
+          ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
       - uses: actions-rs/toolchain@v1
-        with: 
-            override: true
-            components: clippy
+        with:
+          override: true
+          components: clippy
       - run: rustup update
 
       # Find all example directories
