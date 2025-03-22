@@ -185,7 +185,7 @@ pub mod voting {
 
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
-pub struct InitVoteStats<'info> {
+pub struct CreateNewPoll<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -203,7 +203,7 @@ pub struct InitVoteStats<'info> {
     )]
     pub executing_pool: Account<'info, ExecutingPool>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -222,26 +222,37 @@ pub struct InitVoteStats<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + PollAccount::INIT_SPACE,
+        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        bump,
+    )]
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("add_together", payer)]
+#[callback_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
+pub struct InitVoteStatsCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
+    #[account(mut)]
+    pub poll_acc: UncheckedAccount<'info>,
 }
 
-#[init_computation_definition_accounts("add_together", payer)]
+#[init_computation_definition_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
+pub struct InitVoteStatsCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -257,8 +268,200 @@ pub struct InitAddTogetherCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[queue_computation_accounts("vote", payer)]
+#[derive(Accounts)]
+#[instruction(id: u32)]
+pub struct Vote<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    /// CHECK: Poll authority pubkey
+    #[account(
+    address = poll_acc.authority,
+    )]
+    pub authority: UncheckedAccount<'info>,
+    #[account(
+    seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
+    bump = poll_acc.bump,
+    has_one = authority
+    )]
+    pub poll_acc: Account<'info, PollAccount>,
+}
+
+#[callback_accounts("vote", payer)]
+#[derive(Accounts)]
+pub struct VoteCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
+    #[account(mut)]
+    pub poll_acc: UncheckedAccount<'info>,
+}
+
+#[init_computation_definition_accounts("vote", payer)]
+#[derive(Accounts)]
+pub struct InitVoteCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[queue_computation_accounts("reveal_result", payer)]
+#[derive(Accounts)]
+#[instruction(id: u32)]
+pub struct RevealVotingResult<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
+        bump = poll_acc.bump
+    )]
+    pub poll_acc: Account<'info, PollAccount>,
+}
+
+#[callback_accounts("reveal_result", payer)]
+#[derive(Accounts)]
+pub struct RevealVotingResultCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[init_computation_definition_accounts("reveal_result", payer)]
+#[derive(Accounts)]
+pub struct InitRevealResultCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct PollAccount {
+    pub bump: u8,
+    #[max_len(50)]
+    pub question: String,
+    pub id: u32,
+    pub authority: Pubkey,
+    pub nonce: u128,
+    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    pub vote_state: [[u8; 32]; 2],
+}
+
 #[error_code]
 pub enum ErrorCode {
     #[msg("Invalid authority")]
     InvalidAuthority,
+}
+
+#[event]
+pub struct VoteEvent {
+    pub output: Vec<u8>,
+}
+
+#[event]
+pub struct RevealResultEvent {
+    pub output: bool,
 }
