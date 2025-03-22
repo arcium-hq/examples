@@ -1,15 +1,17 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
-        StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
+        PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
-    types::{Argument, CallbackAccount},
+    types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -21,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("AL25N1v4WjSXdTsszwYG7WA2Ztb6Wj5VAQBFGn8Y4pnz");
+declare_id!("EGRyBhhe9pzvoznJuQh5x5Dx5V2eKQv1AwWdTsEMEYEQ");
 
 #[arcium_program]
 pub mod voting {
@@ -103,6 +105,7 @@ pub mod voting {
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
                 8 + 1 + (4 + 50) + 4 + 32 + 16,
+                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
             Argument::PlaintextU128(vote_stats_nonce),
         ];
@@ -160,6 +163,7 @@ pub mod voting {
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
                 8 + 1 + (4 + 50) + 4 + 32 + 16,
+                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
             Argument::PlaintextU128(vote_stats_nonce),
         ];
@@ -181,91 +185,68 @@ pub mod voting {
 
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct CreateNewPoll<'info> {
+pub struct InitVoteStats<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
+        address = derive_mempool_pda!()
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_INIT_VOTE_STATS.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
+        address = derive_cluster_pda!(mxe_account)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        init,
-        payer = payer,
-        space = 8 + PollAccount::INIT_SPACE,
-        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump,
-    )]
-    pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("init_vote_stats", payer)]
+#[callback_accounts("add_together", payer)]
 #[derive(Accounts)]
-pub struct InitVoteStatsCallback<'info> {
+pub struct AddTogetherCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_INIT_VOTE_STATS.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
-    #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
 }
 
-#[init_computation_definition_accounts("init_vote_stats", payer)]
+#[init_computation_definition_accounts("add_together", payer)]
 #[derive(Accounts)]
-pub struct InitVoteStatsCompDef<'info> {
+pub struct InitAddTogetherCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
         mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
@@ -274,227 +255,10 @@ pub struct InitVoteStatsCompDef<'info> {
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
-}
-
-#[queue_computation_accounts("vote", payer)]
-#[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct Vote<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
-    )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
-    #[account(
-        mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
-    )]
-    pub mempool_account: Account<'info, Mempool>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(
-        mut,
-        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(
-        mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
-    )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
-    #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
-    )]
-    pub clock_account: Account<'info, ClockAccount>,
-    pub system_program: Program<'info, System>,
-    pub arcium_program: Program<'info, Arcium>,
-    /// CHECK: Poll authority pubkey
-    #[account(
-        address = poll_acc.authority,
-    )]
-    pub authority: UncheckedAccount<'info>,
-    #[account(
-        seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump = poll_acc.bump,
-        has_one = authority
-    )]
-    pub poll_acc: Account<'info, PollAccount>,
-}
-
-#[callback_accounts("vote", payer)]
-#[derive(Accounts)]
-pub struct VoteCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_VOTE.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
-    #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
-}
-
-#[init_computation_definition_accounts("vote", payer)]
-#[derive(Accounts)]
-pub struct InitVoteCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
-    )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
-    #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
-    pub comp_def_account: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    pub system_program: Program<'info, System>,
-}
-
-#[queue_computation_accounts("reveal_result", payer)]
-#[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct RevealVotingResult<'info> {
-    #[account(
-        mut,
-        address = poll_acc.authority,
-    )]
-    pub payer: Signer<'info>,
-    #[account(
-        seeds = [b"poll", payer.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump = poll_acc.bump
-    )]
-    pub poll_acc: Account<'info, PollAccount>,
-    #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
-    )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
-    #[account(
-        mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
-    )]
-    pub mempool_account: Account<'info, Mempool>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    #[account(
-        mut,
-        seeds = [CLUSTER_PDA_SEED, mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(
-        mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
-    )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
-    #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
-    )]
-    pub clock_account: Account<'info, ClockAccount>,
-    pub system_program: Program<'info, System>,
-    pub arcium_program: Program<'info, Arcium>,
-}
-
-#[callback_accounts("reveal_result", payer)]
-#[derive(Accounts)]
-pub struct RevealVotingResultCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_REVEAL.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: AccountInfo<'info>,
-}
-
-#[init_computation_definition_accounts("reveal_result", payer)]
-#[derive(Accounts)]
-pub struct InitRevealResultCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account(
-        mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
-    )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
-    #[account(mut)]
-    /// CHECK: comp_def_account, checked by arcium program.
-    /// Can't check it here as it's not initialized yet.
-    pub comp_def_account: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-    pub system_program: Program<'info, System>,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct PollAccount {
-    pub bump: u8,
-    #[max_len(50)]
-    pub question: String,
-    pub id: u32,
-    pub authority: Pubkey,
-    pub nonce: u128,
-    // 2 counts, each saved as a ciphertext (so 32 bytes each)
-    pub vote_state: [[u8; 32]; 2],
 }
 
 #[error_code]
 pub enum ErrorCode {
     #[msg("Invalid authority")]
     InvalidAuthority,
-}
-
-#[event]
-pub struct VoteEvent {
-    pub output: Vec<u8>,
-}
-
-#[event]
-pub struct RevealResultEvent {
-    pub output: bool,
 }
