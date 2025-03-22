@@ -1,10 +1,9 @@
 name: Test Examples
-
 on:
-  workflow_run:
-    workflows: ["Clippy Check"]
-    types:
-      - completed
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   ARCUP_USER: testnet_user_20842437
