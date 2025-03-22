@@ -28,6 +28,7 @@ jobs:
         with:
           override: true
           components: clippy
+          toolchain: nightly
       - run: rustup update
 
       # Find all example directories
