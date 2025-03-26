@@ -159,13 +159,13 @@ pub mod voting {
         msg!("Revealing voting result for poll with id {}", id);
 
         let args = vec![
+            Argument::PlaintextU128(vote_stats_nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
                 8 + 1 + (4 + 50) + 4 + 32 + 16,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
-            Argument::PlaintextU128(vote_stats_nonce),
         ];
 
         queue_computation(ctx.accounts, args, vec![], None)?;
