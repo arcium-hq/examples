@@ -98,16 +98,16 @@ pub mod voting {
         vote_stats_nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::EncryptedBool(vote),
             Argument::PublicKey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
+            Argument::EncryptedBool(vote),
+            Argument::PlaintextU128(vote_stats_nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
                 8 + 1 + (4 + 50) + 4 + 32 + 16,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
-            Argument::PlaintextU128(vote_stats_nonce),
         ];
 
         queue_computation(
@@ -311,13 +311,13 @@ pub struct Vote<'info> {
     pub arcium_program: Program<'info, Arcium>,
     /// CHECK: Poll authority pubkey
     #[account(
-    address = poll_acc.authority,
+        address = poll_acc.authority,
     )]
     pub authority: UncheckedAccount<'info>,
     #[account(
-    seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
-    bump = poll_acc.bump,
-    has_one = authority
+        seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
+        bump = poll_acc.bump,
+        has_one = authority
     )]
     pub poll_acc: Account<'info, PollAccount>,
 }
