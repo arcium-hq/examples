@@ -130,6 +130,8 @@ describe("Voting", () => {
     // TODO: Remove this sleep once the CI bug is solved
     await new Promise((resolve) => setTimeout(resolve, 100));
 
+    console.log("Voting");
+
     const queueVoteSig = await program.methods
       .vote(
         POLL_ID,
@@ -147,6 +149,7 @@ describe("Voting", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
         ),
+        authority: owner.publicKey,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Queue vote sig is ", queueVoteSig);
@@ -385,6 +388,13 @@ describe("Voting", () => {
         .accountsPartial({
           payer: owner,
           clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
+          ),
         })
         .rpc(),
       nonce: nonce,

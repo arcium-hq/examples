@@ -11,7 +11,7 @@ use arcium_client::idl::arcium::{
         PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
-    types::Argument,
+    types::{Argument, CallbackAccount},
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -64,7 +64,7 @@ pub mod voting {
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "init_vote_stats")]
+    #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
         output: Vec<u8>,
@@ -122,7 +122,7 @@ pub mod voting {
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "vote")]
+    #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
         let vote_stats: [[u8; 32]; 2] = output
             .chunks_exact(32)
@@ -172,7 +172,7 @@ pub mod voting {
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "reveal_result")]
+    #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealVotingResultCallback>,
         output: Vec<u8>,
@@ -185,6 +185,7 @@ pub mod voting {
 
 #[queue_computation_accounts("init_vote_stats", payer)]
 #[derive(Accounts)]
+#[instruction(id: u32)]
 pub struct CreateNewPoll<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
