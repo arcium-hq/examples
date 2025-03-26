@@ -136,7 +136,12 @@ pub mod voting {
         poll_acc.vote_state = vote_stats;
         poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
 
-        emit!(VoteEvent { output: output });
+        let clock = Clock::get()?;
+        let current_timestamp = clock.unix_timestamp;
+
+        emit!(VoteEvent {
+            timestamp: current_timestamp,
+        });
 
         Ok(())
     }
@@ -459,7 +464,7 @@ pub enum ErrorCode {
 
 #[event]
 pub struct VoteEvent {
-    pub output: Vec<u8>,
+    pub timestamp: i64,
 }
 
 #[event]

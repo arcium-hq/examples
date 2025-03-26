@@ -177,7 +177,7 @@ describe("Voting", () => {
     console.log("Finalize sig is ", finalizeSig);
 
     const voteEvent = await voteEventPromise;
-    console.log("Vote event is ", voteEvent);
+    console.log("Vote casted at timestamp ", voteEvent.timestamp.toString());
 
     const revealEventPromise = awaitEvent("revealResultEvent");
 
