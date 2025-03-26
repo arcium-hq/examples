@@ -1,5 +1,6 @@
 use arcis_imports::*;
-#[module]
+
+#[encrypted]
 mod circuits{
     use arcis_imports::*;
 
@@ -9,11 +10,11 @@ mod circuits{
     }
 
     // Arcomorphic Encryption (Homomorphic Encryption à la Arcium)
-    #[circuit]
-    pub fn add_together(input_ctxt: Ciphertext<ClientCipher, InputValues>) -> Ciphertext<ClientCipher, u16> {
-        let input = input_ctxt.decrypt();
+    #[instruction]
+    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
+        let input = input_ctxt.to_arcis();
         let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.cipher.encrypt(sum)
+        input_ctxt.owner.from_arcis(sum)
     }
 
 }

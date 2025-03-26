@@ -1,6 +1,7 @@
 [workspace]
-members = ["programs/*", "confidential-ixs"]
+edition = "2021"
 resolver = "2"
+members = ["programs/*", "encrypted-ixs"]
 
 [profile.release]
 overflow-checks = true

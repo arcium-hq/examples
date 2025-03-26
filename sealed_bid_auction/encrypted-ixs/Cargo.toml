@@ -1,5 +1,5 @@
 [package]
-name = "confidential-ixs"
+name = "encrypted-ixs"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,4 +8,4 @@ default = ["arcis-imports/default"]
 solana = ["arcis-imports/solana"]
 
 [dependencies]
-arcis-imports = { version = "0.1.37", registry = "arcium", default-features = false }
+arcis-imports = { version = "0.1.40", registry = "arcium", default-features = false }

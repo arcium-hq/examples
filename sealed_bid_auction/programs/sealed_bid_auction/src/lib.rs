@@ -1,25 +1,40 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    comp_def_offset,
+    derive_cluster_pda,
+    derive_comp_def_pda,
+    derive_execpool_pda,
+    derive_mempool_pda,
+    derive_mxe_pda,
+    init_comp_def,
+    queue_computation,
+    ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED,
+    MEMPOOL_PDA_SEED,
+    MXE_PDA_SEED,
+    EXECPOOL_PDA_SEED,
 };
-use arcium_client::idl::arcium::types::Argument;
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
-        StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool, PersistentMXEAccount, StakingPoolAccount
     },
     program::Arcium,
+    types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
+    arcium_callback,
+    arcium_program,
+    callback_accounts,
+    init_computation_definition_accounts,
     queue_computation_accounts,
 };
 
 const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
 
-declare_id!("ATvEY4wiQUHP2tFLm8Zt9dzrsWtQSDkPG8CubYSG1dn5");
+declare_id!("4HzhiDmVCdgHBPRABW2krzkVHTbocLJxiaHuonsZpHJK");
 
 #[arcium_program]
 pub mod sealed_bid_auction {
@@ -47,7 +62,7 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "add_together")]
+    #[arcium_callback(encrypted_ix = "add_together")]
     pub fn add_together_callback(ctx: Context<AddTogetherCallback>, output: Vec<u8>) -> Result<()> {
         emit!(SumEvent {
             sum: output[48..].try_into().unwrap(),
@@ -63,42 +78,35 @@ pub struct AddTogether<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
+        address = derive_mempool_pda!()
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
+        address = derive_cluster_pda!(mxe_account)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
@@ -112,9 +120,7 @@ pub struct AddTogetherCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_ADD_TOGETHER.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -129,9 +135,7 @@ pub struct InitAddTogetherCompDef<'info> {
     pub payer: Signer<'info>,
     #[account(
         mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
