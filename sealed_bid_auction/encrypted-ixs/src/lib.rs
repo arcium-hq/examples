@@ -1,7 +1,7 @@
 use arcis_imports::*;
 
 #[encrypted]
-mod circuits{
+mod circuits {
     use arcis_imports::*;
 
     pub struct InputValues {
@@ -16,5 +16,4 @@ mod circuits{
         let sum = input.v1 as u16 + input.v2 as u16;
         input_ctxt.owner.from_arcis(sum)
     }
-
 }
