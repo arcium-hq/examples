@@ -20,8 +20,6 @@ mod circuits {
     }
 
     #[instruction]
-    // Arcomorphic Encryption (Homomorphic Encryption à la Arcium)
-    #[instruction]
     pub fn vote(
         vote: Enc<Client, UserVote>,
         vote_stats_ctxt: Enc<Mxe, VoteStats>,
