@@ -25,22 +25,45 @@ jobs:
           ARCUP_USER: testnet_user_20842437
           ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
 
-      # Find all example directories
       - name: Find example directories
         id: find-examples
         run: |
           echo "examples=$(find . -type f -name "Anchor.toml" -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
         shell: bash
 
-      # Test each example
+      - name: Load cached cargo registry
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-examples-
+
       - name: Test examples
         run: |
           EXAMPLES=$(echo '${{ steps.find-examples.outputs.examples }}' | jq -r '.[]')
           for example in $EXAMPLES; do
             echo "Testing $example"
-            cd $example
+            pushd $example
             yarn install
-            arcium test
-            cd $GITHUB_WORKSPACE
+            arcium build
+            timeout 15m arcium test
+            echo "Most recent docker container id: $(docker ps -q -l)"
+            docker logs $(docker ps -q -l)
+            popd
           done
         shell: bash
+
+      - name: Save cargo registry
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
