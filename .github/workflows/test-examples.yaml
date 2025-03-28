@@ -16,6 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Ensure Docker is running
+      - name: Start Docker daemon
+        run: |
+          sudo systemctl start docker
+          sudo systemctl status docker
+          docker info
+
       # Setup all required tools with caching
       - uses: ./.github/actions/setup/
       - uses: ./.github/actions/setup-solana/
