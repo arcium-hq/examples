@@ -1,0 +1,56 @@
+name: "Setup Arcium"
+description: "Setup Arcium CLI using arcup"
+
+inputs:
+  ARCUP_USER:
+    description: "caddy username"
+    required: true
+  ARCUP_TOKEN:
+    description: "caddy token"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: ./.github/actions/setup/
+    - uses: ./.github/actions/setup-anchor/
+
+    # Install system dependencies (for Linux)
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config build-essential libudev-dev libssl-dev
+      shell: bash
+
+    # Determine target architecture
+    - name: Set target architecture
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          if [ "$(uname -m)" == "aarch64" ]; then
+            echo "ARCUP_TARGET=aarch64_linux" >> $GITHUB_ENV
+          else
+            echo "ARCUP_TARGET=x86_64_linux" >> $GITHUB_ENV
+          fi
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          if [ "$(uname -m)" == "arm64" ]; then
+            echo "ARCUP_TARGET=aarch64_macos" >> $GITHUB_ENV
+          else
+            echo "ARCUP_TARGET=x86_64_macos" >> $GITHUB_ENV
+          fi
+        fi
+      shell: bash
+
+    # Install arcup
+    - name: Install arcup
+      run: |
+        curl -u "${{ inputs.ARCUP_USER }}:${{ inputs.ARCUP_TOKEN }}" "https://bin.arcium.com/download/arcup_${ARCUP_TARGET}_${{ env.ARCUP_VERSION }}" -o ~/.cargo/bin/arcup
+        chmod +x ~/.cargo/bin/arcup
+      shell: bash
+
+    # Install Arcium CLI
+    - name: Install Arcium CLI
+      run: |
+        arcup install
+        arcium --version
+      shell: bash

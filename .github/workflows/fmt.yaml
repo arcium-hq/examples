@@ -1,0 +1,42 @@
+name: Formatting Check
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    name: Formatting
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup/
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          components: rustfmt
+          toolchain: nightly
+      - run: rustup update
+
+      # Find all example directories and their Cargo.lock files
+      - name: Find example directories
+        id: find-examples
+        run: |
+          echo "examples=$(find . -type f -name "Anchor.toml" -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+          echo "cargo_locks=$(find . -type f -name "Cargo.lock" | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+
+      # Check formatting on each example
+      - name: Check formatting
+        run: |
+          EXAMPLES=$(echo '${{ steps.find-examples.outputs.examples }}' | jq -r '.[]')
+          for example in $EXAMPLES; do
+            echo "Checking formatting in $example"
+            cd $example
+            cargo +nightly fmt --all --check
+            cd $GITHUB_WORKSPACE
+          done

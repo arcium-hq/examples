@@ -1,0 +1,76 @@
+name: Test Examples
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  ARCUP_USER: testnet_user_20842437
+  ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
+jobs:
+  test-examples:
+    name: Test Examples
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ensure Docker is running
+      - name: Start Docker daemon
+        run: |
+          sudo systemctl start docker
+          sudo systemctl status docker
+          docker info
+
+      # Setup all required tools with caching
+      - uses: ./.github/actions/setup/
+      - uses: ./.github/actions/setup-solana/
+      - uses: ./.github/actions/setup-anchor/
+      - uses: ./.github/actions/setup-arcium/
+        with:
+          ARCUP_USER: testnet_user_20842437
+          ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
+      - name: Find example directories
+        id: find-examples
+        run: |
+          echo "examples=$(find . -type f -name "Anchor.toml" -exec dirname {} \; | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Load cached cargo registry
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-examples-
+
+      - name: Test examples
+        run: |
+          EXAMPLES=$(echo '${{ steps.find-examples.outputs.examples }}' | jq -r '.[]')
+          for example in $EXAMPLES; do
+            echo "Testing $example"
+            pushd $example
+            yarn install
+            arcium build
+            timeout 15m arcium test
+            echo "Most recent docker container id: $(docker ps -q -l)"
+            docker logs $(docker ps -q -l)
+            popd
+          done
+        shell: bash
+
+      - name: Save cargo registry
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-examples-${{ hashFiles('**/Cargo.lock') }}
