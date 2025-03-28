@@ -91,7 +91,7 @@ pub mod voting {
 
     pub fn vote(
         ctx: Context<Vote>,
-        id: u32,
+        _id: u32,
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
@@ -276,7 +276,7 @@ pub struct InitVoteStatsCompDef<'info> {
 
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
-#[instruction(id: u32)]
+#[instruction(_id: u32)]
 pub struct Vote<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -320,7 +320,7 @@ pub struct Vote<'info> {
     )]
     pub authority: UncheckedAccount<'info>,
     #[account(
-        seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
+        seeds = [b"poll", authority.key().as_ref(), _id.to_le_bytes().as_ref()],
         bump = poll_acc.bump,
         has_one = authority
     )]
