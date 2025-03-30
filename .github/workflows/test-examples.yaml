@@ -22,6 +22,8 @@ jobs:
           sudo systemctl start docker
           sudo systemctl status docker
           docker info
+          echo "Available images:"
+          docker images
 
       # Setup all required tools with caching
       - uses: ./.github/actions/setup/
@@ -58,10 +60,17 @@ jobs:
             pushd $example
             yarn install
             arcium build
-            timeout 15m arcium test
+            timeout 15m arcium test || EXIT_CODE=$?
             echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
+            echo "Callback server log contents:"
+            cat artifacts/callback_server.log || true
+            echo "Docker containers:"
+            docker ps -a
             popd
+            if [ -n "$EXIT_CODE" ]; then
+              exit $EXIT_CODE
+            fi
           done
         shell: bash
 
