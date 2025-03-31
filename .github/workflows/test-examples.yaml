@@ -60,6 +60,26 @@ jobs:
             pushd $example
             yarn install
             arcium build
+            
+            # Try to manually run docker-compose first
+            echo "Attempting to manually run docker-compose..."
+            if [ -f "artifacts/docker-compose-arx-env.yml" ]; then
+              echo "Found docker-compose file, attempting to run..."
+              docker compose -f artifacts/docker-compose-arx-env.yml up || DOCKER_COMPOSE_ERROR=$?
+              if [ -n "$DOCKER_COMPOSE_ERROR" ]; then
+                echo "Docker compose failed with error code: $DOCKER_COMPOSE_ERROR"
+                echo "Docker compose logs:"
+                docker compose -f artifacts/docker-compose-arx-env.yml logs
+                echo "Current docker containers:"
+                docker ps -a
+                echo "Docker system info:"
+                docker system info
+              fi
+            else
+              echo "No docker-compose file found at artifacts/docker-compose-arx-env.yml"
+            fi
+            
+            # Now try the actual test
             timeout 15m arcium test || EXIT_CODE=$?
             echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
