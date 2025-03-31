@@ -104,8 +104,8 @@ pub mod voting {
             Argument::PlaintextU128(vote_stats_nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
-                8 + 1 + (4 + 50) + 4 + 32 + 16,
+                // Offset of 8 (discriminator) and 1 (bump)
+                8 + 1,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
         ];
@@ -447,13 +447,13 @@ pub struct InitRevealResultCompDef<'info> {
 #[derive(InitSpace)]
 pub struct PollAccount {
     pub bump: u8,
-    #[max_len(50)]
-    pub question: String,
+    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    pub vote_state: [[u8; 32]; 2],
     pub id: u32,
     pub authority: Pubkey,
     pub nonce: u128,
-    // 2 counts, each saved as a ciphertext (so 32 bytes each)
-    pub vote_state: [[u8; 32]; 2],
+    #[max_len(50)]
+    pub question: String,
 }
 
 #[error_code]
