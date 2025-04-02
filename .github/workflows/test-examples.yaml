@@ -61,6 +61,9 @@ jobs:
             yarn install
             arcium build
             
+            # Now try the actual test
+            timeout 15m arcium test || EXIT_CODE=$?
+            echo "Most recent docker container id: $(docker ps -q -l)"
             # Try to manually run docker-compose first
             echo "Attempting to manually run docker-compose..."
             if [ -f "artifacts/docker-compose-arx-env.yml" ]; then
@@ -78,10 +81,6 @@ jobs:
             else
               echo "No docker-compose file found at artifacts/docker-compose-arx-env.yml"
             fi
-            
-            # Now try the actual test
-            timeout 15m arcium test || EXIT_CODE=$?
-            echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
             echo "Callback server log contents:"
             cat artifacts/callback_server.log || true
