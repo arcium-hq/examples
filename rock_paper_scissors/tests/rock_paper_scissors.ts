@@ -16,6 +16,10 @@ import {
   x25519GetPublicKey,
   x25519GetSharedSecretWithMXE,
   deserializeLE,
+  getMXEAccAcc,
+  getMempoolAcc,
+  getCompDefAcc,
+  getExecutingPoolAcc,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -43,7 +47,7 @@ describe("RockPaperScissors", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Plays a game of rock paper scissors!", async () => {
+  it("Plays Rock Paper Scissors games!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing compare moves computation definition");
@@ -53,84 +57,105 @@ describe("RockPaperScissors", () => {
       initSig
     );
 
-    // Setup encryption
     const privateKey = x25519RandomPrivateKey();
     const publicKey = x25519GetPublicKey(privateKey);
     const mxePublicKey = [
       new Uint8Array([
-        78, 96, 220, 218, 225, 248, 149, 140,
-        229, 147, 105, 183, 46, 82, 166, 248,
-        146, 35, 137, 78, 122, 181, 200, 220,
-        217, 97, 20, 11, 71, 9, 113, 6
+        34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+        253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
       ]),
       new Uint8Array([
-        155, 202, 231, 73, 215, 1, 94, 193,
-        141, 26, 77, 66, 143, 114, 197, 172,
-        160, 245, 64, 108, 236, 104, 149, 242,
-        103, 140, 199, 94, 70, 61, 162, 118
+        107, 1, 201, 151, 195, 126, 155, 84, 228, 85, 185, 142, 62, 220, 161,
+        29, 179, 36, 112, 163, 201, 103, 172, 207, 55, 89, 53, 120, 73, 208,
+        234, 63,
       ]),
       new Uint8Array([
-        231, 24, 19, 12, 184, 40, 139, 11,
-        29, 176, 125, 231, 49, 53, 174, 225,
-        183, 156, 234, 55, 49, 240, 169, 70,
-        252, 141, 70, 28, 113, 255, 70, 20
+        217, 186, 137, 28, 190, 167, 128, 220, 100, 71, 90, 160, 130, 162, 96,
+        15, 191, 147, 184, 4, 151, 89, 186, 211, 72, 212, 173, 31, 98, 187, 65,
+        59,
       ]),
       new Uint8Array([
-        120, 66, 73, 239, 247, 13, 25, 149,
-        162, 21, 108, 27, 236, 128, 93, 84,
-        210, 18, 70, 106, 80, 82, 111, 61,
-        12, 178, 182, 23, 96, 12, 9, 1
+        51, 66, 84, 103, 52, 182, 174, 177, 134, 163, 224, 196, 127, 102, 81,
+        61, 12, 136, 171, 212, 230, 171, 242, 47, 221, 48, 152, 231, 239, 0,
+        183, 15,
       ]),
       new Uint8Array([
-        112, 133, 255, 66, 62, 138, 251, 232,
-        170, 239, 193, 225, 253, 152, 85, 205,
-        19, 16, 50, 193, 41, 248, 39, 175,
-        49, 87, 207, 79, 54, 122, 78, 125
-      ])
+        162, 140, 124, 61, 16, 202, 184, 56, 39, 7, 37, 95, 225, 104, 229, 25,
+        48, 246, 35, 136, 99, 106, 110, 253, 188, 86, 201, 42, 112, 211, 129,
+        34,
+      ]),
     ];
     const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
     const cipher = new RescueCipher(rescueKey);
 
-    // Player chooses rock (0)
-    const playerMove = BigInt(0);
-    // House randomly chooses paper (1)
-    const houseMove = BigInt(1);
-    
-    const moves = [playerMove, houseMove];
-    const nonce = randomBytes(16);
-    const ciphertext = cipher.encrypt(moves, nonce);
+    // Play multiple games
+    const games = [
+      { player: 0, house: 0 }, // Rock vs Rock (Tie)
+      { player: 0, house: 2 }, // Rock vs Scissors (Win)
+      { player: 1, house: 0 }, // Paper vs Rock (Win)
+      { player: 2, house: 1 }, // Scissors vs Paper (Win)
+      { player: 2, house: 0 }, // Scissors vs Rock (Loss)
+      { player: 1, house: 2 }, // Paper vs Scissors (Loss)
+    ];
 
-    const gameEventPromise = awaitEvent("gameResultEvent");
+    for (const game of games) {
+      const gameEventPromise = awaitEvent("compareMovesEvent");
 
-    // Queue the game computation
-    const queueSig = await program.methods
-      .playGame(
-        Array.from(ciphertext[0]),
-        Array.from(ciphertext[1]),
-        Array.from(publicKey),
-        new anchor.BN(deserializeLE(nonce).toString()),
-      )
-      .accountsPartial({
-        clusterAccount: arciumEnv.arciumClusterPubkey,
-      })
-      .rpc({ commitment: "confirmed" });
-    console.log("Queue sig is ", queueSig);
+      const nonce = randomBytes(16);
+      const ciphertext = cipher.encrypt(
+        [BigInt(game.player), BigInt(game.house)],
+        nonce
+      );
 
-    // Wait for computation to finish
-    const finalizeSig = await awaitComputationFinalization(
-      provider as anchor.AnchorProvider,
-      queueSig,
-      program.programId,
-      "confirmed"
-    );
-    console.log("Finalize sig is ", finalizeSig);
+      const queueSig = await program.methods
+        .compareMoves(
+          Array.from(ciphertext[0]),
+          Array.from(ciphertext[1]),
+          Array.from(publicKey),
+          new anchor.BN(deserializeLE(nonce).toString())
+        )
+        .accounts({
+          payer: owner.publicKey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+        })
+        .rpc({ commitment: "confirmed" });
 
-    // Get the game result
-    const gameEvent = await gameEventPromise;
-    const result = gameEvent.result;
-    
-    // House should win (2) since paper beats rock
-    expect(result).to.equal(2);
+      console.log("Queue signature:", queueSig);
+
+      const finalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        queueSig,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Finalize signature:", finalizeSig);
+
+      const gameEvent = await gameEventPromise;
+      console.log(`Game result: ${gameEvent.result}`);
+
+      // Verify the result
+      let expectedResult: string;
+      if (game.player === game.house) {
+        expectedResult = "Tie";
+      } else if (
+        (game.player === 0 && game.house === 2) || // Rock beats Scissors
+        (game.player === 1 && game.house === 0) || // Paper beats Rock
+        (game.player === 2 && game.house === 1) // Scissors beats Paper
+      ) {
+        expectedResult = "Win";
+      } else {
+        expectedResult = "Loss";
+      }
+
+      expect(gameEvent.result).to.equal(expectedResult);
+    }
   });
 
   async function initCompareMovesCompDef(
@@ -148,11 +173,15 @@ describe("RockPaperScissors", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Comp def pda is ", compDefPDA);
+    console.log("Comp def PDA:", compDefPDA);
 
     const sig = await program.methods
       .initCompareMovesCompDef()
-      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+      })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
@@ -160,10 +189,7 @@ describe("RockPaperScissors", () => {
     console.log("Init compare moves computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync(
-        "build/compare_moves.arcis"
-      );
-
+      const rawCircuit = fs.readFileSync("build/compare_moves.arcis");
       await uploadCircuit(
         provider as anchor.AnchorProvider,
         "compare_moves",
@@ -183,7 +209,6 @@ describe("RockPaperScissors", () => {
       finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
       finalizeTx.sign(owner);
-
       await provider.sendAndConfirm(finalizeTx);
     }
     return sig;

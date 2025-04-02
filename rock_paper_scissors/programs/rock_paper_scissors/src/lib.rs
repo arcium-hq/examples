@@ -1,15 +1,17 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
-use arcium_client::idl::arcium::types::Argument;
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
-        StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
+        PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
+    types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -19,7 +21,7 @@ use arcium_macros::{
 
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("6MoscNZh1jxaAVHRCJEpPMurjrkRz8uaXc4iEXjcXFo4");
+declare_id!("FTS6tzdevUMhM4DxQr557N83J4wJBnDhAs2LwXNcb4tS");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
@@ -30,28 +32,40 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
-    pub fn play_game(
-        ctx: Context<PlayGame>,
-        encrypted_player_move: [u8; 32],
-        encrypted_house_move: [u8; 32],
+    pub fn compare_moves(
+        ctx: Context<CompareMoves>,
+        player_move: [u8; 32],
+        house_move: [u8; 32],
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
             Argument::PublicKey(pub_key),
             Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(encrypted_player_move),
-            Argument::EncryptedU8(encrypted_house_move),
+            Argument::EncryptedU8(player_move),
+            Argument::EncryptedU8(house_move),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "compare_moves")]
-    pub fn compare_moves_callback(ctx: Context<CompareMovesCallback>, output: Vec<u8>) -> Result<()> {
-        emit!(GameResultEvent {
-            result: output[0],  // 0 = tie, 1 = player wins, 2 = house wins
-            nonce: output[16..32].try_into().unwrap(),
+    #[arcium_callback(encrypted_ix = "compare_moves")]
+    pub fn compare_moves_callback(
+        ctx: Context<CompareMovesCallback>,
+        output: Vec<u8>,
+    ) -> Result<()> {
+        msg!("output: {:?}", output);
+
+        let result = output[0];
+        let result_str = match result {
+            0 => "Tie",
+            1 => "Win",
+            2 => "Loss",
+            _ => "Unknown",
+        };
+
+        emit!(CompareMovesEvent {
+            result: result_str.to_string(),
         });
         Ok(())
     }
@@ -59,46 +73,39 @@ pub mod rock_paper_scissors {
 
 #[queue_computation_accounts("compare_moves", payer)]
 #[derive(Accounts)]
-pub struct PlayGame<'info> {
+pub struct CompareMoves<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
+        address = derive_mempool_pda!()
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_COMPARE_MOVES.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
+        address = derive_cluster_pda!(mxe_account)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
@@ -112,9 +119,7 @@ pub struct CompareMovesCallback<'info> {
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_COMPARE_MOVES.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -129,9 +134,7 @@ pub struct InitCompareMovesCompDef<'info> {
     pub payer: Signer<'info>,
     #[account(
         mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
@@ -143,7 +146,6 @@ pub struct InitCompareMovesCompDef<'info> {
 }
 
 #[event]
-pub struct GameResultEvent {
-    pub result: u8,  // 0 = tie, 1 = player wins, 2 = house wins
-    pub nonce: [u8; 16],
+pub struct CompareMovesEvent {
+    pub result: String,
 }

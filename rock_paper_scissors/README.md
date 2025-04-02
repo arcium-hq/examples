@@ -6,19 +6,19 @@ This is done by editing the generated `.cargo/credentials.toml` file to the root
 This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
 
 - The `programs` dir like normal
-- The `confidential-ixs` dir for confidential computing instructions
+- The `encrypted-ixs` dir for confidential computing instructions
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `confidential-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
 
 ```
-// confidential-ixs/add_together.rs
+// encrypted-ixs/add_together.rs
 
 use arcis::prelude::*;
 
 arcis_main!();
 
 // mu8 is a masked u8, i.e. an encrypted u8.
-#[circuit]
+#[instruction]
 fn add_together(x: mu8, y: mu8) -> mu8 {
     x + y
 }
