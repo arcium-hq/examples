@@ -142,7 +142,7 @@ pub mod voting {
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        
+
         ctx.accounts.poll_acc.vote_state = vote_stats;
         ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
