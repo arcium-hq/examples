@@ -1,106 +1,66 @@
-# Structure of this project
+# Anonymous Voting with Arcium
 
-**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
-This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
+This project demonstrates how to implement truly anonymous voting on Solana using Arcium's confidential computing capabilities. It showcases how to create private polls where individual votes remain confidential while still allowing for verifiable results.
 
-This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
+## Why Arcium is Necessary for Anonymous Voting
 
-- The `programs` dir like normal
-- The `encrypted-ixs` dir for confidential computing instructions
+Traditional blockchains are transparent by design, making it impossible to implement truly anonymous voting without additional privacy layers. Here's why Arcium is essential:
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+- **Public Nature of Blockchains**: All data on a regular blockchain is visible to everyone
+- **Privacy Requirements**: Votes must remain confidential to ensure anonymity
+- **Security Concerns**: Even encrypted votes would require decryption keys, creating vulnerabilities
+- **Distributed Trust**: Arcium uses Multi-Party Computation (MPC) to achieve a trust-minimized setup for confidential computing
 
+## How It Works
+
+### 1. Poll Creation
+
+```typescript
+const pollSig = await program.methods.createNewPoll(
+  POLL_ID,
+  `Poll ${POLL_ID}: $SOL to 500?`,
+  new anchor.BN(deserializeLE(pollNonce).toString())
+);
 ```
-// encrypted-ixs/add_together.rs
 
-use arcis_imports::*;
+- Creates a new poll with a unique ID and title
+- Uses a cryptographic nonce for security operations
+- Establishes the voting context on-chain
 
-#[encrypted]
-mod circuits {
-    use arcis_imports::*;
+### 2. Voting Process
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
-    }
-
-    #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
-        let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
-    }
-}
-
-// programs/my_program/src/lib.rs
-
-declare_id!("<some ID>");
-
-#[program]
-pub mod my_program {
-    use super::*;
-
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
-        Ok(())
-    }
-
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
-        let args = vec![
-            Argument::PublicKey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
-        Ok(())
-    }
-
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
-       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-           bytes
-       } else {
-           return Err(ErrorCode::AbortedComputation.into());
-       };
-
-       emit!(SumEvent {
-           sum: bytes[48..80].try_into().unwrap(),
-           nonce: bytes[32..48].try_into().unwrap(),
-       });
-       Ok(())
-    }
-}
-
-#[queue_computation_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogether<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-#[callback_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-    pub some_extra_acc: AccountInfo<'info>,
-}
-
-#[init_computation_definition_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
+```typescript
+const vote = BigInt(true);
+const plaintext = [vote];
+const nonce = randomBytes(16);
+const ciphertext = cipher.encrypt(plaintext, nonce);
 ```
+
+- Votes are encrypted using x25519 (key exchange) and RescueCipher
+- Each vote uses a unique nonce for security
+- Votes remain confidential even when stored on-chain
+
+### 3. Confidential Computation
+
+```typescript
+const queueVoteSig = await program.methods.vote(
+  POLL_ID,
+  Array.from(ciphertext[0]),
+  Array.from(publicKey),
+  new anchor.BN(deserializeLE(nonce).toString())
+);
+```
+
+- Encrypted votes are processed using MPC across multiple parties
+- Computation is distributed across the Arcium network
+- Individual vote values remain confidential throughout the computation
+
+### 4. Result Revealed
+
+```typescript
+const revealQueueSig = await program.methods.revealResult(POLL_ID);
+```
+
+- Only the final result (e.g., majority vote) is revealed
+- Individual votes remain confidential
+- Results are computed through MPC and only the outcome is published
