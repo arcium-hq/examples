@@ -142,6 +142,7 @@ describe("ShareMedicalRecords", () => {
       })
       .rpc({ commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
+    
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
       queueSig,
@@ -150,10 +151,18 @@ describe("ShareMedicalRecords", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
+    console.log("reciever key length is ", receiverKp.secretKey.length);
+    console.log("mxe public key length is ", mxePublicKey.length);
+    const receiverSharedSecret = x25519.getSharedSecret(
+      receiverKp.secretKey,
+      mxePublicKey
+    );
+    const receiverCipher = new RescueCipher(receiverSharedSecret);
+
     const receivedPatientDataEvent = await receivedPatientDataEventPromise;
-    const decrypted = cipher.decrypt(
+    const decrypted = receiverCipher.decrypt(
       [receivedPatientDataEvent.patientId],
-      nonce
+      receiverNonce
     )[0];
     // expect(decrypted).to.equal(patientData.patientId);
     console.log("Decrypted patient data is ", decrypted);
