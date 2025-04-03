@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-access_control = "8ezhbEqmpbQJmWGyJMgsyQLVp6uP8fEsncJzWN5Wdgkv"
+time_capsule = "8so4imnbiDULdF6AcwyvV2sD3siSmkurPhBHzzrnbwi5"
 
 [registry]
 url = "https://api.apr.dev"

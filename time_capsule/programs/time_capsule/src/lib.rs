@@ -1,43 +1,61 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
+    comp_def_offset,
+    derive_cluster_pda,
+    derive_comp_def_pda,
+    derive_execpool_pda,
+    derive_mempool_pda,
+    derive_mxe_pda,
+    init_comp_def,
+    queue_computation,
+    ComputationOutputs,
+    ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED,
+    EXECPOOL_PDA_SEED,
+    MEMPOOL_PDA_SEED,
+    MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount,
+        Cluster,
+        ComputationDefinitionAccount,
+        ExecutingPool,
+        Mempool,
+        PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
     types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
+    arcium_callback,
+    arcium_program,
+    callback_accounts,
+    init_computation_definition_accounts,
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_ACCESS_CONTROL: u32 =
-    comp_def_offset("share_answer_to_ultimate_question_of_life");
+const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
 
-declare_id!("8ezhbEqmpbQJmWGyJMgsyQLVp6uP8fEsncJzWN5Wdgkv");
+declare_id!("8so4imnbiDULdF6AcwyvV2sD3siSmkurPhBHzzrnbwi5");
 
 #[arcium_program]
-pub mod access_control {
+pub mod time_capsule {
     use super::*;
 
-    pub fn init_share_answer_to_ultimate_question_of_life_comp_def(
-        ctx: Context<InitShareAnswerToUltimateQuestionOfLifeCompDef>,
-    ) -> Result<()> {
+    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn share_answer_to_ultimate_question_of_life(
-        ctx: Context<ShareAnswerToUltimateQuestionOfLife>,
+    pub fn add_together(
+        ctx: Context<AddTogether>,
         ciphertext_0: [u8; 32],
+        ciphertext_1: [u8; 32],
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
@@ -45,26 +63,34 @@ pub mod access_control {
             Argument::PublicKey(pub_key),
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(ciphertext_0),
+            Argument::EncryptedU8(ciphertext_1),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "share_answer_to_ultimate_question_of_life")]
-    pub fn share_answer_to_ultimate_question_of_life_callback(
-        ctx: Context<ShareAnswerToUltimateQuestionOfLifeCallback>,
-        output: Vec<u8>,
+    #[arcium_callback(encrypted_ix = "add_together")]
+    pub fn add_together_callback(
+        ctx: Context<AddTogetherCallback>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        emit!(AnswerToUltimateQuestionOfLifeEvent {
-            answer: output[0..32].try_into().unwrap(),
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        emit!(SumEvent {
+            sum: bytes[48..].try_into().unwrap(),
+            nonce: bytes[32..48].try_into().unwrap(),
         });
         Ok(())
     }
 }
 
-#[queue_computation_accounts("share_answer_to_ultimate_question_of_life", payer)]
+#[queue_computation_accounts("add_together", payer)]
 #[derive(Accounts)]
-pub struct ShareAnswerToUltimateQuestionOfLife<'info> {
+pub struct AddTogether<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -82,7 +108,7 @@ pub struct ShareAnswerToUltimateQuestionOfLife<'info> {
     )]
     pub executing_pool: Account<'info, ExecutingPool>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ACCESS_CONTROL)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -103,14 +129,14 @@ pub struct ShareAnswerToUltimateQuestionOfLife<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("share_answer_to_ultimate_question_of_life", payer)]
+#[callback_accounts("add_together", payer)]
 #[derive(Accounts)]
-pub struct ShareAnswerToUltimateQuestionOfLifeCallback<'info> {
+pub struct AddTogetherCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ACCESS_CONTROL)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -118,9 +144,9 @@ pub struct ShareAnswerToUltimateQuestionOfLifeCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("share_answer_to_ultimate_question_of_life", payer)]
+#[init_computation_definition_accounts("add_together", payer)]
 #[derive(Accounts)]
-pub struct InitShareAnswerToUltimateQuestionOfLifeCompDef<'info> {
+pub struct InitAddTogetherCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -137,6 +163,13 @@ pub struct InitShareAnswerToUltimateQuestionOfLifeCompDef<'info> {
 }
 
 #[event]
-pub struct AnswerToUltimateQuestionOfLifeEvent {
-    pub answer: [u8; 32],
+pub struct SumEvent {
+    pub sum: [u8; 32],
+    pub nonce: [u8; 16],
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }
