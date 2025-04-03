@@ -1,106 +1,51 @@
-# Structure of this project
+# Confidential Rock Paper Scissors on Solana
 
-**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
-This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
+This project demonstrates how to build a confidential on-chain Rock Paper Scissors game using Arcium's confidential computing capabilities. The game ensures that neither player can see the other's move until both moves are committed, preventing any potential cheating.
 
-This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
+## How It Works
 
-- The `programs` dir like normal
-- The `encrypted-ixs` dir for confidential computing instructions
+### The Challenge of On-Chain Games
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+Traditional on-chain games face a fundamental challenge: all data on the blockchain is public. This means that in a game like Rock Paper Scissors, if one player's move is visible on-chain, the other player could simply wait to see it before making their own move, making the game unfair.
 
-```
-// encrypted-ixs/add_together.rs
+### Arcium's Solution
 
-use arcis_imports::*;
+Arcium solves this by enabling confidential computing on Solana. Here's how it works:
 
-#[encrypted]
-mod circuits {
-    use arcis_imports::*;
+1. **Confidential Move Submission**: Players submit their moves (Rock, Paper, or Scissors) in encrypted form
+2. **Off-Chain Computation**: The Arcium network processes the game logic in a confidential environment
+3. **Fair Resolution**: The result is computed without revealing either player's move
+4. **On-Chain Result**: Only the final outcome (win, lose, or draw) is published to the blockchain
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
-    }
+### Technical Implementation
 
-    #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
-        let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
-    }
-}
+The project is structured into two main components:
 
-// programs/my_program/src/lib.rs
+1. **Encrypted Instructions** (`encrypted-ixs/`):
+   - Contains the confidential game logic
+   - Processes encrypted moves without revealing them
+   - Returns only the game result
 
-declare_id!("<some ID>");
+2. **Solana Program** (`programs/rock_paper_scissors/`):
+   - Handles on-chain state management
+   - Manages player accounts and game sessions
+   - Interfaces with Arcium's confidential computing network
 
-#[program]
-pub mod my_program {
-    use super::*;
+## Game Flow
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
-        Ok(())
-    }
+1. Players initialize a game session
+2. Each player submits their move (encrypted)
+3. The Arcium network processes the moves confidentially
+4. The result is published on-chain
+5. Players can claim their winnings based on the outcome
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
-        let args = vec![
-            Argument::PublicKey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
-        Ok(())
-    }
+## Security Benefits
 
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
-       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-           bytes
-       } else {
-           return Err(ErrorCode::AbortedComputation.into());
-       };
+- **Move Privacy**: Neither player can see the other's move until both are committed
+- **Fair Play**: The game logic runs in a trusted execution environment
+- **Transparent Resolution**: While moves are private, the outcome is publicly verifiable
+- **No Front-Running**: Players cannot manipulate the game by observing on-chain data
 
-       emit!(SumEvent {
-           sum: bytes[48..80].try_into().unwrap(),
-           nonce: bytes[32..48].try_into().unwrap(),
-       });
-       Ok(())
-    }
-}
+## Getting Started
 
-#[queue_computation_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogether<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-#[callback_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-    pub some_extra_acc: AccountInfo<'info>,
-}
-
-#[init_computation_definition_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-```
+For detailed setup instructions and API documentation, please refer to the [Arcium documentation](https://docs.arcium.com).
