@@ -23,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("EDxE15Sb8c5GndP7SK69VEzXhvdMxns6AEBn6wBHRF9u");
+declare_id!("HoTZLaBzph62oPg4vVpaukGrgDh7SC8oNKdyHqw1q2FQ");
 
 #[arcium_program]
 pub mod voting {
@@ -82,10 +82,8 @@ pub mod voting {
             .try_into()
             .unwrap();
 
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        ctx.accounts.poll_acc.vote_state = vote_stats;
+
         Ok(())
     }
 
@@ -100,13 +98,12 @@ pub mod voting {
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
-        vote_stats_nonce: u128,
     ) -> Result<()> {
         let args = vec![
             Argument::PublicKey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator) and 1 (bump)
@@ -142,10 +139,7 @@ pub mod voting {
             .try_into()
             .unwrap();
 
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        ctx.accounts.poll_acc.vote_state = vote_stats;
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -162,11 +156,7 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        id: u32,
-        vote_stats_nonce: u128,
-    ) -> Result<()> {
+    pub fn reveal_result(ctx: Context<RevealVotingResult>, id: u32) -> Result<()> {
         require!(
             ctx.accounts.payer.key() == ctx.accounts.poll_acc.authority,
             ErrorCode::InvalidAuthority
@@ -175,7 +165,7 @@ pub mod voting {
         msg!("Revealing voting result for poll with id {}", id);
 
         let args = vec![
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator) and 1 (bump)
@@ -271,7 +261,7 @@ pub struct InitVoteStatsCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
@@ -358,9 +348,8 @@ pub struct VoteCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
