@@ -1,106 +1,63 @@
-# Structure of this project
+# Share Medical Records
 
-**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
-This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
+## How This Example Demonstrates Arcium's MPC Solution
 
-This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
+This example showcases how Arcium's MPC (Multi-Party Computation) solution enables decentralized, trust-minimized confidential computing on Solana. Here's how it works:
 
-- The `programs` dir like normal
-- The `encrypted-ixs` dir for confidential computing instructions
+## Architecture Overview
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+- The project implements a medical records sharing system on Solana using Arcium's MPC network
+- It's structured with two main components:
+  - Regular Solana program code in the `programs` directory
+  - Confidential computing instructions in the `encrypted-ixs` directory using Arcium's Arcis framework
 
-```
-// encrypted-ixs/add_together.rs
+## Confidential Data Handling
 
-use arcis_imports::*;
+- The system demonstrates how to handle sensitive medical data (patient ID, age, gender, blood type, weight, height, allergies) in a privacy-preserving way
+- Data is encrypted using Arcium's encryption scheme (using x25519 for key exchange and RescueCipher for encryption)
+- The actual computation happens off-chain in Arcium's MPC network, ensuring the data never exists in plaintext on the blockchain
 
-#[encrypted]
-mod circuits {
-    use arcis_imports::*;
+## Trust-Minimized Architecture
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
-    }
+- The system uses a decentralized network of MPC nodes
+- The computation is split across multiple parties (nodes) who must cooperate to perform operations
+- No single node has access to the complete data, making it impossible for any single party to compromise privacy
 
-    #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
-        let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
-    }
-}
+## Key Components
 
-// programs/my_program/src/lib.rs
+- **Encrypted Circuit**: Defined in `encrypted-ixs/src/lib.rs`, the `share_patient_data` circuit handles the confidential transfer of patient data
+- **Program Instructions**:
+  - `init_share_patient_data_comp_def`: Initializes the confidential computation definition
+  - `store_patient_data`: Stores encrypted patient data on-chain
+  - `share_patient_data`: Initiates the confidential data sharing process
+  - `share_patient_data_callback`: Handles the result of the confidential computation
 
-declare_id!("<some ID>");
+## Security Features
 
-#[program]
-pub mod my_program {
-    use super::*;
+- Uses a threshold encryption scheme where multiple parties must cooperate
+- Implements proper key management with separate encryption keys for sender and receiver
+- Employs nonces to prevent replay attacks
+- Uses Arcium's secure enclave environment for computation
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
-        Ok(())
-    }
+## Integration with Solana
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
-        let args = vec![
-            Argument::PublicKey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
-        Ok(())
-    }
+- Seamlessly integrates with Solana's account model and program structure
+- Uses Anchor framework for program development
+- Maintains on-chain state for encrypted data while keeping the actual computation off-chain
 
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
-       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-           bytes
-       } else {
-           return Err(ErrorCode::AbortedComputation.into());
-       };
+## Practical Implementation
 
-       emit!(SumEvent {
-           sum: bytes[48..80].try_into().unwrap(),
-           nonce: bytes[32..48].try_into().unwrap(),
-       });
-       Ok(())
-    }
-}
+The test file (`share_medical_records.ts`) demonstrates the complete flow:
 
-#[queue_computation_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogether<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
+1. Initializes the computation definition
+2. Encrypts and stores patient data
+3. Shares the data with a receiver
+4. Verifies the secure transfer through events
 
-#[callback_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-    pub some_extra_acc: AccountInfo<'info>,
-}
+This example effectively showcases how Arcium's MPC solution enables:
 
-#[init_computation_definition_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-```
+- Decentralized computation without any single trusted party
+- Privacy-preserving data sharing on public blockchains
+- Secure handling of sensitive medical information
+- Integration with existing blockchain infrastructure
+- Practical implementation of complex privacy-preserving protocols
