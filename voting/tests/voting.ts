@@ -152,7 +152,6 @@ describe("Voting", () => {
         Array.from(ciphertext[0]),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString()),
-        new anchor.BN(deserializeLE(pollNonce).toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -182,7 +181,7 @@ describe("Voting", () => {
     const revealEventPromise = awaitEvent("revealResultEvent");
 
     const revealQueueSig = await program.methods
-      .revealResult(POLL_ID, new anchor.BN(deserializeLE(pollNonce).toString()))
+      .revealResult(POLL_ID)
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),

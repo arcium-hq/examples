@@ -69,17 +69,19 @@ pub mod voting {
         ctx: Context<InitVoteStatsCallback>,
         output: Vec<u8>,
     ) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+        let vote_stats_nonce: [u8; 16] = output[0..16].try_into().unwrap();
+        let vote_stats: [[u8; 32]; 2] = output[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
 
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        msg!("vote_stats: {:?}", vote_stats);
+        msg!("vote_stats_nonce: {:?}", vote_stats_nonce);
+
+        ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         Ok(())
     }
@@ -95,13 +97,12 @@ pub mod voting {
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
-        vote_stats_nonce: u128,
     ) -> Result<()> {
         let args = vec![
             Argument::PublicKey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
                 // Offset of 8 (discriminator) and 1 (bump)
@@ -124,17 +125,17 @@ pub mod voting {
 
     #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+        let vote_stats_nonce: [u8; 16] = output[0..16].try_into().unwrap();
+        let vote_stats: [[u8; 32]; 2] = output[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        msg!("vote_stats: {:?}", vote_stats);
+        msg!("vote_stats_nonce: {:?}", vote_stats_nonce);
+        ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -151,11 +152,7 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        id: u32,
-        vote_stats_nonce: u128,
-    ) -> Result<()> {
+    pub fn reveal_result(ctx: Context<RevealVotingResult>, id: u32) -> Result<()> {
         require!(
             ctx.accounts.payer.key() == ctx.accounts.poll_acc.authority,
             ErrorCode::InvalidAuthority
@@ -164,11 +161,11 @@ pub mod voting {
         msg!("Revealing voting result for poll with id {}", id);
 
         let args = vec![
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
-                8 + 1 + (4 + 50) + 4 + 32 + 16,
+                // Offset of 8 (discriminator) and 1 (bump)
+                8 + 1,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
         ];
@@ -253,7 +250,7 @@ pub struct InitVoteStatsCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
@@ -340,9 +337,8 @@ pub struct VoteCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
