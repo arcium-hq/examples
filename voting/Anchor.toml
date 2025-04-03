@@ -1,18 +1,26 @@
 [toolchain]
+package_manager = "yarn"
 
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-voting = "EGRyBhhe9pzvoznJuQh5x5Dx5V2eKQv1AwWdTsEMEYEQ"
+voting = "EDxE15Sb8c5GndP7SK69VEzXhvdMxns6AEBn6wBHRF9u"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+
+[test.validator]
+[[test.genesis]]
+address = "BKck65TgoKRokMjQM3datB9oRwJ8rAj2jxPXvHXUvcL6"
+program = "/Users/arihantbansal/Developer/arcium/examples/voting/artifacts/arcium_program_0.1.41.so"
+

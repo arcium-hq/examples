@@ -139,7 +139,7 @@ dependencies = [
  "anchor-syn",
  "anyhow",
  "bs58",
- "heck 0.3.3",
+ "heck",
  "proc-macro2",
  "quote",
  "serde_json",
@@ -213,7 +213,7 @@ checksum = "32e8599d21995f68e296265aa5ab0c3cef582fd58afec014d01bd0bce18a4418"
 dependencies = [
  "anchor-lang-idl-spec",
  "anyhow",
- "heck 0.3.3",
+ "heck",
  "regex",
  "serde",
  "serde_json",
@@ -250,7 +250,7 @@ dependencies = [
  "anyhow",
  "bs58",
  "cargo_toml",
- "heck 0.3.3",
+ "heck",
  "proc-macro2",
  "quote",
  "serde",
@@ -268,17 +268,14 @@ checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
 
 [[package]]
 name = "arcis"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "d5e9a68a49a800fea00b814e66041197e84174f4ff997c583e61aa728ade9abf"
+checksum = "e83b9af74fb7b85d0deda56c426a17b33a9c24bc8eef5658d03f8b9350e7c36c"
 dependencies = [
  "aes",
  "arcis-diagnostics",
  "arcis-internal-expr-macro",
  "bincode",
- "crypto-bigint",
- "derive_more",
- "enum-try-as-inner",
  "ff",
  "indexmap",
  "num-bigint 0.4.6",
@@ -289,25 +286,23 @@ dependencies = [
  "rand_seeder",
  "rustc-hash",
  "serde",
- "serde_bytes",
- "serde_json",
  "sha3",
 ]
 
 [[package]]
 name = "arcis-diagnostics"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "199dcf23760c4e9bf10c1cb77c999d4c90e7a0cde3bb661236239fd653a8fe1c"
+checksum = "71d3c2448c3e08482eeda68faf7038db0169153d6a421968450cca3b52a5cb01"
 dependencies = [
  "colored",
 ]
 
 [[package]]
 name = "arcis-imports"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "c358c4fb70c6990ec6f733a477e92fc30cf1c47820a4c5c9c983d96b05ed776c"
+checksum = "96102f6a32e16bc4c603795311421d980fb80a5a01b1243e5e4ed642df47b67a"
 dependencies = [
  "arcis",
  "arcis-interpreter-proc-macros",
@@ -316,10 +311,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "arcis-internal-expr-macro"
-version = "0.1.40"
+name = "arcis-interface"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ff183a90a0ab4650f0078a0698fe0b846ac0cab1000b5ffc21c71553beb66536"
+checksum = "ec2768d120becb0425edfff352270ce06e6bf05c240061de033c9cf8218f460b"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "arcis-internal-expr-macro"
+version = "0.1.41"
+source = "sparse+https://crates.arcium.com/api/v1/crates/"
+checksum = "983417b40f028070160100932d622578f1ae1bf018052963bf38697df598ba9d"
 dependencies = [
  "indexmap",
  "proc-macro2",
@@ -330,11 +335,12 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "419f2ca1b3ef4a0a5f8c5be5944854862e91cf9b3b7633d300762d1413220672"
+checksum = "208407779e10fb5f7f8244de3e79cac8386b46dc67e6621d3a91f63d0b53c2e8"
 dependencies = [
  "arcis",
+ "arcis-interface",
  "ff",
  "indexmap",
  "num-traits",
@@ -345,18 +351,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter-proc-macros"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "5a8e0a88c85c73e3b8a14eec07aa4da742fa92418be24f62e420e7a3b351878f"
+checksum = "facfb41036d32eac1207941fe871decaebc36414074dda8d66c27e17e52c3723"
 dependencies = [
  "arcis-interpreter",
 ]
 
 [[package]]
 name = "arcium-anchor"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "d44c1b09994816a87da88d230083a1dde8ff700540846cb77d3644a6f649b1df"
+checksum = "f0c8b264ab58e1a66fa13afa13f0f5ae2a70e9b7aaa80c11e48864eddbea9842"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -366,20 +372,20 @@ dependencies = [
 
 [[package]]
 name = "arcium-client"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ecc50bc022962bd6f38a57cb7c87b817069de8c0eccce5764af31a34da88cc8f"
+checksum = "ad7ae4afd276690d1c2f79db36c00e565e4f28bb2809dd1aaab62e44f4c6903b"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "arcium-macros"
-version = "0.1.40"
+version = "0.1.41"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ac373ee62da44e232e4e881482d1a9cb29707867f3b1bd57c32f3cd7d1c811f0"
+checksum = "d088bd2bd580dfb1d82ec87abec0c911574c1c1fa8349d5d71d822835cac7554"
 dependencies = [
- "arcis",
+ "arcis-interface",
  "proc-macro2",
  "quote",
  "sha2 0.10.8",
@@ -403,12 +409,6 @@ name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
-
-[[package]]
-name = "base16ct"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
@@ -457,9 +457,9 @@ dependencies = [
 
 [[package]]
 name = "blake3"
-version = "1.7.0"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b17679a8d69b6d7fd9cd9801a536cec9fa5e5970b69f9d4747f70b39b031f5e7"
+checksum = "389a099b34312839e16420d499a9cad9650541715937ffbdd40d36f49e77eeb3"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -499,11 +499,11 @@ dependencies = [
 
 [[package]]
 name = "borsh"
-version = "1.5.6"
+version = "1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2b74d67a0fc0af8e9823b79fd1c43a0900e5a8f0e0f4cc9210796bf3a820126"
+checksum = "ad8646f98db542e39fc66e68a20b2144f6a732636df7c2354e74645faaa433ce"
 dependencies = [
- "borsh-derive 1.5.6",
+ "borsh-derive 1.5.7",
  "cfg_aliases",
 ]
 
@@ -522,9 +522,9 @@ dependencies = [
 
 [[package]]
 name = "borsh-derive"
-version = "1.5.6"
+version = "1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d37ed1b2c9b78421218a0b4f6d8349132d6ec2cfeba1cfb0118b0a8e268df9e"
+checksum = "fdd1d3c0c2f5833f22386f252fe8ed005c7f59fdcddeef025c01b4c3b9fd9ac3"
 dependencies = [
  "once_cell",
  "proc-macro-crate 3.3.0",
@@ -699,17 +699,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43da5946c66ffcc7745f48db692ffbb10a83bfe0afd96235c5c2a4fb23994929"
 
 [[package]]
-name = "crypto-bigint"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dc92fb57ca44df6db8059111ab3af99a63d5d0f8375d9972e319a379c6bab76"
-dependencies = [
- "rand_core 0.6.4",
- "serdect",
- "subtle",
-]
-
-[[package]]
 name = "crypto-common"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -765,27 +754,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e5c37193a1db1d8ed868c03ec7b152175f26160a5b740e5e484143877e0adf0"
 
 [[package]]
-name = "derive_more"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
-dependencies = [
- "derive_more-impl",
-]
-
-[[package]]
-name = "derive_more-impl"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.100",
- "unicode-xid",
-]
-
-[[package]]
 name = "digest"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -816,18 +784,6 @@ name = "encrypted-ixs"
 version = "0.1.0"
 dependencies = [
  "arcis-imports",
-]
-
-[[package]]
-name = "enum-try-as-inner"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c448fc2753338b04aa344ead5a6bdda26f2df2dcd85b65c86dd15b16819369e"
-dependencies = [
- "heck 0.4.1",
- "proc-macro2",
- "quote",
- "syn 2.0.100",
 ]
 
 [[package]]
@@ -963,12 +919,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "heck"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
-
-[[package]]
 name = "hmac"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1101,9 +1051,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.26"
+version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
+checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 
 [[package]]
 name = "memchr"
@@ -1207,9 +1157,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.21.1"
+version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d75b0bedcc4fe52caa0e03d9f1151a323e4aa5e2d78ba3580400cd3c9e2bc4bc"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "opaque-debug"
@@ -1536,16 +1486,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serdect"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
-dependencies = [
- "base16ct",
- "serde",
-]
-
-[[package]]
 name = "sha2"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1690,7 +1630,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "718333bcd0a1a7aed6655aa66bef8d7fb047944922b2d3a18f49cbc13e73d004"
 dependencies = [
  "borsh 0.10.4",
- "borsh 1.5.6",
+ "borsh 1.5.7",
 ]
 
 [[package]]
@@ -1722,9 +1662,9 @@ dependencies = [
 
 [[package]]
 name = "solana-curve25519"
-version = "2.2.3"
+version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa1f28fdc4acdf6d1e47eec6fea58e88a650ca08f6a779d34730a616a2a82801"
+checksum = "91f23498bbf3ae4f22125a2f16f988a5a659628ea4949ca605a05191f91095d3"
 dependencies = [
  "bytemuck",
  "bytemuck_derive",
@@ -1844,7 +1784,7 @@ version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf7bcb14392900fe02e4e34e90234fbf0c673d4e327888410ba99fa2ba0f4e99"
 dependencies = [
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "bs58",
  "bytemuck",
  "bytemuck_derive",
@@ -1863,7 +1803,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ce496a475e5062ba5de97215ab39d9c358f9c9df4bb7f3a45a1f1a8bd9065ed"
 dependencies = [
  "bincode",
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "getrandom 0.2.15",
  "js-sys",
  "num-traits",
@@ -1962,9 +1902,9 @@ dependencies = [
 
 [[package]]
 name = "solana-message"
-version = "2.2.1"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "268486ba8a294ed22a4d7c1ec05f540c3dbe71cfa7c6c54b6d4d13668d895678"
+checksum = "9c6bf99c4570173710107a1f233f3bee226feea5fc817308707d4f7cb100a72d"
 dependencies = [
  "bincode",
  "blake3",
@@ -2021,7 +1961,7 @@ dependencies = [
  "bincode",
  "blake3",
  "borsh 0.10.4",
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "bs58",
  "bytemuck",
  "console_error_panic_hook",
@@ -2110,7 +2050,7 @@ version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8ae2c1a8d0d4ae865882d5770a7ebca92bab9c685e43f0461682c6c05a35bfa"
 dependencies = [
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "num-traits",
  "serde",
  "serde_derive",
@@ -2152,7 +2092,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40db1ff5a0f8aea2c158d78ab5f2cf897848964251d1df42fef78efd3c85b863"
 dependencies = [
  "borsh 0.10.4",
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "bs58",
  "bytemuck",
  "bytemuck_derive",
@@ -2352,7 +2292,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5269e89fde216b4d7e1d1739cf5303f8398a1ff372a81232abbee80e554a838c"
 dependencies = [
  "borsh 0.10.4",
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "num-traits",
  "serde",
  "serde_derive",
@@ -2441,9 +2381,9 @@ dependencies = [
 
 [[package]]
 name = "solana-vote-interface"
-version = "2.2.2"
+version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1e9f6a1651310a94cd5a1a6b7f33ade01d9e5ea38a2220becb5fd737b756514"
+checksum = "6b630547b7f12ee742e1c5069951fedba0fe5cbd4786f6342a779384e2b11f71"
 dependencies = [
  "bincode",
  "num-derive",
@@ -2465,9 +2405,9 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-sdk"
-version = "2.2.3"
+version = "2.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "faf45055dc78b74fdced852f9ed3a6f46eb13754f88b75675d9ce2bc7f242ea9"
+checksum = "25f159f6daedab6cbd42d57945b1789f2f0d859c647dd611658227ae4330e4df"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.1",
@@ -2506,7 +2446,7 @@ version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76fee7d65013667032d499adc3c895e286197a35a0d3a4643c80e7fd3e9969e3"
 dependencies = [
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "num-derive",
  "num-traits",
  "solana-program",
@@ -2595,7 +2535,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d994afaf86b779104b4a95ba9ca75b8ced3fdb17ee934e38cb69e72afbe17799"
 dependencies = [
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "bytemuck",
  "bytemuck_derive",
  "num-derive",
@@ -2761,7 +2701,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfb9c89dbc877abd735f05547dcf9e6e12c00c11d6d74d8817506cab4c99fdbb"
 dependencies = [
- "borsh 1.5.6",
+ "borsh 1.5.7",
  "num-derive",
  "num-traits",
  "solana-borsh",
@@ -2968,12 +2908,6 @@ name = "unicode-segmentation"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
-
-[[package]]
-name = "unicode-xid"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "universal-hash"

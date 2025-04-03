@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
     COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
@@ -23,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("EGRyBhhe9pzvoznJuQh5x5Dx5V2eKQv1AwWdTsEMEYEQ");
+declare_id!("EDxE15Sb8c5GndP7SK69VEzXhvdMxns6AEBn6wBHRF9u");
 
 #[arcium_program]
 pub mod voting {
@@ -67,9 +67,15 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let vote_stats: [[u8; 32]; 2] = bytes
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -80,7 +86,6 @@ pub mod voting {
             PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
         poll_acc.vote_state = vote_stats;
         poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
-
         Ok(())
     }
 
@@ -123,8 +128,14 @@ pub mod voting {
     }
 
     #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+    pub fn vote_callback(ctx: Context<VoteCallback>, output: ComputationOutputs) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let vote_stats: [[u8; 32]; 2] = bytes
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -167,8 +178,8 @@ pub mod voting {
             Argument::PlaintextU128(vote_stats_nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
-                8 + 1 + (4 + 50) + 4 + 32 + 16,
+                // Offset of 8 (discriminator) and 1 (bump)
+                8 + 1,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
         ];
@@ -180,10 +191,17 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealVotingResultCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        let result = output[0] != 0;
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let result = bytes[0] != 0;
         emit!(RevealResultEvent { output: result });
+
         Ok(())
     }
 }
@@ -460,6 +478,8 @@ pub struct PollAccount {
 pub enum ErrorCode {
     #[msg("Invalid authority")]
     InvalidAuthority,
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }
 
 #[event]

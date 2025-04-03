@@ -1,68 +1,106 @@
-# Confidential On-Chain Voting with Arcium
+# Structure of this project
 
-This example demonstrates how to implement confidential voting on Solana using Arcium's encrypted computation framework. The system allows voters to cast their votes privately while maintaining the integrity of the voting process.
+**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
+This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
 
-## Overview
+This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
 
-The voting system consists of three main components:
+- The `programs` dir like normal
+- The `encrypted-ixs` dir for confidential computing instructions
 
-1. Creating a poll
-2. Casting a vote
-3. Revealing results
+When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
 
-### Key Features
+```
+// encrypted-ixs/add_together.rs
 
-- **Confidential Voting**: Votes are encrypted and processed in a privacy-preserving manner
-- **Secure Result Revelation**: Only the poll authority can reveal the final results
+use arcis_imports::*;
 
-## How It Works
+#[encrypted]
+mod circuits {
+    use arcis_imports::*;
 
-### 1. Poll Creation
+    pub struct InputValues {
+        v1: u8,
+        v2: u8,
+    }
 
-When a new poll is created:
+    #[instruction]
+    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
+        let input = input_ctxt.to_arcis();
+        let sum = input.v1 as u16 + input.v2 as u16;
+        input_ctxt.owner.from_arcis(sum)
+    }
+}
 
-- A unique poll account is initialized with a question and initial encrypted vote counts
-- The vote counts are initialized to zero using encrypted computation
-- The poll creator becomes the authority who can later reveal results
+// programs/my_program/src/lib.rs
 
-### 2. Vote Casting
+declare_id!("<some ID>");
 
-The voting process uses Arcium's encrypted computation framework:
+#[program]
+pub mod my_program {
+    use super::*;
 
-- Each vote is encrypted using the client's encryption key
-- Votes are processed using homomorphic encryption, allowing addition of encrypted values
-- The vote counts are updated without revealing individual votes
-- A timestamp is recorded for each vote for audit purposes
+    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
 
-### 3. Result Revelation
+    pub fn add_together(
+        ctx: Context<AddTogether>,
+        ciphertext_0: [u8; 32],
+        ciphertext_1: [u8; 32],
+        pub_key: [u8; 32],
+        nonce: u128,
+    ) -> Result<()> {
+        let args = vec![
+            Argument::PublicKey(pub_key),
+            Argument::PlaintextU128(nonce),
+            Argument::EncryptedU8(ciphertext_0),
+            Argument::EncryptedU8(ciphertext_1),
+        ];
+        queue_computation(ctx.accounts, args, vec![], None)?;
+        Ok(())
+    }
 
-Only the poll authority can reveal the final results:
+    #[arcium_callback(encrypted_ix = "add_together")]
+    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
+       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+           bytes
+       } else {
+           return Err(ErrorCode::AbortedComputation.into());
+       };
 
-- The encrypted vote counts are processed to determine the winner
-- The result is revealed as a boolean (true for "yes" winning, false for "no" winning)
-- The process maintains privacy of individual votes while providing verifiable results
+       emit!(SumEvent {
+           sum: bytes[48..80].try_into().unwrap(),
+           nonce: bytes[32..48].try_into().unwrap(),
+       });
+       Ok(())
+    }
+}
 
-## Technical Implementation
+#[queue_computation_accounts("add_together", payer)]
+#[derive(Accounts)]
+pub struct AddTogether<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    // ... other required accounts
+}
 
-### Encrypted Computation
+#[callback_accounts("add_together", payer)]
+#[derive(Accounts)]
+pub struct AddTogetherCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    // ... other required accounts
+    pub some_extra_acc: AccountInfo<'info>,
+}
 
-The system uses Arcium's encrypted instruction framework, Arcis, with three main computations:
+#[init_computation_definition_accounts("add_together", payer)]
+#[derive(Accounts)]
+pub struct InitAddTogetherCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    // ... other required accounts
+}
 
-1. `init_vote_stats`: Initializes encrypted vote counts
-2. `vote`: Processes an encrypted vote and updates the encrypted vote counts
-3. `reveal_result`: Computes the final result from encrypted vote counts
-
-### Data Structures
-
-- `PollAccount`: Solana account structure that stores poll metadata and encrypted vote state
-- Arcis Data Structures (used in encrypted computation):
-  - `VoteStats`: Encrypted structure containing yes/no vote counts, processed within Arcis
-  - `UserVote`: Encrypted structure for individual votes, processed within Arcis
-
-### Privacy Guarantees
-
-The system ensures:
-
-- Individual votes remain private
-- Vote counts are encrypted during computation
-- Results are only revealed when explicitly requested by the authority
+```
