@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
     COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
@@ -21,7 +21,7 @@ use arcium_macros::{
 
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("FTS6tzdevUMhM4DxQr557N83J4wJBnDhAs2LwXNcb4tS");
+declare_id!("2PiEBVRRcLRQcAyEPFQYoX7rPNTTB3Q8Up7XZJmKEeuQ");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
@@ -52,11 +52,17 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        msg!("output: {:?}", output);
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
 
-        let result = output[0];
+        msg!("output: {:?}", bytes);
+
+        let result = bytes[0];
         let result_str = match result {
             0 => "Tie",
             1 => "Win",
@@ -148,4 +154,10 @@ pub struct InitCompareMovesCompDef<'info> {
 #[event]
 pub struct CompareMovesEvent {
     pub result: String,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }

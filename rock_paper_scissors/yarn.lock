@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/arcium-sdk@0.1.40":
-  version "0.1.40"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.40/08aa0591823c292751a2b959e89374dac9e9a5eb#08aa0591823c292751a2b959e89374dac9e9a5eb"
-  integrity sha512-om1rUovX5dKEV87iigcw8oJ2guPPwJT+YPJdkEzDpil3vj5UGoATgn4XDWLv0vJ9IM9xOwl3TI9nTE3uGMrHzw==
+"@arcium-hq/arcium-sdk@0.1.41":
+  version "0.1.41"
+  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.41/fe2cc82600c22e0863b64062dcf15ed8a2b6cd9e#fe2cc82600c22e0863b64062dcf15ed8a2b6cd9e"
+  integrity sha512-uCMM0WI69EDhNNqcOW1kXnVswjE45E6+st0MzJPlCophg8YDdXlj9qnbXACBLvQb5eCIURmtmSXK5FJ2nLNpmA==
   dependencies:
     "@coral-xyz/anchor" "0.31"
     "@noble/curves" "^1.8.1"
