@@ -89,11 +89,19 @@ jobs:
             yarn install
             arcium build
             
-            # Now try the actual test
+            # Run the test and capture logs
+            echo "Running arcium test..."
             timeout 20m arcium test || EXIT_CODE=$?
             echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
+            echo "=== Docker Containers ==="
+            docker ps -a
+            echo "=== Callback Server Logs ==="
+            cat artifacts/callback_server.log || true
+            echo "=== Docker Compose Logs ==="
+            docker compose -f artifacts/docker-compose-arx-env.yml logs || true
             popd
+            
             if [ -n "$EXIT_CODE" ]; then
               exit $EXIT_CODE
             fi
