@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
     COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
@@ -22,7 +22,7 @@ use arcium_macros::{
 const COMP_DEF_VICKREY_AUCTION_BID: u32 = comp_def_offset("vickrey_bid");
 const COMP_DEF_VICKREY_AUCTION_REVEAL: u32 = comp_def_offset("vickrey_reveal");
 
-declare_id!("4HzhiDmVCdgHBPRABW2krzkVHTbocLJxiaHuonsZpHJK");
+declare_id!("HAmy4nhyS3uobDtyjDy5GutzCp3osznvBpbjzoNg6LzU");
 
 #[arcium_program]
 pub mod sealed_bid_auction {
@@ -44,16 +44,21 @@ pub mod sealed_bid_auction {
 
     pub fn vickrey_bid(
         ctx: Context<VickreyAuctionBid>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
+        bid: [u8; 32],
+        bidder_pubkey_one: [u8; 32],
+        bidder_pubkey_two: [u8; 32],
+        encryption_pub_key: [u8; 32],
+        bid_nonce: u128,
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(pub_key),
             Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
+            // Argument::Account(),
+            Argument::EncryptedU128(encryption_pub_key),
+            Argument::PlaintextU128(bid_nonce),
+            Argument::EncryptedU128(bid),
+            Argument::EncryptedU128(bidder_pubkey_one),
+            Argument::EncryptedU128(bidder_pubkey_two),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
@@ -62,11 +67,16 @@ pub mod sealed_bid_auction {
     #[arcium_callback(encrypted_ix = "vickrey_bid")]
     pub fn vickrey_bid_callback(
         ctx: Context<VickreyAuctionBidCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        emit!(SumEvent {
-            sum: output[48..].try_into().unwrap(),
-            nonce: output[32..48].try_into().unwrap(),
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        emit!(BidEvent {
+            timestamp: Clock::get()?.unix_timestamp,
         });
         Ok(())
     }
@@ -165,7 +175,12 @@ pub struct InitVickreyAuctionRevealCompDef<'info> {
 }
 
 #[event]
-pub struct SumEvent {
-    pub sum: [u8; 32],
-    pub nonce: [u8; 16],
+pub struct BidEvent {
+    pub timestamp: i64,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }

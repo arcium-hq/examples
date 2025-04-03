@@ -10,14 +10,17 @@ mod circuits {
     /// strategically similar to an English auction and gives bidders an incentive to bid their true value.
     pub struct VickreyAuction {
         highest_bid: u128,
-        highest_bidder: PublicKey,
+        highest_bidder_pubkey_one: u128,
+        highest_bidder_pubkey_two: u128,
         second_highest_bid: u128,
-        second_highest_bidder: PublicKey,
+        second_highest_bidder_pubkey_one: u128,
+        second_highest_bidder_pubkey_two: u128,
     }
 
     pub struct Bid {
         bid: u128,
-        bidder: PublicKey,
+        bidder_pubkey_one: u128,
+        bidder_pubkey_two: u128,
     }
 
     #[instruction]
@@ -30,24 +33,28 @@ mod circuits {
 
         if bid.bid > auction.highest_bid {
             auction.second_highest_bid = auction.highest_bid;
-            auction.second_highest_bidder = auction.highest_bidder;
+            auction.second_highest_bidder_pubkey_one = auction.highest_bidder_pubkey_one;
+            auction.second_highest_bidder_pubkey_two = auction.highest_bidder_pubkey_two;
             auction.highest_bid = bid.bid;
-            auction.highest_bidder = bid.bidder;
+            auction.highest_bidder_pubkey_one = bid.bidder_pubkey_one;
+            auction.highest_bidder_pubkey_two = bid.bidder_pubkey_two;
         } else if bid.bid > auction.second_highest_bid {
             auction.second_highest_bid = bid.bid;
-            auction.second_highest_bidder = bid.bidder;
+            auction.second_highest_bidder_pubkey_one = bid.bidder_pubkey_one;
+            auction.second_highest_bidder_pubkey_two = bid.bidder_pubkey_two;
         }
 
         auction_ctxt.owner.from_arcis(auction)
     }
 
     #[instruction]
-    pub fn vickrey_reveal(auction_ctxt: Enc<Mxe, VickreyAuction>) -> (u128, PublicKey) {
+    pub fn vickrey_reveal(auction_ctxt: Enc<Mxe, VickreyAuction>) -> (u128, u128, u128) {
         let auction = auction_ctxt.to_arcis();
 
         (
             auction.second_highest_bid.reveal(),
-            auction.second_highest_bidder.reveal(),
+            auction.second_highest_bidder_pubkey_one.reveal(),
+            auction.second_highest_bidder_pubkey_two.reveal(),
         )
     }
 }
