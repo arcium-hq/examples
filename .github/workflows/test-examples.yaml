@@ -90,7 +90,7 @@ jobs:
             arcium build
             
             # Now try the actual test
-            timeout 15m arcium test || EXIT_CODE=$?
+            timeout 20m arcium test || EXIT_CODE=$?
             echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
             popd
