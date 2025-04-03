@@ -12,20 +12,18 @@ import {
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
-  x25519RandomPrivateKey,
-  x25519GetPublicKey,
-  x25519GetSharedSecretWithMXE,
   deserializeLE,
   getMXEAccAcc,
   getMempoolAcc,
   getCompDefAcc,
   getExecutingPoolAcc,
+  x25519,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
 
-describe("Share Medical Records", () => {
+describe("ShareMedicalRecords", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace
@@ -57,36 +55,14 @@ describe("Share Medical Records", () => {
       initSPDSig
     );
 
-    const privateKey = x25519RandomPrivateKey();
-    const publicKey = x25519GetPublicKey(privateKey);
-    const mxePublicKey = [
-      new Uint8Array([
-        34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-        253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-      ]),
-      new Uint8Array([
-        107, 1, 201, 151, 195, 126, 155, 84, 228, 85, 185, 142, 62, 220, 161,
-        29, 179, 36, 112, 163, 201, 103, 172, 207, 55, 89, 53, 120, 73, 208,
-        234, 63,
-      ]),
-      new Uint8Array([
-        217, 186, 137, 28, 190, 167, 128, 220, 100, 71, 90, 160, 130, 162, 96,
-        15, 191, 147, 184, 4, 151, 89, 186, 211, 72, 212, 173, 31, 98, 187, 65,
-        59,
-      ]),
-      new Uint8Array([
-        51, 66, 84, 103, 52, 182, 174, 177, 134, 163, 224, 196, 127, 102, 81,
-        61, 12, 136, 171, 212, 230, 171, 242, 47, 221, 48, 152, 231, 239, 0,
-        183, 15,
-      ]),
-      new Uint8Array([
-        162, 140, 124, 61, 16, 202, 184, 56, 39, 7, 37, 95, 225, 104, 229, 25,
-        48, 246, 35, 136, 99, 106, 110, 253, 188, 86, 201, 42, 112, 211, 129,
-        34,
-      ]),
-    ];
-    const rescueKey = x25519GetSharedSecretWithMXE(privateKey, mxePublicKey);
-    const cipher = new RescueCipher(rescueKey);
+    const privateKey = x25519.utils.randomPrivateKey();
+    const publicKey = x25519.getPublicKey(privateKey);
+    const mxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
+    const cipher = new RescueCipher(sharedSecret);
 
     const patientId = BigInt(420);
     const age = BigInt(69);

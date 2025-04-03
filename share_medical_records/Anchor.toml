@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-share_medical_records = "BK9xySHWhg2UJoFZmzNfYBHk1qCuHdnKfeF1fueAvjL8"
+share_medical_records = "4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4"
 
 [registry]
 url = "https://api.apr.dev"
@@ -17,106 +17,3 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-
-[test.validator]
-[[test.genesis]]
-address = "BKck65TgoKRokMjQM3datB9oRwJ8rAj2jxPXvHXUvcL6"
-program = "/Users/arihantbansal/Developer/arcium/examples/share_medical_records/artifacts/arcium_program_0.1.40.so"
-
-
-[[test.validator.account]]
-address = "FHriyvoZotYiFnbUzKFjzRSb2NiaC8RPWY7jtKuKhg65"
-filename = "artifacts/arcium_clock.json"
-
-[[test.validator.account]]
-address = "DXHqHhBGNM58RLk438UiEbGe9137A7zJc6JHKN3qMZoB"
-filename = "artifacts/arcium_pool.json"
-
-[[test.validator.account]]
-address = "FF1ZjqVRQDfd6N5LaUh1i2PQ946vQjHpnbDuAyaCXUdQ"
-filename = "artifacts/arcium_pool_ata.json"
-
-[[test.validator.account]]
-address = "BoVUVSJAhob2cvM5z4JZTdS6VWRSznh3bbzQD1TFjvDP"
-filename = "artifacts/arx_mint.json"
-
-[[test.validator.account]]
-address = "ariZN4ANYnFyfnF12mmUuCchjawFXnepyrWdEQakFtP"
-filename = "artifacts/wallet_acc_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "79hykNQMNeXvcpYDM2buEz1kGNnFBgnGvKPTyTUnCAEj"
-filename = "artifacts/arx_ata_ariZ_kFtP.json"
-
-[[test.validator.account]]
-address = "7QNsF4BNg91EDMtJfCkWm4yg5YoQbAeKjiJ4js7cDGT7"
-filename = "artifacts/callback_server_acc_7QNs_DGT7.json"
-
-[[test.validator.account]]
-address = "9XVH58jw5jgHVnDBwhD9Hkgpses8TSBGxqehxAt6Rrfo"
-filename = "artifacts/wallet_acc_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "9RREV6kDWwhyQ2xiwjxcjMGN16b6pWcPrt7X6iUDidky"
-filename = "artifacts/arx_ata_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "7CZ8sciXkGasEmd923aG1cqFvPgqwbL16PwSSDYfBta1"
-filename = "artifacts/primary_stake_acc_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "DQX295Tx5a3s4R3BKt4E8388TiFZr6VEH7FFaLtmHt7d"
-filename = "artifacts/stake_queue_acc_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "3iosxGUMWm38kVYNGn3yGsNz8YEVGNRx7kuQhUCeBNm2"
-filename = "artifacts/operator_acc_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "ELoRR19zrps1G3UYKcAxr7LKbw3kbqkVUXVY9dETMWN7"
-filename = "artifacts/arx_node_9XVH_Rrfo.json"
-
-[[test.validator.account]]
-address = "BMLNR6ScZyWxnCjZhu8TF5yJ8AargXXSRp32zgMy53nU"
-filename = "artifacts/wallet_acc_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "8NuhoiUt7BJ1o2P1nMgdrfk16ZF7noJb7mid6MBJR5nc"
-filename = "artifacts/arx_ata_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "CTXgtPAALGbruzx2oxKBhkxRY5HTqurnU5s4HJmTnNkx"
-filename = "artifacts/primary_stake_acc_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "4BtanwXQNwDbKsJZKyH4JabYWsE1WX27LzfE8LXwutQj"
-filename = "artifacts/stake_queue_acc_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "58eD6VhtPsxfK5RRyr5DD9g8qGbM7LmitEWkeiZRyoPC"
-filename = "artifacts/operator_acc_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "XdfSwb8ZajhN7CerfBSJVhyfx5fyLtv34QVKSRgMFA9"
-filename = "artifacts/arx_node_BMLN_53nU.json"
-
-[[test.validator.account]]
-address = "GgSqqAyH7AVY3Umcv8NvncrjFaNJuQLmxzxFxPoPW2Yd"
-filename = "artifacts/cluster_acc_0.json"
-
-[[test.validator.account]]
-address = "FAh8TTPb4Wy6NGSv2XJHbbSD5oLEUGCiXsAYFqngyLzK"
-filename = "artifacts/share_patient_data_raw_circuit_0.json"
-
-[[test.validator.account]]
-address = "7dS4vfFAgCexV8gTV6yAF3Xg9AibZN6efvuDKpKi5Wze"
-filename = "artifacts/mxe_acc.json"
-
-[[test.validator.account]]
-address = "7WmUSBTYfbA1ovGMi6zegDNx3d1tnZYdoTC6CRsnvT55"
-filename = "artifacts/mempool_acc.json"
-
-[[test.validator.account]]
-address = "CnK8jYZaL6KEFQTtTjbWQkdCgpCroB9MHXdBgHX9cLPK"
-filename = "artifacts/executing_pool_acc.json"

@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/arcium-sdk@0.1.40":
-  version "0.1.40"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.40/08aa0591823c292751a2b959e89374dac9e9a5eb#08aa0591823c292751a2b959e89374dac9e9a5eb"
-  integrity sha512-om1rUovX5dKEV87iigcw8oJ2guPPwJT+YPJdkEzDpil3vj5UGoATgn4XDWLv0vJ9IM9xOwl3TI9nTE3uGMrHzw==
+"@arcium-hq/arcium-sdk@0.1.41":
+  version "0.1.41"
+  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.41/fe2cc82600c22e0863b64062dcf15ed8a2b6cd9e#fe2cc82600c22e0863b64062dcf15ed8a2b6cd9e"
+  integrity sha512-uCMM0WI69EDhNNqcOW1kXnVswjE45E6+st0MzJPlCophg8YDdXlj9qnbXACBLvQb5eCIURmtmSXK5FJ2nLNpmA==
   dependencies:
     "@coral-xyz/anchor" "0.31"
     "@noble/curves" "^1.8.1"
@@ -128,11 +128,11 @@
   integrity sha512-Z61JK7DKDtdKTWwLeElSEBcWGRLY8g95ic5FoQqI9CMx0ns/Ghep3B4DfcEimiKMvtamNVULVNKEsiwV3aQmXw==
 
 "@types/node@*":
-  version "22.13.17"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.13.17.tgz#9ca6a81a0180cdcfd3719b9cf6c09186756e1754"
-  integrity sha512-nAJuQXoyPj04uLgu+obZcSmsfOenUg6DxPKogeUy6yNCFwWaj5sBF8/G/pNo8EtBJjAfSVgfIlugR/BCOleO+g==
+  version "22.14.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.14.0.tgz#d3bfa3936fef0dbacd79ea3eb17d521c628bb47e"
+  integrity sha512-Kmpl+z84ILoG+3T/zQFyAJsU6EPTmOCj8/2+83fSN6djd6I4o7uOuGIH6vq3PrjY5BGitSbFuMN18j3iknubbA==
   dependencies:
-    undici-types "~6.20.0"
+    undici-types "~6.21.0"
 
 "@types/node@^12.12.54":
   version "12.20.55"
@@ -1038,10 +1038,10 @@ typescript@^4.3.5:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
 
-undici-types@~6.20.0:
-  version "6.20.0"
-  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.20.0.tgz#8171bf22c1f588d1554d55bf204bc624af388433"
-  integrity sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 utf-8-validate@^5.0.2:
   version "5.0.10"

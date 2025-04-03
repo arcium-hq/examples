@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
     COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
@@ -21,7 +21,7 @@ use arcium_macros::{
 
 const COMP_DEF_OFFSET_SHARE_PATIENT_DATA: u32 = comp_def_offset("share_patient_data");
 
-declare_id!("BK9xySHWhg2UJoFZmzNfYBHk1qCuHdnKfeF1fueAvjL8");
+declare_id!("4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4");
 
 #[arcium_program]
 pub mod share_medical_records {
@@ -81,21 +81,27 @@ pub mod share_medical_records {
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
         emit!(ReceivedPatientDataEvent {
-            patient_id: output[16..48].try_into().unwrap(),
-            age: output[48..80].try_into().unwrap(),
-            gender: output[80..112].try_into().unwrap(),
-            blood_type: output[112..144].try_into().unwrap(),
-            weight: output[144..176].try_into().unwrap(),
-            height: output[176..208].try_into().unwrap(),
+            patient_id: bytes[16..48].try_into().unwrap(),
+            age: bytes[48..80].try_into().unwrap(),
+            gender: bytes[80..112].try_into().unwrap(),
+            blood_type: bytes[112..144].try_into().unwrap(),
+            weight: bytes[144..176].try_into().unwrap(),
+            height: bytes[176..208].try_into().unwrap(),
             allergies: [
-                output[208..240].try_into().unwrap(),
-                output[240..272].try_into().unwrap(),
-                output[272..304].try_into().unwrap(),
-                output[304..336].try_into().unwrap(),
-                output[336..368].try_into().unwrap(),
+                bytes[208..240].try_into().unwrap(),
+                bytes[240..272].try_into().unwrap(),
+                bytes[272..304].try_into().unwrap(),
+                bytes[304..336].try_into().unwrap(),
+                bytes[336..368].try_into().unwrap(),
             ],
         });
         Ok(())
@@ -213,4 +219,10 @@ pub struct PatientData {
     pub weight: [u8; 32],
     pub height: [u8; 32],
     pub allergies: [[u8; 32]; 5],
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }
