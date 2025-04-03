@@ -165,6 +165,7 @@ describe("Share Medical Records", () => {
         )[0],
       })
       .rpc({ commitment: "confirmed" });
+    console.log("Queue sig is ", queueSig);
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
       queueSig,

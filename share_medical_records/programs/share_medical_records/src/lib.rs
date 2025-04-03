@@ -63,22 +63,14 @@ pub mod share_medical_records {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
-        let patient_data = &ctx.accounts.patient_data;
-
         let args = vec![
             Argument::PublicKey(pub_key),
             Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(patient_data.patient_id),
-            Argument::EncryptedU8(patient_data.age),
-            Argument::EncryptedU8(patient_data.gender),
-            Argument::EncryptedU8(patient_data.blood_type),
-            Argument::EncryptedU8(patient_data.weight),
-            Argument::EncryptedU8(patient_data.height),
-            Argument::EncryptedU8(patient_data.allergies[0]),
-            Argument::EncryptedU8(patient_data.allergies[1]),
-            Argument::EncryptedU8(patient_data.allergies[2]),
-            Argument::EncryptedU8(patient_data.allergies[3]),
-            Argument::EncryptedU8(patient_data.allergies[4]),
+            Argument::Account(
+                ctx.accounts.patient_data.key(),
+                8,
+                PatientData::INIT_SPACE as u32,
+            ),
             Argument::PublicKey(receiver),
             Argument::PlaintextU128(receiver_nonce),
         ];
@@ -92,18 +84,18 @@ pub mod share_medical_records {
         output: Vec<u8>,
     ) -> Result<()> {
         emit!(ReceivedPatientDataEvent {
-            patient_id: output[0..32].try_into().unwrap(),
-            age: output[32..64].try_into().unwrap(),
-            gender: output[64..96].try_into().unwrap(),
-            blood_type: output[96..128].try_into().unwrap(),
-            weight: output[128..160].try_into().unwrap(),
-            height: output[160..192].try_into().unwrap(),
+            patient_id: output[16..48].try_into().unwrap(),
+            age: output[48..80].try_into().unwrap(),
+            gender: output[80..112].try_into().unwrap(),
+            blood_type: output[112..144].try_into().unwrap(),
+            weight: output[144..176].try_into().unwrap(),
+            height: output[176..208].try_into().unwrap(),
             allergies: [
-                output[192..224].try_into().unwrap(),
-                output[224..256].try_into().unwrap(),
-                output[256..288].try_into().unwrap(),
-                output[288..320].try_into().unwrap(),
-                output[320..352].try_into().unwrap(),
+                output[208..240].try_into().unwrap(),
+                output[240..272].try_into().unwrap(),
+                output[272..304].try_into().unwrap(),
+                output[304..336].try_into().unwrap(),
+                output[336..368].try_into().unwrap(),
             ],
         });
         Ok(())
