@@ -45,7 +45,7 @@ describe("Voting", () => {
   const arciumEnv = getArciumEnv();
 
   it("Is initialized!", async () => {
-    const POLL_ID = 420;
+    const POLL_IDS = [420, 421, 422];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing vote stats computation definition");
@@ -78,107 +78,129 @@ describe("Voting", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const pollNonce = randomBytes(16);
+    // Create multiple polls
+    for (const POLL_ID of POLL_IDS) {
+      const pollNonce = randomBytes(16);
 
-    const pollSig = await program.methods
-      .createNewPoll(
-        POLL_ID,
-        "$SOL to 500?",
-        new anchor.BN(deserializeLE(pollNonce).toString())
-      )
-      .accountsPartial({
-        clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
-          program.programId,
-          Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
-        ),
-      })
-      .rpc();
+      const pollSig = await program.methods
+        .createNewPoll(
+          POLL_ID,
+          `Poll ${POLL_ID}: $SOL to 500?`,
+          new anchor.BN(deserializeLE(pollNonce).toString())
+        )
+        .accountsPartial({
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
+          ),
+        })
+        .rpc();
 
-    console.log("Poll created with signature", pollSig);
+      console.log(`Poll ${POLL_ID} created with signature`, pollSig);
 
-    const finalizePollSig = await awaitComputationFinalization(
-      provider as anchor.AnchorProvider,
-      pollSig,
-      program.programId,
-      "confirmed"
-    );
-    console.log("Finalize poll sig is ", finalizePollSig);
+      const finalizePollSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        pollSig,
+        program.programId,
+        "confirmed"
+      );
+      console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
+    }
 
-    const vote = BigInt(true);
-    const plaintext = [vote];
+    // Cast votes for each poll with different outcomes
+    const voteOutcomes = [true, false, true]; // Different outcomes for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const vote = BigInt(voteOutcomes[i]);
+      const plaintext = [vote];
 
-    const nonce = randomBytes(16);
-    const ciphertext = cipher.encrypt(plaintext, nonce);
+      const nonce = randomBytes(16);
+      const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const voteEventPromise = awaitEvent("voteEvent");
+      const voteEventPromise = awaitEvent("voteEvent");
 
-    console.log("Voting");
+      console.log(`Voting for poll ${POLL_ID}`);
 
-    const queueVoteSig = await program.methods
-      .vote(
-        POLL_ID,
-        Array.from(ciphertext[0]),
-        Array.from(publicKey),
-        new anchor.BN(deserializeLE(nonce).toString())
-      )
-      .accountsPartial({
-        clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
-          program.programId,
-          Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
-        ),
-        authority: owner.publicKey,
-      })
-      .rpc({ commitment: "confirmed" });
-    console.log("Queue vote sig is ", queueVoteSig);
+      const queueVoteSig = await program.methods
+        .vote(
+          POLL_ID,
+          Array.from(ciphertext[0]),
+          Array.from(publicKey),
+          new anchor.BN(deserializeLE(nonce).toString())
+        )
+        .accountsPartial({
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
+          ),
+          authority: owner.publicKey,
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
 
-    const finalizeSig = await awaitComputationFinalization(
-      provider as anchor.AnchorProvider,
-      queueVoteSig,
-      program.programId,
-      "confirmed"
-    );
-    console.log("Finalize sig is ", finalizeSig);
+      const finalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        queueVoteSig,
+        program.programId,
+        "confirmed"
+      );
+      console.log(`Finalize vote for poll ${POLL_ID} sig is `, finalizeSig);
 
-    const voteEvent = await voteEventPromise;
-    console.log("Vote casted at timestamp ", voteEvent.timestamp.toString());
+      const voteEvent = await voteEventPromise;
+      console.log(
+        `Vote casted for poll ${POLL_ID} at timestamp `,
+        voteEvent.timestamp.toString()
+      );
+    }
 
-    const revealEventPromise = awaitEvent("revealResultEvent");
+    // Reveal results for each poll
+    for (let i = 0; i < POLL_IDS.length; i++) {
+      const POLL_ID = POLL_IDS[i];
+      const expectedOutcome = voteOutcomes[i];
 
-    const revealQueueSig = await program.methods
-      .revealResult(POLL_ID)
-      .accountsPartial({
-        clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
-          program.programId,
-          Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
-        ),
-      })
-      .rpc({ commitment: "confirmed" });
-    console.log("Reveal queue sig is ", revealQueueSig);
+      const revealEventPromise = awaitEvent("revealResultEvent");
 
-    const revealFinalizeSig = await awaitComputationFinalization(
-      provider as anchor.AnchorProvider,
-      revealQueueSig,
-      program.programId,
-      "confirmed"
-    );
-    console.log("Reveal finalize sig is ", revealFinalizeSig);
+      const revealQueueSig = await program.methods
+        .revealResult(POLL_ID)
+        .accountsPartial({
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
+          ),
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
 
-    const revealEvent = await revealEventPromise;
+      const revealFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        revealQueueSig,
+        program.programId,
+        "confirmed"
+      );
+      console.log(
+        `Reveal finalize for poll ${POLL_ID} sig is `,
+        revealFinalizeSig
+      );
 
-    console.log("Decrypted winner is ", revealEvent.output);
-    expect(revealEvent.output).to.be.true;
+      const revealEvent = await revealEventPromise;
+      console.log(
+        `Decrypted winner for poll ${POLL_ID} is `,
+        revealEvent.output
+      );
+      expect(revealEvent.output).to.equal(expectedOutcome);
+    }
   });
 
   async function initVoteStatsCompDef(

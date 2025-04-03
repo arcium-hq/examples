@@ -75,7 +75,9 @@ pub mod voting {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let vote_stats: [[u8; 32]; 2] = bytes
+        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
+
+        let vote_stats: [[u8; 32]; 2] = bytes[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -83,6 +85,7 @@ pub mod voting {
             .unwrap();
 
         ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         Ok(())
     }
@@ -132,14 +135,16 @@ pub mod voting {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let vote_stats: [[u8; 32]; 2] = bytes
+        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
+        let vote_stats: [[u8; 32]; 2] = bytes[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-
+        
         ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
