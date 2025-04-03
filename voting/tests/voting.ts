@@ -196,7 +196,10 @@ describe("Voting", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Init vote stats computation definition pda is ", compDefPDA);
+    console.log(
+      "Init vote stats computation definition pda is ",
+      compDefPDA.toBase58()
+    );
 
     const sig = await program.methods
       .initVoteStatsCompDef()
@@ -254,7 +257,7 @@ describe("Voting", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Vote computation definition pda is ", compDefPDA);
+    console.log("Vote computation definition pda is ", compDefPDA.toBase58());
 
     const sig = await program.methods
       .initVoteCompDef()
@@ -312,7 +315,10 @@ describe("Voting", () => {
       getArciumProgAddress()
     )[0];
 
-    console.log("Reveal result computation definition pda is ", compDefPDA);
+    console.log(
+      "Reveal result computation definition pda is ",
+      compDefPDA.toBase58()
+    );
 
     const sig = await program.methods
       .initRevealResultCompDef()
