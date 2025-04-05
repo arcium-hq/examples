@@ -80,6 +80,34 @@ pub mod sealed_bid_auction {
         });
         Ok(())
     }
+
+    pub fn vickrey_reveal(ctx: Context<VickreyAuctionReveal>) -> Result<()> {
+        let args = vec![
+            Argument::PublicKey(ctx.accounts.auction_account.encryption_pubkey),
+            Argument::PlaintextU128(ctx.accounts.auction_account.nonce),
+        ];
+        queue_computation(ctx.accounts, args, vec![], None)?;
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "vickrey_reveal")]
+    pub fn vickrey_reveal_callback(
+        ctx: Context<VickreyAuctionRevealCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        emit!(RevealEvent {
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
+        Ok(())
+    }
 }
 
 #[queue_computation_accounts("vickrey_bid", payer)]
@@ -156,6 +184,64 @@ pub struct InitVickreyAuctionBidCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[queue_computation_accounts("vickrey_reveal", payer)]
+#[derive(Accounts)]
+pub struct VickreyAuctionReveal<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_VICKREY_AUCTION_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(mut)]
+    pub auction_account: Account<'info, Auction>,
+}
+
+#[callback_accounts("vickrey_reveal", payer)]
+#[derive(Accounts)]
+pub struct VickreyAuctionRevealCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_VICKREY_AUCTION_REVEAL)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
 #[init_computation_definition_accounts("vickrey_reveal", payer)]
 #[derive(Accounts)]
 pub struct InitVickreyAuctionRevealCompDef<'info> {
@@ -174,8 +260,19 @@ pub struct InitVickreyAuctionRevealCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[account]
+pub struct Auction {
+    pub encryption_pubkey: [u8; 32],
+    pub nonce: u128,
+}
+
 #[event]
 pub struct BidEvent {
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct RevealEvent {
     pub timestamp: i64,
 }
 
