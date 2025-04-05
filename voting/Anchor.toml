@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-voting = "AL25N1v4WjSXdTsszwYG7WA2Ztb6Wj5VAQBFGn8Y4pnz"
+voting = "EGRyBhhe9pzvoznJuQh5x5Dx5V2eKQv1AwWdTsEMEYEQ"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,8 +16,3 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-[test]
-startup_wait = 5000
-shutdown_wait = 2000
-upgradeable = false
