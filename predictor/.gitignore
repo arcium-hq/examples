@@ -5,7 +5,7 @@ target
 node_modules
 test-ledger
 .yarn
-confidential-ixs/arcis_temp_target
-confidential-ixs/build
-confidential-ixs/src/main.rs
+encrypted-ixs/arcis_temp_target
+build
+encrypted-ixs/src/main.rs
 artifacts/

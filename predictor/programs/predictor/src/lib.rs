@@ -1,15 +1,17 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, init_comp_def, queue_computation, CLOCK_PDA_SEED, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED, POOL_PDA_SEED,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
+    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
+    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, Mempool, PersistentMXEAccount,
-        StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
+        PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
-    types::{Argument, OffChainReference},
+    types::Argument,
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -17,128 +19,126 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_PREDICT: u32 = comp_def_offset("predict_proba");
+const COMP_DEF_OFFSET_PREDICT_PROBABILITY: u32 = comp_def_offset("predict_probability");
 
-declare_id!("7nUHZ4UUTrUDoRYfZBspJv9WWXzex2rgxxt7iyM7wbBS");
+declare_id!("KzAUiBZMUTv4vbuFhJeeJ6xZWkhVKK7bC3ZCgQd1bfQ");
 
 #[arcium_program]
 pub mod predictor {
     use super::*;
 
-    pub fn init_predict_comp_def(ctx: Context<InitPredictCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+    pub fn init_predict_probability_comp_def(
+        ctx: Context<InitPredictProbabilityCompDef>,
+    ) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn predictor(
-        ctx: Context<Predict>,
-        coef_1: OffChainReference,
-        coef_2: OffChainReference,
-        // coef_3: OffChainReference,
-        // coef_4: OffChainReference,
-        intercept: OffChainReference,
-        input_1: OffChainReference,
-        input_2: OffChainReference,
-        // input_3: OffChainReference,
-        // input_4: OffChainReference,
+    pub fn predict_probability(
+        ctx: Context<PredictProbability>,
+        coef_1: [u8; 32],
+        coef_2: [u8; 32],
+        intercept: [u8; 32],
+        input_1: [u8; 32],
+        input_2: [u8; 32],
+        encryption_pub_key: [u8; 32],
+        encryption_nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::MFloat(coef_1),
-            Argument::MFloat(coef_2),
-            // Argument::MFloat(coef_3),
-            // Argument::MFloat(coef_4),
-            Argument::MFloat(intercept),
-            Argument::MFloat(input_1),
-            Argument::MFloat(input_2),
-            // Argument::MFloat(input_3),
-            // Argument::MFloat(input_4),
+            Argument::PublicKey(encryption_pub_key),
+            Argument::PlaintextU128(encryption_nonce),
+            Argument::EncryptedU8(coef_1),
+            Argument::EncryptedU8(coef_2),
+            Argument::EncryptedU8(intercept),
+            Argument::EncryptedU8(input_1),
+            Argument::EncryptedU8(input_2),
         ];
-        queue_computation(ctx.accounts, args, vec![], vec![])?;
+        queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(confidential_ix = "predict_proba")]
-    pub fn predict_proba_callback(ctx: Context<PredictCallback>, output: Vec<u8>) -> Result<()> {
-        msg!("Prediction: {:?}", output);
+    #[arcium_callback(encrypted_ix = "predict_probability")]
+    pub fn predict_probability_callback(
+        ctx: Context<PredictProbabilityCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        emit!(PredictProbabilityEvent {
+            probability: bytes[..32].try_into().unwrap(),
+        });
         Ok(())
     }
 }
 
-#[queue_computation_accounts("predict_proba", payer)]
+#[queue_computation_accounts("predict_probability", payer)]
 #[derive(Accounts)]
-pub struct Predict<'info> {
+pub struct PredictProbability<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
-        seeds = [MXE_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, PersistentMXEAccount>,
     #[account(
         mut,
-        seeds = [MEMPOOL_PDA_SEED, ID.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mempool_account.bump
+        address = derive_mempool_pda!()
     )]
     pub mempool_account: Account<'info, Mempool>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_PREDICT.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_PREDICT_PROBABILITY)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        seeds = [CLUSTER_PDA_SEED,  mxe_account.cluster.offset.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = cluster_account.bump
+        address = derive_cluster_pda!(mxe_account)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        seeds = [POOL_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = pool_account.bump
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
     )]
     pub pool_account: Account<'info, StakingPoolAccount>,
     #[account(
-        seeds = [CLOCK_PDA_SEED],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = clock_account.bump
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("predict_proba", payer)]
+#[callback_accounts("predict_probability", payer)]
 #[derive(Accounts)]
-pub struct PredictCallback<'info> {
+pub struct PredictProbabilityCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [COMP_DEF_PDA_SEED, &ID_CONST.to_bytes().as_ref(), COMP_DEF_OFFSET_PREDICT.to_le_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = comp_def_account.bump
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_PREDICT_PROBABILITY)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-    /// CHECK: instructions_sysvar, checked by the account constraint
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("predict_proba", payer)]
+#[init_computation_definition_accounts("predict_probability", payer)]
 #[derive(Accounts)]
-pub struct InitPredictCompDef<'info> {
+pub struct InitPredictProbabilityCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
         mut,
-        seeds = [MXE_PDA_SEED, ID_CONST.to_bytes().as_ref()],
-        seeds::program = ARCIUM_PROG_ID,
-        bump = mxe_account.bump
+        address = derive_mxe_pda!()
     )]
     pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
     #[account(mut)]
@@ -147,4 +147,15 @@ pub struct InitPredictCompDef<'info> {
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
+}
+
+#[event]
+pub struct PredictProbabilityEvent {
+    pub probability: [u8; 32],
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }

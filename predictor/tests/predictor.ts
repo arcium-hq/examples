@@ -2,117 +2,114 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Predictor } from "../target/types/predictor";
+import { randomBytes } from "crypto";
 import {
-  getClusterDAInfo,
+  awaitComputationFinalization,
   getArciumEnv,
-  encryptAndEncodeInput,
-  MFloat,
-  DANodeClient,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgAddress,
   uploadCircuit,
   buildFinalizeCompDefTx,
-  awaitComputationFinalization,
+  RescueCipher,
+  deserializeLE,
+  getMXEAccAcc,
+  getMempoolAcc,
+  getCompDefAcc,
+  getExecutingPoolAcc,
+  x25519,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
+import { expect } from "chai";
 
 describe("Predictor", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace.Predictor as Program<Predictor>;
+  const program = anchor.workspace
+    .Predictor as Program<Predictor>;
   const provider = anchor.getProvider();
 
+  type Event = anchor.IdlEvents<(typeof program)["idl"]>;
+  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+    let listenerId: number;
+    const event = await new Promise<Event[E]>((res) => {
+      listenerId = program.addEventListener(eventName, (event) => {
+        res(event);
+      });
+    });
+    await program.removeEventListener(listenerId);
+
+    return event;
+  };
+
   const arciumEnv = getArciumEnv();
-  const daNodeClient = new DANodeClient(arciumEnv.DANodeURL);
 
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing predict computation definition");
-    const initPredictSig = await initPredictCompDef(program, owner, false);
+    console.log("Initializing add together computation definition");
+    const initATSig = await initAddTogetherCompDef(program, owner, false);
     console.log(
-      "Predict computation definition initialized with signature",
-      initPredictSig
+      "Add together computation definition initialized with signature",
+      initATSig
     );
 
-    const cluster_da_info = await getClusterDAInfo(
-      provider.connection,
-      arciumEnv.arciumClusterPubkey
-    );
+    const privateKey = x25519.utils.randomPrivateKey();
+    const publicKey = x25519.getPublicKey(privateKey);
+    const mxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
+    const cipher = new RescueCipher(sharedSecret);
 
-    // Demo values for a logistic regression model
-    const coef_1 = 1.1 as MFloat;
-    const coef_2 = 5.2 as MFloat;
-    // const coef_3 = 3.1 as MFloat;
-    // const coef_4 = -1.9 as MFloat;
+    const val1 = BigInt(1);
+    const val2 = BigInt(2);
+    const plaintext = [val1, val2];
 
-    const intercept = 0.1 as MFloat;
-    const inputVal1 = 1.0 as MFloat;
-    const inputVal2 = 2.1 as MFloat;
-    // const inputVal3 = -3.3 as MFloat;
-    // const inputVal4 = 4.2 as MFloat;
+    const nonce = randomBytes(16);
+    const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const req1 = encryptAndEncodeInput(coef_1, cluster_da_info);
-    const req2 = encryptAndEncodeInput(coef_2, cluster_da_info);
-    // const req3 = encryptAndEncodeInput(coef_3, cluster_da_info);
-    // const req4 = encryptAndEncodeInput(coef_4, cluster_da_info);
+    const sumEventPromise = awaitEvent("sumEvent");
 
-    const reqIntercept = encryptAndEncodeInput(intercept, cluster_da_info);
-    const reqInput1 = encryptAndEncodeInput(inputVal1, cluster_da_info);
-    const reqInput2 = encryptAndEncodeInput(inputVal2, cluster_da_info);
-    // const reqInput3 = encryptAndEncodeInput(inputVal3, cluster_da_info);
-    // const reqInput4 = encryptAndEncodeInput(inputVal4, cluster_da_info);
-
-    const oref1 = await daNodeClient.postOffchainReference(req1);
-    const oref2 = await daNodeClient.postOffchainReference(req2);
-    // const oref3 = await daNodeClient.postOffchainReference(req3);
-    // const oref4 = await daNodeClient.postOffchainReference(req4);
-
-    const orefIntercept = await daNodeClient.postOffchainReference(
-      reqIntercept
-    );
-    const orefInput1 = await daNodeClient.postOffchainReference(reqInput1);
-    const orefInput2 = await daNodeClient.postOffchainReference(reqInput2);
-    // const orefInput3 = await daNodeClient.postOffchainReference(reqInput3);
-    // const orefInput4 = await daNodeClient.postOffchainReference(reqInput4);
+    // TODO: Remove this sleep once the CI bug is solved
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const queueSig = await program.methods
-      .predictor(
-        oref1,
-        oref2,
-        // oref3, oref4,
-        orefIntercept,
-        orefInput1,
-        orefInput2
-        // orefInput3, orefInput4,
+      .addTogether(
+        Array.from(ciphertext[0]),
+        Array.from(ciphertext[1]),
+        Array.from(publicKey),
+        new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("add_together")).readUInt32LE()
+        ),
       })
       .rpc({ commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
-      provider.connection,
+      provider as anchor.AnchorProvider,
       queueSig,
       program.programId,
       "confirmed"
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    const tx = await provider.connection.getTransaction(
-      finalizeSig.finalizeSignature,
-      {
-        commitment: "confirmed",
-        maxSupportedTransactionVersion: 0,
-      }
-    );
-    console.log("Logs are ", tx.meta.logMessages);
+    const sumEvent = await sumEventPromise;
+    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0];
+    expect(decrypted).to.equal(val1 + val2);
   });
 
-  async function initPredictCompDef(
+  async function initAddTogetherCompDef(
     program: Program<Predictor>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
@@ -120,7 +117,7 @@ describe("Predictor", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("predict_proba");
+    const offset = getCompDefAccOffset("add_together");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -130,30 +127,31 @@ describe("Predictor", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initPredictCompDef()
-      .accounts({ compDefAccount: compDefPDA, payer: owner.publicKey })
+      .initAddTogetherCompDef()
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+      })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init predict computation definition transaction", sig);
+    console.log("Init add together computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync(
-        "confidential-ixs/build/predict_proba.arcis"
-      );
+      const rawCircuit = fs.readFileSync("build/add_together.arcis");
 
       await uploadCircuit(
-        provider.connection,
-        owner,
-        "predict_proba",
+        provider as anchor.AnchorProvider,
+        "add_together",
         program.programId,
         rawCircuit,
         true
       );
     } else {
       const finalizeTx = await buildFinalizeCompDefTx(
-        owner.publicKey,
+        provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
         program.programId
       );
