@@ -1,7 +1,6 @@
 [workspace]
-edition = "2021"
-resolver = "2"
 members = ["programs/*", "encrypted-ixs"]
+resolver = "2"
 
 [profile.release]
 overflow-checks = true
