@@ -19,6 +19,8 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
+const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
+const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
 declare_id!("2PiEBVRRcLRQcAyEPFQYoX7rPNTTB3Q8Up7XZJmKEeuQ");
@@ -26,6 +28,16 @@ declare_id!("2PiEBVRRcLRQcAyEPFQYoX7rPNTTB3Q8Up7XZJmKEeuQ");
 #[arcium_program]
 pub mod rock_paper_scissors {
     use super::*;
+
+    pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
 
     pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
@@ -75,6 +87,42 @@ pub mod rock_paper_scissors {
         });
         Ok(())
     }
+}
+
+#[init_computation_definition_accounts("init_game", payer)]
+#[derive(Accounts)]
+pub struct InitInitGameCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[init_computation_definition_accounts("player_move", payer)]
+#[derive(Accounts)]
+pub struct InitPlayerMoveCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }
 
 #[queue_computation_accounts("compare_moves", payer)]
