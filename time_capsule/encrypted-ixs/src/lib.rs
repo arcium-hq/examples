@@ -4,15 +4,16 @@ use arcis_imports::*;
 mod circuits {
     use arcis_imports::*;
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
+    pub struct ShareSecretToLife {
+        pub secret: u16,
     }
 
     #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
+    pub fn reveal_secret(
+        input_ctxt: Enc<Client, ShareSecretToLife>,
+        receiver: Client,
+    ) -> Enc<Client, ShareSecretToLife> {
         let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
+        receiver.from_arcis(input)
     }
 }

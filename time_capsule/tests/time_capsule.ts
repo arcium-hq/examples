@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { TimeCapsule } from "../target/types/time_capsule";
 import { randomBytes } from "crypto";
 import {
@@ -26,8 +26,7 @@ import { expect } from "chai";
 describe("TimeCapsule", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace
-    .TimeCapsule as Program<TimeCapsule>;
+  const program = anchor.workspace.TimeCapsule as Program<TimeCapsule>;
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
@@ -48,11 +47,15 @@ describe("TimeCapsule", () => {
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false);
+    console.log("Initializing reveal secret computation definition");
+    const initRevealSecretCompDefSig = await initRevealSecretCompDef(
+      program,
+      owner,
+      false
+    );
     console.log(
-      "Add together computation definition initialized with signature",
-      initATSig
+      "Reveal secret computation definition initialized with signature",
+      initRevealSecretCompDefSig
     );
 
     const privateKey = x25519.utils.randomPrivateKey();
@@ -64,24 +67,39 @@ describe("TimeCapsule", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const val1 = BigInt(1);
-    const val2 = BigInt(2);
-    const plaintext = [val1, val2];
+    const secret = BigInt(42); // The answer to the universe
+    const plaintext = [secret];
 
     const nonce = randomBytes(16);
     const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const sumEventPromise = awaitEvent("sumEvent");
+    const receiver = Keypair.generate();
+    const receiverPublicKey = receiver.publicKey;
+    const receiverNonce = randomBytes(16);
 
-    // TODO: Remove this sleep once the CI bug is solved
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const receiverSharedSecret = x25519.getSharedSecret(
+      receiver.secretKey,
+      publicKey
+    );
+    const receiverCipher = new RescueCipher(receiverSharedSecret);
 
-    const queueSig = await program.methods
-      .addTogether(
+    const storeSecretSig = await program.methods
+      .storeSecret(
         Array.from(ciphertext[0]),
-        Array.from(ciphertext[1]),
+        new anchor.BN(5),
+        Array.from(receiverPublicKey.toBuffer()),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString())
+      )
+      .rpc();
+    console.log("Store secret sig is ", storeSecretSig);
+
+    const revealSecretEventPromise = awaitEvent("revealSecretEvent");
+
+    const queueSig = await program.methods
+      .revealSecret(
+        Array.from(receiverPublicKey.toBuffer()),
+        new anchor.BN(deserializeLE(receiverNonce).toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -90,7 +108,7 @@ describe("TimeCapsule", () => {
         executingPool: getExecutingPoolAcc(program.programId),
         compDefAccount: getCompDefAcc(
           program.programId,
-          Buffer.from(getCompDefAccOffset("add_together")).readUInt32LE()
+          Buffer.from(getCompDefAccOffset("reveal_secret")).readUInt32LE()
         ),
       })
       .rpc({ commitment: "confirmed" });
@@ -104,12 +122,15 @@ describe("TimeCapsule", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    const sumEvent = await sumEventPromise;
-    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0];
-    expect(decrypted).to.equal(val1 + val2);
+    const revealSecretEvent = await revealSecretEventPromise;
+    const decrypted = receiverCipher.decrypt(
+      [revealSecretEvent.secret],
+      receiverNonce
+    )[0];
+    expect(decrypted).to.equal(secret);
   });
 
-  async function initAddTogetherCompDef(
+  async function initRevealSecretCompDef(
     program: Program<TimeCapsule>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
@@ -117,7 +138,7 @@ describe("TimeCapsule", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("add_together");
+    const offset = getCompDefAccOffset("reveal_secret");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -127,7 +148,7 @@ describe("TimeCapsule", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initAddTogetherCompDef()
+      .initRevealSecretCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
@@ -137,14 +158,14 @@ describe("TimeCapsule", () => {
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init add together computation definition transaction", sig);
+    console.log("Init reveal secret computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/add_together.arcis");
+      const rawCircuit = fs.readFileSync("build/reveal_secret.arcis");
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "add_together",
+        "reveal_secret",
         program.programId,
         rawCircuit,
         true
