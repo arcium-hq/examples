@@ -24,6 +24,20 @@ mod circuits {
     }
 
     #[instruction]
+    pub fn setup_vickrey_auction(mxe: Mxe) -> Enc<Mxe, VickreyAuction> {
+        let auction = VickreyAuction {
+            highest_bid: 0,
+            highest_bidder_pubkey_one: 0,
+            highest_bidder_pubkey_two: 0,
+            second_highest_bid: 0,
+            second_highest_bidder_pubkey_one: 0,
+            second_highest_bidder_pubkey_two: 0,
+        };
+
+        mxe.from_arcis(auction)
+    }
+
+    #[instruction]
     pub fn vickrey_bid(
         auction_ctxt: Enc<Mxe, VickreyAuction>,
         bid_ctxt: Enc<Mxe, Bid>,
