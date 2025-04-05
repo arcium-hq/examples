@@ -11,7 +11,7 @@ use arcium_client::idl::arcium::{
         PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
-    types::Argument,
+    types::{Argument, CallbackAccount},
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -31,6 +31,63 @@ pub mod rock_paper_scissors {
 
     pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn init_game(
+        ctx: Context<InitGame>,
+        id: u64,
+        player_a: Pubkey,
+        player_b: Pubkey,
+        encryption_key: [u8; 32],
+        nonce: u128,
+    ) -> Result<()> {
+        let game = &mut ctx.accounts.rps_game;
+        game.id = id;
+        game.player_a = player_a;
+        game.player_b = player_b;
+        game.encryption_key = encryption_key;
+        game.nonce = nonce;
+
+        let args = vec![
+            Argument::EncryptedU8(encryption_key),
+            Argument::PlaintextU128(nonce),
+        ];
+
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.rps_game.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
+
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "init_game")]
+    pub fn init_game_callback(
+        ctx: Context<InitGameCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let moves: [[u8; 32]; 2] = bytes[16..]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let game = &mut ctx.accounts.rps_game;
+        game.moves = moves;
+
         Ok(())
     }
 
@@ -87,6 +144,72 @@ pub mod rock_paper_scissors {
         });
         Ok(())
     }
+}
+
+#[queue_computation_accounts("init_game", payer)]
+#[derive(Accounts)]
+#[instruction(id: u64)]
+pub struct InitGame<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(init,
+        payer = payer,
+        space = 8 + RPSGame::INIT_SPACE,
+        seeds = [b"rps_game", id.to_le_bytes().as_ref()],
+        bump,
+    )]
+    pub rps_game: Account<'info, RPSGame>,
+}
+
+#[callback_accounts("init_game", payer)]
+#[derive(Accounts)]
+pub struct InitGameCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub rps_game: Account<'info, RPSGame>,
 }
 
 #[init_computation_definition_accounts("init_game", payer)]
@@ -197,6 +320,17 @@ pub struct InitCompareMovesCompDef<'info> {
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct RPSGame {
+    pub moves: [[u8; 32]; 2],
+    pub player_a: Pubkey,
+    pub player_b: Pubkey,
+    pub encryption_key: [u8; 32],
+    pub nonce: u128,
+    pub id: u64,
 }
 
 #[event]
