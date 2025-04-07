@@ -16,8 +16,8 @@ mod circuits {
 
     #[instruction]
     pub fn share_patient_data(
-        input_ctxt: Enc<Client, PatientData>,
         receiver: Client,
+        input_ctxt: Enc<Client, PatientData>,
     ) -> Enc<Client, PatientData> {
         let input = input_ctxt.to_arcis();
         receiver.from_arcis(input)

@@ -55,13 +55,13 @@ describe("ShareMedicalRecords", () => {
       initSPDSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
-    const publicKey = x25519.getPublicKey(privateKey);
+    const senderPrivateKey = x25519.utils.randomPrivateKey();
+    const senderPublicKey = x25519.getPublicKey(senderPrivateKey);
     const mxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
       253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
     ]);
-    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
+    const sharedSecret = x25519.getSharedSecret(senderPrivateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
     const patientId = BigInt(420);
@@ -111,8 +111,8 @@ describe("ShareMedicalRecords", () => {
       .rpc({ commitment: "confirmed" });
     console.log("Store sig is ", storeSig);
 
-    const receiverKp = Keypair.generate();
-    const receiverPubKey = receiverKp.publicKey;
+    const receiverSecretKey = x25519.utils.randomPrivateKey();
+    const receiverPubKey = x25519.getPublicKey(receiverSecretKey);
     const receiverNonce = randomBytes(16);
 
     const receivedPatientDataEventPromise = awaitEvent(
@@ -121,9 +121,9 @@ describe("ShareMedicalRecords", () => {
 
     const queueSig = await program.methods
       .sharePatientData(
-        Array.from(receiverPubKey.toBuffer()),
+        Array.from(receiverPubKey),
         new anchor.BN(deserializeLE(receiverNonce).toString()),
-        ciphertext[0],
+        Array.from(senderPublicKey),
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
@@ -142,7 +142,7 @@ describe("ShareMedicalRecords", () => {
       })
       .rpc({ commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
-    
+
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
       queueSig,
@@ -151,20 +151,19 @@ describe("ShareMedicalRecords", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    console.log("reciever key length is ", receiverKp.secretKey.length);
-    console.log("mxe public key length is ", mxePublicKey.length);
     const receiverSharedSecret = x25519.getSharedSecret(
-      receiverKp.secretKey,
+      receiverSecretKey,
       mxePublicKey
     );
     const receiverCipher = new RescueCipher(receiverSharedSecret);
 
     const receivedPatientDataEvent = await receivedPatientDataEventPromise;
+
     const decrypted = receiverCipher.decrypt(
       [receivedPatientDataEvent.patientId],
-      receiverNonce
+      new Uint8Array(receivedPatientDataEvent.nonce)
     )[0];
-    // expect(decrypted).to.equal(patientData.patientId);
+    expect(decrypted).to.equal(patientData[0]);
     console.log("Decrypted patient data is ", decrypted);
   });
 

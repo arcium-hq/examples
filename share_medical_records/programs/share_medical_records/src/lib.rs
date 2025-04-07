@@ -60,19 +60,19 @@ pub mod share_medical_records {
         ctx: Context<SharePatientData>,
         receiver: [u8; 32],
         receiver_nonce: u128,
-        pub_key: [u8; 32],
+        sender_pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(pub_key),
+            Argument::PublicKey(receiver),
+            Argument::PlaintextU128(receiver_nonce),
+            Argument::PublicKey(sender_pub_key),
             Argument::PlaintextU128(nonce),
             Argument::Account(
                 ctx.accounts.patient_data.key(),
                 8,
                 PatientData::INIT_SPACE as u32,
             ),
-            Argument::PublicKey(receiver),
-            Argument::PlaintextU128(receiver_nonce),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
@@ -89,7 +89,10 @@ pub mod share_medical_records {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
+        let bytes = bytes.iter().skip(32).cloned().collect::<Vec<_>>();
+
         emit!(ReceivedPatientDataEvent {
+            nonce: bytes[0..16].try_into().unwrap(),
             patient_id: bytes[16..48].try_into().unwrap(),
             age: bytes[48..80].try_into().unwrap(),
             gender: bytes[80..112].try_into().unwrap(),
@@ -200,6 +203,7 @@ pub struct InitSharePatientDataCompDef<'info> {
 
 #[event]
 pub struct ReceivedPatientDataEvent {
+    pub nonce: [u8; 16],
     pub patient_id: [u8; 32],
     pub age: [u8; 32],
     pub gender: [u8; 32],
