@@ -91,7 +91,7 @@ jobs:
             
             # Run the test and capture logs
             echo "Running arcium test..."
-            timeout 20m arcium test || EXIT_CODE=$?
+            timeout 10m arcium test || EXIT_CODE=$?
             echo "Most recent docker container id: $(docker ps -q -l)"
             docker logs $(docker ps -q -l)
             echo "=== Docker Containers ==="
@@ -104,9 +104,9 @@ jobs:
             
             pkill -f solana-test-validator
 
-            # if [ -n "$EXIT_CODE" ]; then
-            #   exit $EXIT_CODE
-            # fi
+            if [ -n "$EXIT_CODE" ]; then
+              exit $EXIT_CODE
+            fi
           done
         shell: bash
       - uses: lhotari/action-upterm@v1
