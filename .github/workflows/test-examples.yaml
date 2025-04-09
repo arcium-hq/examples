@@ -107,7 +107,7 @@ jobs:
             # fi
           done
         shell: bash
-      - uses: valeriangalliat/action-sshd-cloudflared@v1
+      - uses: lhotari/action-upterm@v1
       - name: Save cargo registry
         uses: actions/cache/save@v4
         with:
