@@ -1,68 +1,66 @@
-# Confidential On-Chain Voting with Arcium
+# Anonymous Voting with Arcium
 
-This example demonstrates how to implement confidential voting on Solana using Arcium's encrypted computation framework. The system allows voters to cast their votes privately while maintaining the integrity of the voting process.
+This project demonstrates how to implement truly anonymous voting on Solana using Arcium's confidential computing capabilities. It showcases how to create private polls where individual votes remain confidential while still allowing for verifiable results.
 
-## Overview
+## Why Arcium is Necessary for Anonymous Voting
 
-The voting system consists of three main components:
+Traditional blockchains are transparent by design, making it impossible to implement truly anonymous voting without additional privacy layers. Here's why Arcium is essential:
 
-1. Creating a poll
-2. Casting a vote
-3. Revealing results
-
-### Key Features
-
-- **Confidential Voting**: Votes are encrypted and processed in a privacy-preserving manner
-- **Secure Result Revelation**: Only the poll authority can reveal the final results
+- **Public Nature of Blockchains**: All data on a regular blockchain is visible to everyone
+- **Privacy Requirements**: Votes must remain confidential to ensure anonymity
+- **Security Concerns**: Even encrypted votes would require decryption keys, creating vulnerabilities
+- **Distributed Trust**: Arcium uses Multi-Party Computation (MPC) to achieve a trust-minimized setup for confidential computing
 
 ## How It Works
 
 ### 1. Poll Creation
 
-When a new poll is created:
+```typescript
+const pollSig = await program.methods.createNewPoll(
+  POLL_ID,
+  `Poll ${POLL_ID}: $SOL to 500?`,
+  new anchor.BN(deserializeLE(pollNonce).toString())
+);
+```
 
-- A unique poll account is initialized with a question and initial encrypted vote counts
-- The vote counts are initialized to zero using encrypted computation
-- The poll creator becomes the authority who can later reveal results
+- Creates a new poll with a unique ID and title
+- Uses a cryptographic nonce for security operations
+- Establishes the voting context on-chain
 
-### 2. Vote Casting
+### 2. Voting Process
 
-The voting process uses Arcium's encrypted computation framework:
+```typescript
+const vote = BigInt(true);
+const plaintext = [vote];
+const nonce = randomBytes(16);
+const ciphertext = cipher.encrypt(plaintext, nonce);
+```
 
-- Each vote is encrypted using the client's encryption key
-- Votes are processed using homomorphic encryption, allowing addition of encrypted values
-- The vote counts are updated without revealing individual votes
-- A timestamp is recorded for each vote for audit purposes
+- Votes are encrypted using x25519 (key exchange) and RescueCipher
+- Each vote uses a unique nonce for security
+- Votes remain confidential even when stored on-chain
 
-### 3. Result Revelation
+### 3. Confidential Computation
 
-Only the poll authority can reveal the final results:
+```typescript
+const queueVoteSig = await program.methods.vote(
+  POLL_ID,
+  Array.from(ciphertext[0]),
+  Array.from(publicKey),
+  new anchor.BN(deserializeLE(nonce).toString())
+);
+```
 
-- The encrypted vote counts are processed to determine the winner
-- The result is revealed as a boolean (true for "yes" winning, false for "no" winning)
-- The process maintains privacy of individual votes while providing verifiable results
+- Encrypted votes are processed using MPC across multiple parties
+- Computation is distributed across the Arcium network
+- Individual vote values remain confidential throughout the computation
 
-## Technical Implementation
+### 4. Result Revealed
 
-### Encrypted Computation
+```typescript
+const revealQueueSig = await program.methods.revealResult(POLL_ID);
+```
 
-The system uses Arcium's encrypted instruction framework, Arcis, with three main computations:
-
-1. `init_vote_stats`: Initializes encrypted vote counts
-2. `vote`: Processes an encrypted vote and updates the encrypted vote counts
-3. `reveal_result`: Computes the final result from encrypted vote counts
-
-### Data Structures
-
-- `PollAccount`: Solana account structure that stores poll metadata and encrypted vote state
-- Arcis Data Structures (used in encrypted computation):
-  - `VoteStats`: Encrypted structure containing yes/no vote counts, processed within Arcis
-  - `UserVote`: Encrypted structure for individual votes, processed within Arcis
-
-### Privacy Guarantees
-
-The system ensures:
-
-- Individual votes remain private
-- Vote counts are encrypted during computation
-- Results are only revealed when explicitly requested by the authority
+- Only the final result (e.g., majority vote) is revealed
+- Individual votes remain confidential
+- Results are computed through MPC and only the outcome is published
