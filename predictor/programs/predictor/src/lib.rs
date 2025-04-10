@@ -45,7 +45,7 @@ pub mod predictor {
         encryption_nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(encryption_pub_key),
+            Argument::ArcisPubkey(encryption_pub_key),
             Argument::PlaintextU128(encryption_nonce),
             Argument::EncryptedU8(coef_1),
             Argument::EncryptedU8(coef_2),

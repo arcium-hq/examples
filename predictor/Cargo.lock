@@ -268,9 +268,9 @@ checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
 
 [[package]]
 name = "arcis"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "e83b9af74fb7b85d0deda56c426a17b33a9c24bc8eef5658d03f8b9350e7c36c"
+checksum = "e6137e618ab8c93ed6190d5f585f22eb89badf2928cc88807298ee4e80cf7281"
 dependencies = [
  "aes",
  "arcis-diagnostics",
@@ -291,18 +291,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-diagnostics"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "71d3c2448c3e08482eeda68faf7038db0169153d6a421968450cca3b52a5cb01"
+checksum = "49586016818bbe8ad898c207598c093cbaad60a27796b8caa3ded6d36eae65f6"
 dependencies = [
  "colored",
 ]
 
 [[package]]
 name = "arcis-imports"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "96102f6a32e16bc4c603795311421d980fb80a5a01b1243e5e4ed642df47b67a"
+checksum = "83ec7424c9bd64e3e205dbbdc0d33cc56ee726334a444cf8c04176465e29cab4"
 dependencies = [
  "arcis",
  "arcis-interpreter-proc-macros",
@@ -312,9 +312,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-interface"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ec2768d120becb0425edfff352270ce06e6bf05c240061de033c9cf8218f460b"
+checksum = "a8fe2a751c0bcdc7ecb237849f3ce48c42f7a5e147628f6c4aa543def3f09b4d"
 dependencies = [
  "serde",
  "serde_json",
@@ -322,9 +322,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-internal-expr-macro"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "983417b40f028070160100932d622578f1ae1bf018052963bf38697df598ba9d"
+checksum = "9368171bad98701adc8e1c017724690588f87387743e8fc2c762fb6bffc09bac"
 dependencies = [
  "indexmap",
  "proc-macro2",
@@ -335,9 +335,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "208407779e10fb5f7f8244de3e79cac8386b46dc67e6621d3a91f63d0b53c2e8"
+checksum = "6d16215c338e7e919987ae73586301d4372a879aedef6c6d29808fd825b1c06d"
 dependencies = [
  "arcis",
  "arcis-interface",
@@ -351,18 +351,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter-proc-macros"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "facfb41036d32eac1207941fe871decaebc36414074dda8d66c27e17e52c3723"
+checksum = "65ea84bab86f4e11786d4047612e3d7eb7b5fc2a06a906bb0a9baf9f7e2032d6"
 dependencies = [
  "arcis-interpreter",
 ]
 
 [[package]]
 name = "arcium-anchor"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "f0c8b264ab58e1a66fa13afa13f0f5ae2a70e9b7aaa80c11e48864eddbea9842"
+checksum = "ef5638e9528099b206e2f5731dc23e4a7af569dc8a1c25237d3f179a003ca9ed"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -372,18 +372,18 @@ dependencies = [
 
 [[package]]
 name = "arcium-client"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ad7ae4afd276690d1c2f79db36c00e565e4f28bb2809dd1aaab62e44f4c6903b"
+checksum = "323307a166ba2bddf3dfc6b7399a8f1c721541caa950975da0149ef76afc15f7"
 dependencies = [
  "anchor-lang",
 ]
 
 [[package]]
 name = "arcium-macros"
-version = "0.1.41"
+version = "0.1.42"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "d088bd2bd580dfb1d82ec87abec0c911574c1c1fa8349d5d71d822835cac7554"
+checksum = "8dcbbb4ee6841d84011e193ae84bea76b4668a9af80ba05f1f2a52921b98b366"
 dependencies = [
  "arcis-interface",
  "proc-macro2",
@@ -1673,9 +1673,9 @@ dependencies = [
 
 [[package]]
 name = "solana-curve25519"
-version = "2.2.6"
+version = "2.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91f23498bbf3ae4f22125a2f16f988a5a659628ea4949ca605a05191f91095d3"
+checksum = "e0cf33066cc9a741ff4cc4d171a4a816ea06f9826516b7360d997179a1b3244f"
 dependencies = [
  "bytemuck",
  "bytemuck_derive",
@@ -2416,9 +2416,9 @@ dependencies = [
 
 [[package]]
 name = "solana-zk-sdk"
-version = "2.2.6"
+version = "2.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25f159f6daedab6cbd42d57945b1789f2f0d859c647dd611658227ae4330e4df"
+checksum = "35a153bff0be31a58dacd7f40bc37fc80f5bb7cb3f38fb62e7a2777a8b48de25"
 dependencies = [
  "aes-gcm-siv",
  "base64 0.22.1",
@@ -3101,9 +3101,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "winnow"
-version = "0.7.4"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e97b544156e9bebe1a0ffbc03484fc1ffe3100cbce3ffb17eac35f7cdd7ab36"
+checksum = "63d3fcd9bba44b03821e7d699eeee959f3126dcc4aa8e4ae18ec617c2a5cea10"
 dependencies = [
  "memchr",
 ]
