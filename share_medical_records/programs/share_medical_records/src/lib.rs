@@ -64,9 +64,9 @@ pub mod share_medical_records {
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(receiver),
+            Argument::ArcisPubkey(receiver),
             Argument::PlaintextU128(receiver_nonce),
-            Argument::PublicKey(sender_pub_key),
+            Argument::ArcisPubkey(sender_pub_key),
             Argument::PlaintextU128(nonce),
             Argument::Account(
                 ctx.accounts.patient_data.key(),
