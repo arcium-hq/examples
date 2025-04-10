@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation,
+    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
     COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
@@ -23,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("EGRyBhhe9pzvoznJuQh5x5Dx5V2eKQv1AwWdTsEMEYEQ");
+declare_id!("7G3err5ACQY8b6Bpi2zpSPydWwEmtPCytzoZ4SVZAVjg");
 
 #[arcium_program]
 pub mod voting {
@@ -67,19 +67,25 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
+
+        let vote_stats: [[u8; 32]; 2] = bytes[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
 
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         Ok(())
     }
@@ -91,21 +97,20 @@ pub mod voting {
 
     pub fn vote(
         ctx: Context<Vote>,
-        id: u32,
+        _id: u32,
         vote: [u8; 32],
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
-        vote_stats_nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(vote_encryption_pubkey),
+            Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
-                8 + 1 + (4 + 50) + 4 + 32 + 16,
+                // Offset of 8 (discriminator) and 1 (bump)
+                8 + 1,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
         ];
@@ -123,18 +128,23 @@ pub mod voting {
     }
 
     #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(ctx: Context<VoteCallback>, output: Vec<u8>) -> Result<()> {
-        let vote_stats: [[u8; 32]; 2] = output
+    pub fn vote_callback(ctx: Context<VoteCallback>, output: ComputationOutputs) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
+        let vote_stats: [[u8; 32]; 2] = bytes[16..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
 
-        let mut poll_acc =
-            PollAccount::try_deserialize(&mut &ctx.accounts.poll_acc.data.borrow()[..])?;
-        poll_acc.vote_state = vote_stats;
-        poll_acc.try_serialize(&mut *ctx.accounts.poll_acc.try_borrow_mut_data()?)?;
+        ctx.accounts.poll_acc.vote_state = vote_stats;
+        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -151,11 +161,7 @@ pub mod voting {
         Ok(())
     }
 
-    pub fn reveal_result(
-        ctx: Context<RevealVotingResult>,
-        id: u32,
-        vote_stats_nonce: u128,
-    ) -> Result<()> {
+    pub fn reveal_result(ctx: Context<RevealVotingResult>, id: u32) -> Result<()> {
         require!(
             ctx.accounts.payer.key() == ctx.accounts.poll_acc.authority,
             ErrorCode::InvalidAuthority
@@ -164,11 +170,11 @@ pub mod voting {
         msg!("Revealing voting result for poll with id {}", id);
 
         let args = vec![
-            Argument::PlaintextU128(vote_stats_nonce),
+            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator), 1 (bump), 4 + 50 (question), 4 (id), 32 (authority), 16 (nonce)
-                8 + 1 + (4 + 50) + 4 + 32 + 16,
+                // Offset of 8 (discriminator) and 1 (bump)
+                8 + 1,
                 32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
             ),
         ];
@@ -180,10 +186,17 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealVotingResultCallback>,
-        output: Vec<u8>,
+        output: ComputationOutputs,
     ) -> Result<()> {
-        let result = output[0] != 0;
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let result = bytes[0] != 0;
         emit!(RevealResultEvent { output: result });
+
         Ok(())
     }
 }
@@ -253,7 +266,7 @@ pub struct InitVoteStatsCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("init_vote_stats", payer)]
@@ -276,7 +289,7 @@ pub struct InitVoteStatsCompDef<'info> {
 
 #[queue_computation_accounts("vote", payer)]
 #[derive(Accounts)]
-#[instruction(id: u32)]
+#[instruction(_id: u32)]
 pub struct Vote<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -320,7 +333,7 @@ pub struct Vote<'info> {
     )]
     pub authority: UncheckedAccount<'info>,
     #[account(
-        seeds = [b"poll", authority.key().as_ref(), id.to_le_bytes().as_ref()],
+        seeds = [b"poll", authority.key().as_ref(), _id.to_le_bytes().as_ref()],
         bump = poll_acc.bump,
         has_one = authority
     )]
@@ -340,9 +353,8 @@ pub struct VoteCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
-    /// CHECK: poll_acc, checked by the callback account key passed in queue_computation
     #[account(mut)]
-    pub poll_acc: UncheckedAccount<'info>,
+    pub poll_acc: Account<'info, PollAccount>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
@@ -447,19 +459,21 @@ pub struct InitRevealResultCompDef<'info> {
 #[derive(InitSpace)]
 pub struct PollAccount {
     pub bump: u8,
-    #[max_len(50)]
-    pub question: String,
+    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    pub vote_state: [[u8; 32]; 2],
     pub id: u32,
     pub authority: Pubkey,
     pub nonce: u128,
-    // 2 counts, each saved as a ciphertext (so 32 bytes each)
-    pub vote_state: [[u8; 32]; 2],
+    #[max_len(50)]
+    pub question: String,
 }
 
 #[error_code]
 pub enum ErrorCode {
     #[msg("Invalid authority")]
     InvalidAuthority,
+    #[msg("The computation was aborted")]
+    AbortedComputation,
 }
 
 #[event]
