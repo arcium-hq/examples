@@ -47,7 +47,7 @@ pub mod sealed_bid_auction {
         auction.nonce = auction_nonce;
 
         let args = vec![
-            Argument::PublicKey(encryption_pubkey),
+            Argument::ArcisPubkey(encryption_pubkey),
             Argument::PlaintextU128(auction_nonce),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
@@ -134,7 +134,7 @@ pub mod sealed_bid_auction {
 
     pub fn vickrey_reveal(ctx: Context<VickreyAuctionReveal>) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(ctx.accounts.auction_account.encryption_pubkey),
+            Argument::ArcisPubkey(ctx.accounts.auction_account.encryption_pubkey),
             Argument::PlaintextU128(ctx.accounts.auction_account.nonce),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;

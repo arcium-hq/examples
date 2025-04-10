@@ -53,7 +53,7 @@ pub mod my_program {
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(pub_key),
+            Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(ciphertext_0),
             Argument::EncryptedU8(ciphertext_1),
