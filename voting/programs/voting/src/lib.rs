@@ -103,7 +103,7 @@ pub mod voting {
         vote_nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(vote_encryption_pubkey),
+            Argument::ArcisPubkey(vote_encryption_pubkey),
             Argument::PlaintextU128(vote_nonce),
             Argument::EncryptedBool(vote),
             Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
