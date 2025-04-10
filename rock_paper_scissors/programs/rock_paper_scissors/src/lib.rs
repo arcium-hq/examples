@@ -109,7 +109,7 @@ pub mod rock_paper_scissors {
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
-            Argument::PublicKey(pub_key),
+            Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(player_move),
             Argument::EncryptedU8(house_move),
