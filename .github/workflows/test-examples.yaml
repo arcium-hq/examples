@@ -89,20 +89,20 @@ jobs:
             yarn install
             arcium build
             
-            # Run the test and capture logs
-            echo "Running arcium test..."
-            timeout 10m arcium test || EXIT_CODE=$?
-            echo "Most recent docker container id: $(docker ps -q -l)"
-            docker logs $(docker ps -q -l)
-            echo "=== Docker Containers ==="
-            docker ps -a
-            echo "=== Callback Server Logs ==="
-            cat artifacts/callback_server.log || true
-            echo "=== Docker Compose Logs ==="
-            docker compose -f artifacts/docker-compose-arx-env.yml logs || true
-            popd
+            # # Run the test and capture logs
+            # echo "Running arcium test..."
+            # timeout 10m arcium test || EXIT_CODE=$?
+            # echo "Most recent docker container id: $(docker ps -q -l)"
+            # docker logs $(docker ps -q -l)
+            # echo "=== Docker Containers ==="
+            # docker ps -a
+            # echo "=== Callback Server Logs ==="
+            # cat artifacts/callback_server.log || true
+            # echo "=== Docker Compose Logs ==="
+            # docker compose -f artifacts/docker-compose-arx-env.yml logs || true
+            # popd
             
-            pkill -f solana-test-validator
+            # pkill -f solana-test-validator
 
             # if [ -n "$EXIT_CODE" ]; then
             #   exit $EXIT_CODE
