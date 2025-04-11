@@ -33,14 +33,10 @@ mod circuits {
         let player_move = player_move_ctxt.to_arcis();
         let mut game_moves = game_ctxt.to_arcis();
 
-        if player_move.player == 0 {
-            if game_moves.player_a_move != 3 {
-                game_moves.player_a_move = player_move.player_move;
-            }
-        } else {
-            if game_moves.player_b_move != 3 {
-                game_moves.player_b_move = player_move.player_move;
-            }
+        if player_move.player == 0 && game_moves.player_a_move != 3 {
+            game_moves.player_a_move = player_move.player_move;
+        } else if player_move.player == 1 && game_moves.player_b_move != 3 {
+            game_moves.player_b_move = player_move.player_move;
         }
 
         game_ctxt.owner.from_arcis(game_moves)
