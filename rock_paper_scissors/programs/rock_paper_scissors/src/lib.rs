@@ -23,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("B9ZAW8SQCTp3DrTSKbGsDwU6mZiLMqcraBgTfyzVSwj4");
+declare_id!("9AYTA4TGBVNgCYTuw3KsFchhfUy4AdL1aN5tWdQNKnPY");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
@@ -50,7 +50,7 @@ pub mod rock_paper_scissors {
         game.nonce = nonce;
 
         let args = vec![
-            Argument::EncryptedU8(encryption_key),
+            Argument::ArcisPubkey(encryption_key),
             Argument::PlaintextU128(nonce),
         ];
 
@@ -149,18 +149,11 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
-    pub fn compare_moves(
-        ctx: Context<CompareMoves>,
-        player_move: [u8; 32],
-        house_move: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
+    pub fn compare_moves(ctx: Context<CompareMoves>) -> Result<()> {
         let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(player_move),
-            Argument::EncryptedU8(house_move),
+            Argument::ArcisPubkey(ctx.accounts.rps_game.encryption_key),
+            Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
+            Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
@@ -393,6 +386,8 @@ pub struct CompareMoves<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    #[account(mut)]
+    pub rps_game: Account<'info, RPSGame>,
 }
 
 #[callback_accounts("compare_moves", payer)]

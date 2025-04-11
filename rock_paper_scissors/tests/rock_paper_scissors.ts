@@ -88,18 +88,17 @@ describe("RockPaperScissors", () => {
     const cipher = new RescueCipher(sharedSecret);
 
     // Initialize a new game
-    const gameId = new anchor.BN(Date.now());
+    const gameId = 1;
     const nonce = randomBytes(16);
-    const nonceValue = new anchor.BN(deserializeLE(nonce).toString());
 
     console.log("Initializing a new game");
     const initGameTx = await program.methods
       .initGame(
-        gameId,
+        new anchor.BN(gameId),
         playerA.publicKey,
         playerB.publicKey,
         Array.from(publicKey),
-        nonceValue
+        new anchor.BN(deserializeLE(nonce).toString()),
       )
       .accounts({
         payer: owner.publicKey,
@@ -181,20 +180,10 @@ describe("RockPaperScissors", () => {
 
     // Compare moves to determine the winner
     const gameEventPromise = awaitEvent("compareMovesEvent");
-    const compareNonce = randomBytes(16);
-    const compareCiphertext = cipher.encrypt(
-      [BigInt(playerAMove), BigInt(playerBMove)],
-      compareNonce
-    );
-
+    
     console.log("Comparing moves");
     const compareTx = await program.methods
-      .compareMoves(
-        Array.from(compareCiphertext[0]),
-        Array.from(compareCiphertext[1]),
-        Array.from(publicKey),
-        new anchor.BN(deserializeLE(compareNonce).toString())
-      )
+      .compareMoves()
       .accounts({
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -207,8 +196,6 @@ describe("RockPaperScissors", () => {
         clusterAccount: arciumEnv.arciumClusterPubkey,
       })
       .rpc({ commitment: "confirmed" });
-
-    console.log("Compare signature:", compareTx);
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -337,13 +324,9 @@ describe("RockPaperScissors", () => {
         nonce
       );
 
+      console.log("Comparing moves");
       const queueSig = await program.methods
-        .compareMoves(
-          Array.from(ciphertext[0]),
-          Array.from(ciphertext[1]),
-          Array.from(publicKey3),
-          new anchor.BN(deserializeLE(nonce).toString())
-        )
+        .compareMoves()
         .accounts({
           payer: owner.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
