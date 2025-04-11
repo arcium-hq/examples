@@ -167,7 +167,7 @@ describe("RockPaperScissors", () => {
     const playerAMove = 0; // Rock
     const playerANonce = randomBytes(16);
     const playerACiphertext = playerACipher.encrypt(
-      [BigInt(playerAMove)],
+      [BigInt(playerAMove), BigInt(0)],
       playerANonce
     );
 
@@ -175,6 +175,7 @@ describe("RockPaperScissors", () => {
     const playerAMoveTx = await program.methods
       .playerMove(
         Array.from(playerACiphertext[0]),
+        Array.from(playerACiphertext[1]),
         Array.from(playerAPublicKey),
         new anchor.BN(deserializeLE(playerANonce).toString())
       )
@@ -229,14 +230,16 @@ describe("RockPaperScissors", () => {
     const playerBMove = 2; // Scissors
     const playerBNonce = randomBytes(16);
     const playerBCiphertext = playerBCipher.encrypt(
-      [BigInt(playerBMove)],
+      [BigInt(playerBMove), BigInt(1)],
       playerBNonce
     );
+    
 
     console.log("Player B making a move (Scissors)");
     const playerBMoveTx = await program.methods
       .playerMove(
         Array.from(playerBCiphertext[0]),
+        Array.from(playerBCiphertext[1]),
         Array.from(playerBPublicKey),
         new anchor.BN(deserializeLE(playerBNonce).toString())
       )
@@ -384,15 +387,16 @@ describe("RockPaperScissors", () => {
     const unauthorizedMove = 1; // Paper
     const unauthorizedNonce = randomBytes(16);
     const unauthorizedCiphertext = unauthorizedCipher.encrypt(
-      [BigInt(unauthorizedMove)],
+      [BigInt(unauthorizedMove), BigInt(0)],
       unauthorizedNonce
     );
-
+    
     console.log("Unauthorized player attempting to make a move");
     try {
       await program.methods
         .playerMove(
           Array.from(unauthorizedCiphertext[0]),
+          Array.from(unauthorizedCiphertext[1]),
           Array.from(unauthorizedPublicKey),
           new anchor.BN(deserializeLE(unauthorizedNonce).toString())
         )
@@ -502,14 +506,15 @@ describe("RockPaperScissors", () => {
       // Player A makes a move
       const playerAMoveNonce = randomBytes(16);
       const playerAMoveCiphertext = playerACipher.encrypt(
-        [BigInt(game.player)],
+        [BigInt(game.player), BigInt(0)],
         playerAMoveNonce
       );
-
+      
       console.log("Player A making a move");
       const playerAMoveTx = await program.methods
         .playerMove(
           Array.from(playerAMoveCiphertext[0]),
+          Array.from(playerAMoveCiphertext[1]),
           Array.from(playerAPublicKey),
           new anchor.BN(deserializeLE(playerAMoveNonce).toString())
         )
@@ -548,14 +553,15 @@ describe("RockPaperScissors", () => {
       // Player B makes a move
       const playerBMoveNonce = randomBytes(16);
       const playerBMoveCiphertext = playerBCipher.encrypt(
-        [BigInt(game.house)],
+        [BigInt(game.house), BigInt(1)],
         playerBMoveNonce
       );
-
+      
       console.log("Player B making a move");
       const playerBMoveTx = await program.methods
         .playerMove(
           Array.from(playerBMoveCiphertext[0]),
+          Array.from(playerBMoveCiphertext[1]),
           Array.from(playerBPublicKey),
           new anchor.BN(deserializeLE(playerBMoveNonce).toString())
         )

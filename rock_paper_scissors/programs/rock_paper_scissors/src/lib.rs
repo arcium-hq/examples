@@ -93,6 +93,7 @@ pub mod rock_paper_scissors {
 
     pub fn player_move(
         ctx: Context<PlayerMove>,
+        player_id: [u8; 32],
         player_move: [u8; 32],
         pub_key: [u8; 32],
         nonce: u128,
@@ -106,11 +107,17 @@ pub mod rock_paper_scissors {
         let args = vec![
             Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
+            Argument::EncryptedU8(player_id),
             Argument::EncryptedU8(player_move),
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, args, vec![
+            CallbackAccount {
+                pubkey: ctx.accounts.rps_game.key(),
+                is_writable: true,
+            },
+        ], None)?;
         Ok(())
     }
 
