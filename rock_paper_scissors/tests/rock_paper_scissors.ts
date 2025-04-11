@@ -122,7 +122,7 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx);
-    
+
     // Wait for initGame computation finalization
     const initGameFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -138,7 +138,13 @@ describe("RockPaperScissors", () => {
       playerA.publicKey,
       2 * anchor.web3.LAMPORTS_PER_SOL
     );
-    await provider.connection.confirmTransaction(airdropPlayerATx, "confirmed");
+    await provider.connection.confirmTransaction({
+      signature: airdropPlayerATx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
     console.log("Funds airdropped to Player A");
 
     // Player A makes a move (Rock)
@@ -167,7 +173,10 @@ describe("RockPaperScissors", () => {
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         rpsGame: PublicKey.findProgramAddressSync(
-          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
           program.programId
         )[0],
       })
@@ -175,7 +184,7 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Player A move signature:", playerAMoveTx);
-    
+
     // Wait for player A move computation finalization
     const playerAMoveFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -191,7 +200,13 @@ describe("RockPaperScissors", () => {
       playerB.publicKey,
       2 * anchor.web3.LAMPORTS_PER_SOL
     );
-    await provider.connection.confirmTransaction(airdropPlayerBTx, "confirmed");
+    await provider.connection.confirmTransaction({
+      signature: airdropPlayerBTx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
     console.log("Funds airdropped to Player B");
 
     // Player B makes a move (Scissors)
@@ -220,7 +235,10 @@ describe("RockPaperScissors", () => {
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         rpsGame: PublicKey.findProgramAddressSync(
-          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
           program.programId
         )[0],
       })
@@ -228,7 +246,7 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Player B move signature:", playerBMoveTx);
-    
+
     // Wait for player B move computation finalization
     const playerBMoveFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -255,7 +273,10 @@ describe("RockPaperScissors", () => {
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         rpsGame: PublicKey.findProgramAddressSync(
-          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
           program.programId
         )[0],
       })
@@ -315,7 +336,7 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx2);
-    
+
     // Wait for initGame computation finalization
     const initGameFinalizeSig2 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -331,7 +352,13 @@ describe("RockPaperScissors", () => {
       unauthorizedPlayer.publicKey,
       2 * anchor.web3.LAMPORTS_PER_SOL
     );
-    await provider.connection.confirmTransaction(airdropUnauthorizedTx, "confirmed");
+    await provider.connection.confirmTransaction({
+      signature: airdropUnauthorizedTx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
     console.log("Funds airdropped to unauthorized player");
 
     // Unauthorized player tries to make a move
@@ -422,7 +449,10 @@ describe("RockPaperScissors", () => {
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
           rpsGame: PublicKey.findProgramAddressSync(
-            [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+            [
+              Buffer.from("rps_game"),
+              new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+            ],
             program.programId
           )[0],
         })
