@@ -113,6 +113,10 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        // rpsGame: PublicKey.findProgramAddressSync(
+        //   [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+        //   program.programId
+        // )[0],
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -127,6 +131,15 @@ describe("RockPaperScissors", () => {
       "confirmed"
     );
     console.log("Init game finalize signature:", initGameFinalizeSig);
+
+    // Airdrop funds to Player A
+    console.log("Airdropping funds to Player A");
+    const airdropPlayerATx = await provider.connection.requestAirdrop(
+      playerA.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await provider.connection.confirmTransaction(airdropPlayerATx, "confirmed");
+    console.log("Funds airdropped to Player A");
 
     // Player A makes a move (Rock)
     const playerAMove = 0; // Rock
@@ -154,7 +167,7 @@ describe("RockPaperScissors", () => {
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         rpsGame: PublicKey.findProgramAddressSync(
-          [Buffer.from("rps_game"), new anchor.BN(gameId).toBuffer()],
+          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
           program.programId
         )[0],
       })
@@ -171,6 +184,15 @@ describe("RockPaperScissors", () => {
       "confirmed"
     );
     console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
+
+    // Airdrop funds to Player B
+    console.log("Airdropping funds to Player B");
+    const airdropPlayerBTx = await provider.connection.requestAirdrop(
+      playerB.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await provider.connection.confirmTransaction(airdropPlayerBTx, "confirmed");
+    console.log("Funds airdropped to Player B");
 
     // Player B makes a move (Scissors)
     const playerBMove = 2; // Scissors
@@ -198,7 +220,7 @@ describe("RockPaperScissors", () => {
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         rpsGame: PublicKey.findProgramAddressSync(
-          [Buffer.from("rps_game"), new anchor.BN(gameId).toBuffer()],
+          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
           program.programId
         )[0],
       })
@@ -232,6 +254,10 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
       })
       .rpc({ commitment: "confirmed" });
 
@@ -280,6 +306,10 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        // rpsGame: PublicKey.findProgramAddressSync(
+        //   [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
+        //   program.programId
+        // )[0],
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -294,6 +324,15 @@ describe("RockPaperScissors", () => {
       "confirmed"
     );
     console.log("Init game finalize signature:", initGameFinalizeSig2);
+
+    // Airdrop funds to unauthorized player
+    console.log("Airdropping funds to unauthorized player");
+    const airdropUnauthorizedTx = await provider.connection.requestAirdrop(
+      unauthorizedPlayer.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await provider.connection.confirmTransaction(airdropUnauthorizedTx, "confirmed");
+    console.log("Funds airdropped to unauthorized player");
 
     // Unauthorized player tries to make a move
     const unauthorizedMove = 1; // Paper
@@ -321,6 +360,10 @@ describe("RockPaperScissors", () => {
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
+            program.programId
+          )[0],
         })
         .signers([unauthorizedPlayer])
         .rpc({ commitment: "confirmed" });
@@ -378,6 +421,10 @@ describe("RockPaperScissors", () => {
             Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
+            program.programId
+          )[0],
         })
         .rpc({ commitment: "confirmed" });
 

@@ -13,8 +13,8 @@ mod circuits {
     #[instruction]
     pub fn init_game(mxe: Mxe) -> Enc<Mxe, GameMoves> {
         let game_moves = GameMoves {
-            player_a_move: 0,
-            player_b_move: 0,
+            player_a_move: 3, // Moves are 0-2, so 3 is invalid
+            player_b_move: 3, // Moves are 0-2, so 3 is invalid
         };
 
         mxe.from_arcis(game_moves)
@@ -34,9 +34,13 @@ mod circuits {
         let mut game_moves = game_ctxt.to_arcis();
 
         if player_move.player == 0 {
-            game_moves.player_a_move = player_move.player_move;
+            if game_moves.player_a_move != 3 {
+                game_moves.player_a_move = player_move.player_move;
+            }
         } else {
-            game_moves.player_b_move = player_move.player_move;
+            if game_moves.player_b_move != 3 {
+                game_moves.player_b_move = player_move.player_move;
+            }
         }
 
         game_ctxt.owner.from_arcis(game_moves)

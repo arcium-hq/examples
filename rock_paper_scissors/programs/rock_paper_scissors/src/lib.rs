@@ -23,7 +23,7 @@ const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("9AYTA4TGBVNgCYTuw3KsFchhfUy4AdL1aN5tWdQNKnPY");
+declare_id!("HNHpZn6r4f916d35Pgyfa7WK7HktL4xtGZFtAojheot7");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
@@ -73,7 +73,7 @@ pub mod rock_paper_scissors {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let moves: [[u8; 32]; 2] = bytes[48..]
+        let moves: [[u8; 32]; 2] = bytes[16..80]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -125,7 +125,7 @@ pub mod rock_paper_scissors {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let moves: [[u8; 32]; 2] = bytes[48..]
+        let moves: [[u8; 32]; 2] = bytes[16..80]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
