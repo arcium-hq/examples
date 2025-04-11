@@ -1,58 +1,69 @@
 # Share Medical Records
 
-## How This Example Demonstrates Arcium's MPC Solution
+## The Problem: Privacy-Preserving Medical Data Sharing
 
-This example showcases how Arcium's MPC (Multi-Party Computation) solution enables decentralized, trust-minimized confidential computing on Solana. Here's how it works:
+Medical records contain highly sensitive personal information that needs to be shared between healthcare providers, insurance companies, and patients while maintaining strict privacy controls. Traditional solutions face several challenges:
 
-## Architecture Overview
+- **Privacy Risks**: Storing medical data on public blockchains exposes sensitive information
+- **Trust Requirements**: Centralized solutions require trusting a single party with sensitive data
+- **Compliance**: Healthcare data sharing must comply with regulations like HIPAA
+- **Access Control**: Fine-grained control over who can access specific medical data is essential
+- **Auditability**: All access and sharing events must be transparent and verifiable
 
-- The project implements a medical records sharing system on Solana using Arcium's MPC network
-- It's structured with two main components:
-  - Regular Solana program code in the `programs` directory
-  - Confidential computing instructions in the `encrypted-ixs` directory using Arcium's Arcis framework
+## The Solution: Arcium's MPC Network
 
-## Confidential Data Handling
+This example demonstrates how Arcium's Multi-Party Computation (MPC) solution enables decentralized, trust-minimized confidential computing on Solana. The system allows medical records to be shared while keeping the data encrypted and ensuring no single party has access to the complete information.
 
-- The system demonstrates how to handle sensitive medical data (patient ID, age, gender, blood type, weight, height, allergies) in a privacy-preserving way
-- Data is encrypted using Arcium's encryption scheme (using x25519 for key exchange and RescueCipher for encryption)
-- The actual computation happens off-chain in Arcium's MPC network, ensuring the data never exists in plaintext on the blockchain
+### Key Features
 
-## Trust-Minimized Architecture
+- **Dishonest Majority MPC**: Secure computation even when a majority of nodes are potentially malicious
+- **Cheater Detection**: Built-in mechanisms to detect and prevent malicious behavior
+- **Trustless Architecture**: No single party has access to the complete data
+- **Regulatory Compliance**: Built-in privacy controls align with healthcare data regulations
+- **Transparent Access**: All sharing events are recorded on-chain while preserving privacy
+- **Selective Sharing**: Patients maintain control over who can access their medical data
 
-- The system uses a decentralized network of MPC nodes
-- The computation is split across multiple parties (nodes) who must cooperate to perform operations
-- No single node has access to the complete data, making it impossible for any single party to compromise privacy
+### Encryption Flow
 
-## Key Components
+- Data remains encrypted at all times during storage and computation
+- Only the authorized recipient can decrypt the data using their private key
+- The MPC network performs computations on encrypted data without ever seeing the plaintext
+- When sharing data, it's encrypted specifically for the recipient's public key
+- The recipient can then decrypt the data using their private key when they receive it
 
-- **Encrypted Circuit**: Defined in `encrypted-ixs/src/lib.rs`, the `share_patient_data` circuit handles the confidential transfer of patient data
+## Implementation Details
+
+### Architecture
+
+- Regular Solana program code in the `programs` directory
+- Confidential computing instructions in the `encrypted-ixs` directory using Arcium's Arcis framework
+- Seamless integration with Solana's account model and Anchor framework
+
+### Key Components
+
+- **Encrypted Circuit**: Defined in `encrypted-ixs/src/lib.rs`, handles confidential data transfer
 - **Program Instructions**:
-  - `init_share_patient_data_comp_def`: Initializes the confidential computation definition
+  - `init_share_patient_data_comp_def`: Initializes the confidential computation
   - `store_patient_data`: Stores encrypted patient data on-chain
   - `share_patient_data`: Initiates the confidential data sharing process
-  - `share_patient_data_callback`: Handles the result of the confidential computation
+  - `share_patient_data_callback`: Handles the computation result
 
-## Security Features
+### Security Implementation
 
-- Uses a threshold encryption scheme where multiple parties must cooperate
-- Implements proper key management with separate encryption keys for sender and receiver
-- Employs nonces to prevent replay attacks
-- Uses Arcium's secure enclave environment for computation
+- Threshold encryption requiring multiple parties to cooperate
+- Separate encryption keys for sender and receiver
+- Nonce-based protection against replay attacks
+- Secure enclave environment for computation
+- Decentralized MPC nodes with no single point of failure
 
-## Integration with Solana
+### Example Flow
 
-- Seamlessly integrates with Solana's account model and program structure
-- Uses Anchor framework for program development
-- Maintains on-chain state for encrypted data while keeping the actual computation off-chain
+The test file (`share_medical_records.ts`) demonstrates:
 
-## Practical Implementation
-
-The test file (`share_medical_records.ts`) demonstrates the complete flow:
-
-1. Initializes the computation definition
-2. Encrypts and stores patient data
-3. Shares the data with a receiver
-4. Verifies the secure transfer through events
+1. Computation definition initialization
+2. Encrypted patient data storage
+3. Secure data sharing with a receiver
+4. Verification through on-chain events
 
 This example effectively showcases how Arcium's MPC solution enables:
 
