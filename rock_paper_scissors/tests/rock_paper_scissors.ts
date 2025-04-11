@@ -68,7 +68,11 @@ describe("RockPaperScissors", () => {
     );
 
     console.log("Initializing compare_moves computation definition");
-    const compareMovesSig = await initCompareMovesCompDef(program, owner, false);
+    const compareMovesSig = await initCompareMovesCompDef(
+      program,
+      owner,
+      false
+    );
     console.log(
       "Compare moves computation definition initialized with signature",
       compareMovesSig
@@ -76,8 +80,8 @@ describe("RockPaperScissors", () => {
 
     // Step 2: Play a complete game with two players
     console.log("\n--- Playing a complete game with two players ---");
-    
-    // Generate encryption keys
+
+    // Generate encryption keys using ECDH shared secret
     const privateKey = x25519.utils.randomPrivateKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const mxePublicKey = new Uint8Array([
@@ -97,8 +101,7 @@ describe("RockPaperScissors", () => {
         new anchor.BN(gameId),
         playerA.publicKey,
         playerB.publicKey,
-        Array.from(publicKey),
-        new anchor.BN(deserializeLE(nonce).toString()),
+        new anchor.BN(deserializeLE(nonce).toString())
       )
       .accounts({
         payer: owner.publicKey,
@@ -115,6 +118,15 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx);
+    
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      initGameTx,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Init game finalize signature:", initGameFinalizeSig);
 
     // Player A makes a move (Rock)
     const playerAMove = 0; // Rock
@@ -141,11 +153,24 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), new anchor.BN(gameId).toBuffer()],
+          program.programId
+        )[0],
       })
       .signers([playerA])
       .rpc({ commitment: "confirmed" });
 
     console.log("Player A move signature:", playerAMoveTx);
+    
+    // Wait for player A move computation finalization
+    const playerAMoveFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerAMoveTx,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
     // Player B makes a move (Scissors)
     const playerBMove = 2; // Scissors
@@ -172,15 +197,28 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), new anchor.BN(gameId).toBuffer()],
+          program.programId
+        )[0],
       })
       .signers([playerB])
       .rpc({ commitment: "confirmed" });
 
     console.log("Player B move signature:", playerBMoveTx);
+    
+    // Wait for player B move computation finalization
+    const playerBMoveFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerBMoveTx,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
     // Compare moves to determine the winner
     const gameEventPromise = awaitEvent("compareMovesEvent");
-    
+
     console.log("Comparing moves");
     const compareTx = await program.methods
       .compareMoves()
@@ -213,7 +251,7 @@ describe("RockPaperScissors", () => {
 
     // Step 3: Test unauthorized player trying to make a move
     console.log("\n--- Testing unauthorized player ---");
-    
+
     // Generate new encryption keys for this test
     const privateKey2 = x25519.utils.randomPrivateKey();
     const publicKey2 = x25519.getPublicKey(privateKey2);
@@ -231,13 +269,7 @@ describe("RockPaperScissors", () => {
 
     console.log("Initializing a new game");
     const initGameTx2 = await program.methods
-      .initGame(
-        gameId2,
-        playerA.publicKey,
-        playerB.publicKey,
-        Array.from(publicKey2),
-        nonceValue2
-      )
+      .initGame(gameId2, playerA.publicKey, playerB.publicKey, nonceValue2)
       .accounts({
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -253,6 +285,15 @@ describe("RockPaperScissors", () => {
       .rpc({ commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx2);
+    
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig2 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      initGameTx2,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Init game finalize signature:", initGameFinalizeSig2);
 
     // Unauthorized player tries to make a move
     const unauthorizedMove = 1; // Paper
@@ -283,7 +324,7 @@ describe("RockPaperScissors", () => {
         })
         .signers([unauthorizedPlayer])
         .rpc({ commitment: "confirmed" });
-      
+
       // If we get here, the test should fail because unauthorized player should not be able to make a move
       expect.fail("Unauthorized player was able to make a move");
     } catch (error) {
@@ -294,7 +335,7 @@ describe("RockPaperScissors", () => {
 
     // Step 4: Test multiple game scenarios
     console.log("\n--- Testing multiple game scenarios ---");
-    
+
     // Generate new encryption keys for this test
     const privateKey3 = x25519.utils.randomPrivateKey();
     const publicKey3 = x25519.getPublicKey(privateKey3);
@@ -428,7 +469,8 @@ async function initInitGameCompDef(
       program.programId
     );
 
-    const latestBlockhash = await program.provider.connection.getLatestBlockhash();
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
     finalizeTx.recentBlockhash = latestBlockhash.blockhash;
     finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
@@ -485,7 +527,8 @@ async function initPlayerMoveCompDef(
       program.programId
     );
 
-    const latestBlockhash = await program.provider.connection.getLatestBlockhash();
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
     finalizeTx.recentBlockhash = latestBlockhash.blockhash;
     finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
@@ -542,7 +585,8 @@ async function initCompareMovesCompDef(
       program.programId
     );
 
-    const latestBlockhash = await program.provider.connection.getLatestBlockhash();
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
     finalizeTx.recentBlockhash = latestBlockhash.blockhash;
     finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 

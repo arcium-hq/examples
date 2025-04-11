@@ -39,20 +39,15 @@ pub mod rock_paper_scissors {
         id: u64,
         player_a: Pubkey,
         player_b: Pubkey,
-        encryption_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let game = &mut ctx.accounts.rps_game;
         game.id = id;
         game.player_a = player_a;
         game.player_b = player_b;
-        game.encryption_key = encryption_key;
         game.nonce = nonce;
 
-        let args = vec![
-            Argument::ArcisPubkey(encryption_key),
-            Argument::PlaintextU128(nonce),
-        ];
+        let args = vec![Argument::PlaintextU128(nonce)];
 
         queue_computation(
             ctx.accounts,
@@ -112,7 +107,6 @@ pub mod rock_paper_scissors {
             Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(player_move),
-            Argument::ArcisPubkey(ctx.accounts.rps_game.encryption_key),
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
@@ -151,7 +145,6 @@ pub mod rock_paper_scissors {
 
     pub fn compare_moves(ctx: Context<CompareMoves>) -> Result<()> {
         let args = vec![
-            Argument::ArcisPubkey(ctx.accounts.rps_game.encryption_key),
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
@@ -429,7 +422,6 @@ pub struct RPSGame {
     pub moves: [[u8; 32]; 2],
     pub player_a: Pubkey,
     pub player_b: Pubkey,
-    pub encryption_key: [u8; 32],
     pub nonce: u128,
     pub id: u64,
 }
