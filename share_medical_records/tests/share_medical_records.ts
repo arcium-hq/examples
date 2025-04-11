@@ -159,12 +159,34 @@ describe("ShareMedicalRecords", () => {
 
     const receivedPatientDataEvent = await receivedPatientDataEventPromise;
 
-    const decrypted = receiverCipher.decrypt(
-      [receivedPatientDataEvent.patientId],
+    // Decrypt all patient data fields
+    const decryptedFields = receiverCipher.decrypt(
+      [
+        receivedPatientDataEvent.patientId,
+        receivedPatientDataEvent.age,
+        receivedPatientDataEvent.gender,
+        receivedPatientDataEvent.bloodType,
+        receivedPatientDataEvent.weight,
+        receivedPatientDataEvent.height,
+        ...receivedPatientDataEvent.allergies
+      ],
       new Uint8Array(receivedPatientDataEvent.nonce)
-    )[0];
-    expect(decrypted).to.equal(patientData[0]);
-    console.log("Decrypted patient data is ", decrypted);
+    );
+
+    // Verify all fields match the original data
+    expect(decryptedFields[0]).to.equal(patientData[0], "Patient ID mismatch");
+    expect(decryptedFields[1]).to.equal(patientData[1], "Age mismatch");
+    expect(decryptedFields[2]).to.equal(patientData[2], "Gender mismatch");
+    expect(decryptedFields[3]).to.equal(patientData[3], "Blood type mismatch");
+    expect(decryptedFields[4]).to.equal(patientData[4], "Weight mismatch");
+    expect(decryptedFields[5]).to.equal(patientData[5], "Height mismatch");
+    
+    // Verify allergies
+    for (let i = 0; i < 5; i++) {
+      expect(decryptedFields[6 + i]).to.equal(patientData[6 + i], `Allergy ${i} mismatch`);
+    }
+
+    console.log("All patient data fields successfully decrypted and verified");
   });
 
   async function initSharePatientDataCompDef(
