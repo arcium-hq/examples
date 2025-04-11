@@ -54,7 +54,8 @@ mod circuits {
             result = 0;
         } else if (game_moves.player_a_move == 0 && game_moves.player_b_move == 2) || // Rock beats Scissors
                   (game_moves.player_a_move == 1 && game_moves.player_b_move == 0) || // Paper beats Rock
-                  (game_moves.player_a_move == 2 && game_moves.player_b_move == 1)    // Scissors beats Paper
+                  (game_moves.player_a_move == 2 && game_moves.player_b_move == 1)
+        // Scissors beats Paper
         {
             result = 1; // Player A wins
         } else {
