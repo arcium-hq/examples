@@ -78,7 +78,7 @@ pub mod rock_paper_scissors {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let moves: [[u8; 32]; 2] = bytes[16..]
+        let moves: [[u8; 32]; 2] = bytes[48..]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -93,6 +93,54 @@ pub mod rock_paper_scissors {
 
     pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn player_move(
+        ctx: Context<PlayerMove>,
+        player_move: [u8; 32],
+        pub_key: [u8; 32],
+        nonce: u128,
+    ) -> Result<()> {
+        require!(
+            ctx.accounts.payer.key() == ctx.accounts.rps_game.player_a
+                || ctx.accounts.payer.key() == ctx.accounts.rps_game.player_b,
+            ErrorCode::NotAuthorized
+        );
+
+        let args = vec![
+            Argument::ArcisPubkey(pub_key),
+            Argument::PlaintextU128(nonce),
+            Argument::EncryptedU8(player_move),
+            Argument::ArcisPubkey(ctx.accounts.rps_game.encryption_key),
+            Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
+            Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
+        ];
+        queue_computation(ctx.accounts, args, vec![], None)?;
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "player_move")]
+    pub fn player_move_callback(
+        ctx: Context<PlayerMoveCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let moves: [[u8; 32]; 2] = bytes[48..]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let game = &mut ctx.accounts.rps_game;
+        game.moves = moves;
+
         Ok(())
     }
 
@@ -128,8 +176,6 @@ pub mod rock_paper_scissors {
         } else {
             return Err(ErrorCode::AbortedComputation.into());
         };
-
-        msg!("output: {:?}", bytes);
 
         let result = bytes[0];
         let result_str = match result {
@@ -228,6 +274,66 @@ pub struct InitInitGameCompDef<'info> {
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
+}
+
+#[queue_computation_accounts("player_move", payer)]
+#[derive(Accounts)]
+pub struct PlayerMove<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(mut)]
+    pub rps_game: Account<'info, RPSGame>,
+}
+
+#[callback_accounts("player_move", payer)]
+#[derive(Accounts)]
+pub struct PlayerMoveCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub rps_game: Account<'info, RPSGame>,
 }
 
 #[init_computation_definition_accounts("player_move", payer)]
@@ -342,4 +448,6 @@ pub struct CompareMovesEvent {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Not authorized")]
+    NotAuthorized,
 }
