@@ -81,15 +81,31 @@ describe("RockPaperScissors", () => {
     // Step 2: Play a complete game with two players
     console.log("\n--- Playing a complete game with two players ---");
 
-    // Generate encryption keys using ECDH shared secret
-    const privateKey = x25519.utils.randomPrivateKey();
-    const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
+    // Generate encryption keys for Player A
+    const playerAPrivateKey = x25519.utils.randomPrivateKey();
+    const playerAPublicKey = x25519.getPublicKey(playerAPrivateKey);
+    const playerAMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
       253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
     ]);
-    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
-    const cipher = new RescueCipher(sharedSecret);
+    const playerASharedSecret = x25519.getSharedSecret(
+      playerAPrivateKey,
+      playerAMxePublicKey
+    );
+    const playerACipher = new RescueCipher(playerASharedSecret);
+
+    // Generate encryption keys for Player B
+    const playerBPrivateKey = x25519.utils.randomPrivateKey();
+    const playerBPublicKey = x25519.getPublicKey(playerBPrivateKey);
+    const playerBMxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const playerBSharedSecret = x25519.getSharedSecret(
+      playerBPrivateKey,
+      playerBMxePublicKey
+    );
+    const playerBCipher = new RescueCipher(playerBSharedSecret);
 
     // Initialize a new game
     const gameId = 1;
@@ -150,7 +166,7 @@ describe("RockPaperScissors", () => {
     // Player A makes a move (Rock)
     const playerAMove = 0; // Rock
     const playerANonce = randomBytes(16);
-    const playerACiphertext = cipher.encrypt(
+    const playerACiphertext = playerACipher.encrypt(
       [BigInt(playerAMove)],
       playerANonce
     );
@@ -159,7 +175,7 @@ describe("RockPaperScissors", () => {
     const playerAMoveTx = await program.methods
       .playerMove(
         Array.from(playerACiphertext[0]),
-        Array.from(publicKey),
+        Array.from(playerAPublicKey),
         new anchor.BN(deserializeLE(playerANonce).toString())
       )
       .accounts({
@@ -212,7 +228,7 @@ describe("RockPaperScissors", () => {
     // Player B makes a move (Scissors)
     const playerBMove = 2; // Scissors
     const playerBNonce = randomBytes(16);
-    const playerBCiphertext = cipher.encrypt(
+    const playerBCiphertext = playerBCipher.encrypt(
       [BigInt(playerBMove)],
       playerBNonce
     );
@@ -221,7 +237,7 @@ describe("RockPaperScissors", () => {
     const playerBMoveTx = await program.methods
       .playerMove(
         Array.from(playerBCiphertext[0]),
-        Array.from(publicKey),
+        Array.from(playerBPublicKey),
         new anchor.BN(deserializeLE(playerBNonce).toString())
       )
       .accounts({
@@ -300,14 +316,17 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Testing unauthorized player ---");
 
     // Generate new encryption keys for this test
-    const privateKey2 = x25519.utils.randomPrivateKey();
-    const publicKey2 = x25519.getPublicKey(privateKey2);
-    const mxePublicKey2 = new Uint8Array([
+    const unauthorizedPrivateKey = x25519.utils.randomPrivateKey();
+    const unauthorizedPublicKey = x25519.getPublicKey(unauthorizedPrivateKey);
+    const unauthorizedMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
       253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
     ]);
-    const sharedSecret2 = x25519.getSharedSecret(privateKey2, mxePublicKey2);
-    const cipher2 = new RescueCipher(sharedSecret2);
+    const unauthorizedSharedSecret = x25519.getSharedSecret(
+      unauthorizedPrivateKey,
+      unauthorizedMxePublicKey
+    );
+    const unauthorizedCipher = new RescueCipher(unauthorizedSharedSecret);
 
     // Initialize a new game
     const gameId2 = new anchor.BN(Date.now());
@@ -364,7 +383,7 @@ describe("RockPaperScissors", () => {
     // Unauthorized player tries to make a move
     const unauthorizedMove = 1; // Paper
     const unauthorizedNonce = randomBytes(16);
-    const unauthorizedCiphertext = cipher2.encrypt(
+    const unauthorizedCiphertext = unauthorizedCipher.encrypt(
       [BigInt(unauthorizedMove)],
       unauthorizedNonce
     );
@@ -374,7 +393,7 @@ describe("RockPaperScissors", () => {
       await program.methods
         .playerMove(
           Array.from(unauthorizedCiphertext[0]),
-          Array.from(publicKey2),
+          Array.from(unauthorizedPublicKey),
           new anchor.BN(deserializeLE(unauthorizedNonce).toString())
         )
         .accounts({
@@ -406,15 +425,18 @@ describe("RockPaperScissors", () => {
     // Step 4: Test multiple game scenarios
     console.log("\n--- Testing multiple game scenarios ---");
 
-    // Generate new encryption keys for this test
-    const privateKey3 = x25519.utils.randomPrivateKey();
-    const publicKey3 = x25519.getPublicKey(privateKey3);
-    const mxePublicKey3 = new Uint8Array([
+    // Generate encryption keys for multiple game scenarios
+    const scenarioPrivateKey = x25519.utils.randomPrivateKey();
+    const scenarioPublicKey = x25519.getPublicKey(scenarioPrivateKey);
+    const scenarioMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
       253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
     ]);
-    const sharedSecret3 = x25519.getSharedSecret(privateKey3, mxePublicKey3);
-    const cipher3 = new RescueCipher(sharedSecret3);
+    const scenarioSharedSecret = x25519.getSharedSecret(
+      scenarioPrivateKey,
+      scenarioMxePublicKey
+    );
+    const scenarioCipher = new RescueCipher(scenarioSharedSecret);
 
     // Play multiple games
     const games = [
@@ -427,16 +449,153 @@ describe("RockPaperScissors", () => {
     ];
 
     for (const game of games) {
-      const gameEventPromise = awaitEvent("compareMovesEvent");
-
-      const nonce = randomBytes(16);
-      const ciphertext = cipher3.encrypt(
-        [BigInt(game.player), BigInt(game.house)],
-        nonce
+      console.log(
+        `\n--- Testing game scenario: Player ${game.player} vs House ${game.house} ---`
       );
 
+      // Initialize a new game for this scenario
+      const scenarioGameId = new anchor.BN(
+        Date.now() + Math.floor(Math.random() * 1000)
+      );
+      const scenarioNonce = randomBytes(16);
+
+      console.log("Initializing a new game");
+      const initGameTx = await program.methods
+        .initGame(
+          scenarioGameId,
+          playerA.publicKey,
+          playerB.publicKey,
+          new anchor.BN(deserializeLE(scenarioNonce).toString())
+        )
+        .accounts({
+          payer: owner.publicKey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          // rpsGame: PublicKey.findProgramAddressSync(
+          //   [
+          //     Buffer.from("rps_game"),
+          //     scenarioGameId.toArrayLike(Buffer, "le", 8),
+          //   ],
+          //   program.programId
+          // )[0],
+        })
+        .signers([owner])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Game initialized with signature:", initGameTx);
+
+      // Wait for initGame computation finalization
+      const initGameFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        initGameTx,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Init game finalize signature:", initGameFinalizeSig);
+
+      // Player A makes a move
+      const playerAMoveNonce = randomBytes(16);
+      const playerAMoveCiphertext = playerACipher.encrypt(
+        [BigInt(game.player)],
+        playerAMoveNonce
+      );
+
+      console.log("Player A making a move");
+      const playerAMoveTx = await program.methods
+        .playerMove(
+          Array.from(playerAMoveCiphertext[0]),
+          Array.from(playerAPublicKey),
+          new anchor.BN(deserializeLE(playerAMoveNonce).toString())
+        )
+        .accounts({
+          payer: playerA.publicKey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("rps_game"),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
+            ],
+            program.programId
+          )[0],
+        })
+        .signers([playerA])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Player A move signature:", playerAMoveTx);
+
+      // Wait for player A move computation finalization
+      const playerAMoveFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        playerAMoveTx,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
+
+      // Player B makes a move
+      const playerBMoveNonce = randomBytes(16);
+      const playerBMoveCiphertext = playerBCipher.encrypt(
+        [BigInt(game.house)],
+        playerBMoveNonce
+      );
+
+      console.log("Player B making a move");
+      const playerBMoveTx = await program.methods
+        .playerMove(
+          Array.from(playerBMoveCiphertext[0]),
+          Array.from(playerBPublicKey),
+          new anchor.BN(deserializeLE(playerBMoveNonce).toString())
+        )
+        .accounts({
+          payer: playerB.publicKey,
+          mxeAccount: getMXEAccAcc(program.programId),
+          mempoolAccount: getMempoolAcc(program.programId),
+          executingPool: getExecutingPoolAcc(program.programId),
+          compDefAccount: getCompDefAcc(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("rps_game"),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
+            ],
+            program.programId
+          )[0],
+        })
+        .signers([playerB])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Player B move signature:", playerBMoveTx);
+
+      // Wait for player B move computation finalization
+      const playerBMoveFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        playerBMoveTx,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
+
+      // Compare moves to determine the winner
+      const gameEventPromise = awaitEvent("compareMovesEvent");
+
       console.log("Comparing moves");
-      const queueSig = await program.methods
+      const compareTx = await program.methods
         .compareMoves()
         .accounts({
           payer: owner.publicKey,
@@ -451,18 +610,18 @@ describe("RockPaperScissors", () => {
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
-              new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
             ],
             program.programId
           )[0],
         })
         .rpc({ commitment: "confirmed" });
 
-      console.log("Queue signature:", queueSig);
+      console.log("Compare moves signature:", compareTx);
 
       const finalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        queueSig,
+        compareTx,
         program.programId,
         "confirmed"
       );
