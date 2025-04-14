@@ -112,12 +112,15 @@ pub mod rock_paper_scissors {
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
-        queue_computation(ctx.accounts, args, vec![
-            CallbackAccount {
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
-            },
-        ], None)?;
+            }],
+            None,
+        )?;
         Ok(())
     }
 
