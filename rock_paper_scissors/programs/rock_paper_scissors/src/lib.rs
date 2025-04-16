@@ -73,6 +73,9 @@ pub mod rock_paper_scissors {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
+        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+        let nonce = u128::from_le_bytes(nonce_bytes);
+
         let moves: [[u8; 32]; 2] = bytes[16..80]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
@@ -82,6 +85,7 @@ pub mod rock_paper_scissors {
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
+        game.nonce = nonce;
 
         Ok(())
     }
@@ -135,6 +139,9 @@ pub mod rock_paper_scissors {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
+        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
+        let nonce = u128::from_le_bytes(nonce_bytes);
+
         let moves: [[u8; 32]; 2] = bytes[16..80]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
@@ -144,6 +151,7 @@ pub mod rock_paper_scissors {
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
+        game.nonce = nonce;
 
         Ok(())
     }
@@ -176,8 +184,8 @@ pub mod rock_paper_scissors {
         let result = bytes[0];
         let result_str = match result {
             0 => "Tie",
-            1 => "Win",
-            2 => "Loss",
+            1 => "Player A Wins",
+            2 => "Player B Wins",
             _ => "Unknown",
         };
 

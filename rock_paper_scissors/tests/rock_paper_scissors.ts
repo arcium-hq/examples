@@ -129,10 +129,6 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
-        // rpsGame: PublicKey.findProgramAddressSync(
-        //   [Buffer.from("rps_game"), new anchor.BN(gameId).toArrayLike(Buffer, "le", 8)],
-        //   program.programId
-        // )[0],
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -165,9 +161,10 @@ describe("RockPaperScissors", () => {
 
     // Player A makes a move (Rock)
     const playerAMove = 0; // Rock
+    const playerAId = 0;
     const playerANonce = randomBytes(16);
     const playerACiphertext = playerACipher.encrypt(
-      [BigInt(playerAMove), BigInt(0)],
+      [BigInt(playerAId), BigInt(playerAMove)],
       playerANonce
     );
 
@@ -228,12 +225,12 @@ describe("RockPaperScissors", () => {
 
     // Player B makes a move (Scissors)
     const playerBMove = 2; // Scissors
+    const playerBId = 1;
     const playerBNonce = randomBytes(16);
     const playerBCiphertext = playerBCipher.encrypt(
-      [BigInt(playerBMove), BigInt(1)],
+      [BigInt(playerBId), BigInt(playerBMove)],
       playerBNonce
     );
-    
 
     console.log("Player B making a move (Scissors)");
     const playerBMoveTx = await program.methods
@@ -313,7 +310,7 @@ describe("RockPaperScissors", () => {
     console.log(`Game result: ${gameEvent.result}`);
 
     // Verify the result (Rock beats Scissors, so Player A wins)
-    expect(gameEvent.result).to.equal("Win");
+    expect(gameEvent.result).to.equal("Player A Wins");
 
     // Step 3: Test unauthorized player trying to make a move
     console.log("\n--- Testing unauthorized player ---");
@@ -349,10 +346,6 @@ describe("RockPaperScissors", () => {
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
-        // rpsGame: PublicKey.findProgramAddressSync(
-        //   [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
-        //   program.programId
-        // )[0],
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -387,10 +380,10 @@ describe("RockPaperScissors", () => {
     const unauthorizedMove = 1; // Paper
     const unauthorizedNonce = randomBytes(16);
     const unauthorizedCiphertext = unauthorizedCipher.encrypt(
-      [BigInt(unauthorizedMove), BigInt(0)],
+      [BigInt(0), BigInt(unauthorizedMove)],
       unauthorizedNonce
     );
-    
+
     console.log("Unauthorized player attempting to make a move");
     try {
       await program.methods
@@ -481,13 +474,6 @@ describe("RockPaperScissors", () => {
             Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          // rpsGame: PublicKey.findProgramAddressSync(
-          //   [
-          //     Buffer.from("rps_game"),
-          //     scenarioGameId.toArrayLike(Buffer, "le", 8),
-          //   ],
-          //   program.programId
-          // )[0],
         })
         .signers([owner])
         .rpc({ commitment: "confirmed" });
@@ -506,10 +492,10 @@ describe("RockPaperScissors", () => {
       // Player A makes a move
       const playerAMoveNonce = randomBytes(16);
       const playerAMoveCiphertext = playerACipher.encrypt(
-        [BigInt(game.player), BigInt(0)],
+        [BigInt(0), BigInt(game.player)],
         playerAMoveNonce
       );
-      
+
       console.log("Player A making a move");
       const playerAMoveTx = await program.methods
         .playerMove(
@@ -553,10 +539,10 @@ describe("RockPaperScissors", () => {
       // Player B makes a move
       const playerBMoveNonce = randomBytes(16);
       const playerBMoveCiphertext = playerBCipher.encrypt(
-        [BigInt(game.house), BigInt(1)],
+        [BigInt(1), BigInt(game.house)],
         playerBMoveNonce
       );
-      
+
       console.log("Player B making a move");
       const playerBMoveTx = await program.methods
         .playerMove(
@@ -636,7 +622,7 @@ describe("RockPaperScissors", () => {
       const gameEvent = await gameEventPromise;
       console.log(`Game result: ${gameEvent.result}`);
 
-      // Verify the result
+      // Verify the result based on the expected outcome
       let expectedResult: string;
       if (game.player === game.house) {
         expectedResult = "Tie";
@@ -645,9 +631,9 @@ describe("RockPaperScissors", () => {
         (game.player === 1 && game.house === 0) || // Paper beats Rock
         (game.player === 2 && game.house === 1) // Scissors beats Paper
       ) {
-        expectedResult = "Win";
+        expectedResult = "Player A Wins";
       } else {
-        expectedResult = "Loss";
+        expectedResult = "Player B Wins";
       }
 
       expect(gameEvent.result).to.equal(expectedResult);

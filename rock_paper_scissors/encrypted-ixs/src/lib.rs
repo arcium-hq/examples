@@ -33,9 +33,9 @@ mod circuits {
         let player_move = player_move_ctxt.to_arcis();
         let mut game_moves = game_ctxt.to_arcis();
 
-        if player_move.player == 0 && game_moves.player_a_move != 3 {
+        if player_move.player == 0 && game_moves.player_a_move == 3 {
             game_moves.player_a_move = player_move.player_move;
-        } else if player_move.player == 1 && game_moves.player_b_move != 3 {
+        } else if player_move.player == 1 && game_moves.player_b_move == 3 {
             game_moves.player_b_move = player_move.player_move;
         }
 
