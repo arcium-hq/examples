@@ -5,7 +5,7 @@ runs:
   steps:
     - run: echo "RUST_VERSION=1.85.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ANCHOR_VERSION=0.31.0" >> $GITHUB_ENV
+    - run: echo "ANCHOR_VERSION=0.31.1" >> $GITHUB_ENV
       shell: bash
     - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.1.42" >> $GITHUB_ENV
       shell: bash
