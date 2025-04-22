@@ -5,8 +5,8 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.31.0",
-    "@arcium-hq/arcium-sdk": "0.1.42"
+    "@coral-xyz/anchor": "^0.31.1",
+    "@arcium-hq/arcium-sdk": "0.1.43"
   },
   "devDependencies": {
     "chai": "^4.3.4",
