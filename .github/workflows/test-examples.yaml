@@ -1,0 +1,111 @@
+name: Test Examples
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  ARCUP_USER: testnet_user_20842437
+  ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
+jobs:
+  find-examples:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.find-examples.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find example directories
+        id: find-examples
+        run: |
+          echo "matrix=$(find . -type f -name "Anchor.toml" -exec dirname {} \; | jq -R -s -c '{example: split("\n")[:-1]}')" >> $GITHUB_OUTPUT
+
+  test-examples:
+    needs: find-examples
+    name: Test ${{ matrix.example }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup/
+      - uses: ./.github/actions/setup-solana/
+      - uses: ./.github/actions/setup-anchor/
+      - uses: ./.github/actions/setup-arcium/
+        with:
+          ARCUP_USER: testnet_user_20842437
+          ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+
+      - name: Load cached cargo registry
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-${{ matrix.example }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.example }}-
+
+      - name: Test ${{ matrix.example }}
+        run: |
+          # Setup computation folders and vault
+          rm -rf /tmp/computation_folder_0
+          rm -rf /tmp/computation_folder_1
+          rm -rf /tmp/computation_folder_2
+          rm -rf /tmp/vault
+          mkdir /tmp/vault
+
+          if [[ "${{ matrix.example }}" = *"manticore"* ]]; then
+            echo "Manticore test"
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_0 
+            rm -r /tmp/computation_folder_0/player-1
+
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_1 
+            rm -r /tmp/computation_folder_1/player-0
+
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_2 
+            rm -r /tmp/computation_folder_2/player-0
+            rm -r /tmp/computation_folder_2/player-1
+          else
+            echo "Cerberus test"
+            mkdir /tmp/computation_folder_0
+            mkdir /tmp/computation_folder_1
+            mkdir /tmp/computation_folder_2
+          fi
+          
+          pushd ${{ matrix.example }}
+          yarn install
+          arcium build
+          
+          # Run the test and capture logs
+          echo "Running arcium test..."
+          timeout 10m arcium test || EXIT_CODE=$?
+          echo "Most recent docker container id: $(docker ps -q -l)"
+          docker logs $(docker ps -q -l)
+          echo "=== Docker Containers ==="
+          docker ps -a
+          echo "=== Callback Server Logs ==="
+          cat artifacts/callback_server.log || true
+          echo "=== Docker Compose Logs ==="
+          docker compose -f artifacts/docker-compose-arx-env.yml logs || true
+          popd
+          
+          pkill -f solana-test-validator
+
+          if [ -n "$EXIT_CODE" ]; then
+            exit $EXIT_CODE
+          fi
+
+      - name: Save cargo registry
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ./*/target
+            ./*/*/target
+          key: ${{ runner.os }}-cargo-${{ matrix.example }}-${{ hashFiles('**/Cargo.lock') }}
