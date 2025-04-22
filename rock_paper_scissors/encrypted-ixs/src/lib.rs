@@ -66,6 +66,11 @@ mod circuits {
             result = 2; // Player B wins
         }
 
+        // If either player hasn't played their move yet, the result is invalid
+        if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
+            result = 3;
+        }
+
         result.reveal()
     }
 }
