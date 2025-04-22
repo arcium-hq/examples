@@ -1,12 +1,12 @@
 [package]
-name = "rock_paper_scissors"
+name = "share_medical_records"
 version = "0.1.0"
 description = "Created with Arcium & Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "rock_paper_scissors"
+name = "share_medical_records"
 
 [features]
 default = []
