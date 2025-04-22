@@ -1,106 +1,41 @@
-# Structure of this project
+# Confidential Coin Flip on Solana
 
-**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
-This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
+This project demonstrates building a confidential on-chain Coin Flip game using Arcium. A player chooses Heads or Tails, and the outcome is determined by a random boolean generated securely within Arcium's confidential computation environment.
 
-This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
+## How It Works
 
-- The `programs` dir like normal
-- The `encrypted-ixs` dir for confidential computing instructions
+### The Challenge of On-Chain Randomness
 
-When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
+Generating true, unpredictable randomness on a public blockchain is difficult. On-chain pseudo-random number generators can often be predicted or influenced, making games like Coin Flip potentially unfair if the outcome could be known beforehand.
 
-```
-// encrypted-ixs/add_together.rs
+### Arcium's Solution
 
-use arcis_imports::*;
+Arcium provides confidential computing on Solana, enabling secure random number generation for games:
 
-#[encrypted]
-mod circuits {
-    use arcis_imports::*;
+1.  **Confidential Player Choice**: The player submits their choice (Heads or Tails) encrypted.
+2.  **Secure Random Boolean Generation**: The Arcium network generates a random boolean value (representing the coin flip) securely within its confidential computation environment.
+3.  **Confidential Computation**: The Arcium network compares the player's encrypted choice against the securely generated random boolean.
+4.  **Result Calculation**: The result (win or lose) is computed without revealing the player's choice or the random boolean during the process.
+5.  **On-Chain Result**: Only the final outcome (win or lose) is published to the Solana blockchain.
 
-    pub struct InputValues {
-        v1: u8,
-        v2: u8,
-    }
+## Game Flow
 
-    #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
-        let input = input_ctxt.to_arcis();
-        let sum = input.v1 as u16 + input.v2 as u16;
-        input_ctxt.owner.from_arcis(sum)
-    }
-}
+1.  The player initializes a game session on Solana.
+2.  The player submits their encrypted choice (Heads or Tails).
+3.  The Solana program triggers the confidential computation on the Arcium network.
+4.  Within Arcium's secure environment:
+    - A random boolean (the coin flip) is securely generated.
+    - The winner is determined based on the player's choice and the generated boolean.
+5.  The result (win or lose) is sent back to the Solana program.
+6.  The game outcome is recorded on-chain.
 
-// programs/my_program/src/lib.rs
+## Security Features
 
-declare_id!("<some ID>");
+- **Player Choice Privacy**: The player's choice (Heads/Tails) is not revealed on-chain or during computation.
+- **Unpredictable Outcome**: The coin flip result (random boolean) is generated securely within Arcium's trusted environment, preventing prediction or manipulation.
+- **Fair Computation**: The game logic runs securely within Arcium.
+- **Verifiable Outcome**: The final result is recorded transparently on the blockchain.
 
-#[program]
-pub mod my_program {
-    use super::*;
+## Getting Started
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
-        Ok(())
-    }
-
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
-    ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
-        Ok(())
-    }
-
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
-       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-           bytes
-       } else {
-           return Err(ErrorCode::AbortedComputation.into());
-       };
-
-       emit!(SumEvent {
-           sum: bytes[48..80].try_into().unwrap(),
-           nonce: bytes[32..48].try_into().unwrap(),
-       });
-       Ok(())
-    }
-}
-
-#[queue_computation_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogether<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-#[callback_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-    pub some_extra_acc: AccountInfo<'info>,
-}
-
-#[init_computation_definition_accounts("add_together", payer)]
-#[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    // ... other required accounts
-}
-
-```
+Refer to the [Arcium documentation](https://docs.arcium.com) for setup instructions.

@@ -44,7 +44,7 @@ describe("Voting", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("can vote on polls!", async () => {
     const POLL_IDS = [420, 421, 422];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
