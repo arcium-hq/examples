@@ -186,6 +186,7 @@ pub mod rock_paper_scissors {
             0 => "Tie",
             1 => "Player A Wins",
             2 => "Player B Wins",
+            3 => "Invalid Move",
             _ => "Unknown",
         };
 

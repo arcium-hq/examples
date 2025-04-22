@@ -638,6 +638,182 @@ describe("RockPaperScissors", () => {
 
       expect(gameEvent.result).to.equal(expectedResult);
     }
+
+    // Step 5: Test invalid move scenario
+    console.log("\n--- Testing invalid move scenario ---");
+
+    // Initialize a new game for this scenario
+    const gameId3 = new anchor.BN(
+      Date.now() + Math.floor(Math.random() * 1000)
+    );
+    const nonce3 = randomBytes(16);
+
+    console.log("Initializing a new game for invalid move test");
+    const initGameTx3 = await program.methods
+      .initGame(
+        gameId3,
+        playerA.publicKey,
+        playerB.publicKey,
+        new anchor.BN(deserializeLE(nonce3).toString())
+      )
+      .accounts({
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+      })
+      .signers([owner])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Game initialized for invalid move test:", initGameTx3);
+
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      initGameTx3,
+      program.programId,
+      "confirmed"
+    );
+    console.log(
+      "Init game finalize signature for invalid move test:",
+      initGameFinalizeSig3
+    );
+
+    // Player A makes a valid move (Rock = 0)
+    const playerAValidMove = 0;
+    const playerAId3 = 0;
+    const playerANonce3 = randomBytes(16);
+    const playerACiphertext3 = playerACipher.encrypt(
+      [BigInt(playerAId3), BigInt(playerAValidMove)],
+      playerANonce3
+    );
+
+    console.log("Player A making a valid move (0)");
+    const playerAMoveTx3 = await program.methods
+      .playerMove(
+        Array.from(playerACiphertext3[0]),
+        Array.from(playerACiphertext3[1]),
+        Array.from(playerAPublicKey),
+        new anchor.BN(deserializeLE(playerANonce3).toString())
+      )
+      .accounts({
+        payer: playerA.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .signers([playerA])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player A valid move signature:", playerAMoveTx3);
+
+    // Wait for player A move computation finalization
+    const playerAMoveFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerAMoveTx3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player A move finalize signature:", playerAMoveFinalizeSig3);
+
+    // Player B makes an invalid move (4)
+    const playerBInvalidMove = 4;
+    const playerBId3 = 1;
+    const playerBNonce3 = randomBytes(16);
+    const playerBCiphertext3 = playerBCipher.encrypt(
+      [BigInt(playerBId3), BigInt(playerBInvalidMove)],
+      playerBNonce3
+    );
+
+    console.log("Player B making an invalid move (4)");
+    const playerBMoveTx3 = await program.methods
+      .playerMove(
+        Array.from(playerBCiphertext3[0]),
+        Array.from(playerBCiphertext3[1]),
+        Array.from(playerBPublicKey),
+        new anchor.BN(deserializeLE(playerBNonce3).toString())
+      )
+      .accounts({
+        payer: playerB.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .signers([playerB])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player B invalid move signature:", playerBMoveTx3);
+
+    // Wait for player B move computation finalization
+    const playerBMoveFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerBMoveTx3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player B move finalize signature:", playerBMoveFinalizeSig3);
+
+    // Compare moves
+    const gameEventPromise3 = awaitEvent("compareMovesEvent");
+
+    console.log("Comparing moves for invalid move test");
+    const compareTx3 = await program.methods
+      .compareMoves()
+      .accounts({
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Compare moves signature for invalid move test:", compareTx3);
+
+    const finalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      compareTx3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize signature for invalid move test:", finalizeSig3);
+
+    const gameEvent3 = await gameEventPromise3;
+    console.log(`Game result for invalid move test: ${gameEvent3.result}`);
+
+    // Verify the result is "Invalid Move"
+    expect(gameEvent3.result).to.equal("Invalid Move");
   });
 });
 
