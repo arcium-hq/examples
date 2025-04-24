@@ -11,7 +11,7 @@ use arcium_client::idl::arcium::{
         PersistentMXEAccount, StakingPoolAccount,
     },
     program::Arcium,
-    types::Argument,
+    types::{Argument, CallbackAccount},
     ID_CONST as ARCIUM_PROG_ID,
 };
 use arcium_macros::{
@@ -19,39 +19,44 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
+const COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS: u32 =
+    comp_def_offset("generate_deck_of_shuffled_cards");
+const COMP_DEF_OFFSET_DEAL_CARDS: u32 = comp_def_offset("deal_cards");
 
 declare_id!("Co1qsWYzoSMhY6SvixqDNJp6ch7B9YgbJTZwgejcsH6L");
 
 #[arcium_program]
 pub mod blackjack {
+
     use super::*;
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
+    pub fn init_generate_deck_of_shuffled_cards_comp_def(
+        ctx: Context<InitGenerateDeckOfShuffledCardsCompDef>,
+    ) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
+    pub fn initialize_blackjack_game(
+        ctx: Context<InitializeBlackjackGame>,
         nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        let args = vec![Argument::PlaintextU128(nonce)];
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(
-        ctx: Context<AddTogetherCallback>,
+    #[arcium_callback(encrypted_ix = "generate_deck_of_shuffled_cards")]
+    pub fn generate_deck_of_shuffled_cards_callback(
+        ctx: Context<GenerateDeckOfShuffledCardsCallback>,
         output: ComputationOutputs,
     ) -> Result<()> {
         let bytes = if let ComputationOutputs::Bytes(bytes) = output {
@@ -60,17 +65,31 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        emit!(SumEvent {
-            sum: bytes[48..].try_into().unwrap(),
-            nonce: bytes[32..48].try_into().unwrap(),
+        let deck: [[u8; 32]; 3] = bytes[16..]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.deck = deck;
+
+        emit!(CardsShuffledEvent {
+            timestamp: Clock::get()?.unix_timestamp,
         });
+        Ok(())
+    }
+
+    pub fn init_deal_cards_comp_def(ctx: Context<InitDealCardsCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 }
 
-#[queue_computation_accounts("add_together", payer)]
+#[queue_computation_accounts("generate_deck_of_shuffled_cards", payer)]
 #[derive(Accounts)]
-pub struct AddTogether<'info> {
+pub struct InitializeBlackjackGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -88,7 +107,7 @@ pub struct AddTogether<'info> {
     )]
     pub executing_pool: Account<'info, ExecutingPool>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -107,26 +126,36 @@ pub struct AddTogether<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + BlackjackGame::INIT_SPACE,
+        seeds = [b"blackjack_game".as_ref()],
+        bump,
+    )]
+    pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("add_together", payer)]
+#[callback_accounts("generate_deck_of_shuffled_cards", payer)]
 #[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
+pub struct GenerateDeckOfShuffledCardsCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[init_computation_definition_accounts("add_together", payer)]
+#[init_computation_definition_accounts("generate_deck_of_shuffled_cards", payer)]
 #[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
+pub struct InitGenerateDeckOfShuffledCardsCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -142,10 +171,35 @@ pub struct InitAddTogetherCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[init_computation_definition_accounts("deal_cards", payer)]
+#[derive(Accounts)]
+pub struct InitDealCardsCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct BlackjackGame {
+    pub deck: [[u8; 32]; 3],
+    // pub player_hand: [u8; 2],
+    // pub dealer_hand: [u8; 2],
+}
+
 #[event]
-pub struct SumEvent {
-    pub sum: [u8; 32],
-    pub nonce: [u8; 16],
+pub struct CardsShuffledEvent {
+    pub timestamp: i64,
 }
 
 #[error_code]
