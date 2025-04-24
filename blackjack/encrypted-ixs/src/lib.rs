@@ -88,11 +88,15 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn generate_deck_of_shuffled_cards(mxe: Mxe) -> Enc<Mxe, Deck> {
+    pub fn generate_deck_of_shuffled_cards(mxe: Mxe) -> bool
+    // -> Enc<Mxe, Deck>
+    {
         let mut deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut deck);
 
-        mxe.from_arcis(Deck::from_array(deck))
+        // mxe.from_arcis(Deck::from_array(deck))
+
+        true
     }
 
     #[instruction]

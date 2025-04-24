@@ -39,13 +39,15 @@ pub mod blackjack {
 
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
+        game_id: u64,
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.blackjack_game.bump = ctx.bumps.blackjack_game;
+        ctx.accounts.blackjack_game.game_id = game_id;
 
         let args = vec![Argument::PlaintextU128(nonce)];
         queue_computation(
-            ctx.accounts,
+        ctx.accounts,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -76,6 +78,7 @@ pub mod blackjack {
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = deck;
+        blackjack_game.nonce = u128::from_le_bytes(bytes[0..16].try_into().unwrap());
 
         emit!(CardsShuffledEvent {
             timestamp: Clock::get()?.unix_timestamp,
@@ -88,9 +91,9 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn deal_cards(ctx: Context<DealCards>, nonce: u128) -> Result<()> {
+    pub fn deal_cards(ctx: Context<DealCards>, game_id: u64) -> Result<()> {
         let args = vec![
-            Argument::PlaintextU128(nonce),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
         ];
         queue_computation(
@@ -116,25 +119,16 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let deck: [[u8; 32]; 3] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let card = bytes[0];
 
-        let blackjack_game = &mut ctx.accounts.blackjack_game;
-        blackjack_game.deck = deck;
-
-        emit!(CardsShuffledEvent {
-            timestamp: Clock::get()?.unix_timestamp,
-        });
+        emit!(CardDealtEvent { card });
         Ok(())
     }
 }
 
 #[queue_computation_accounts("generate_deck_of_shuffled_cards", payer)]
 #[derive(Accounts)]
+#[instruction(game_id: u64)]
 pub struct InitializeBlackjackGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -176,7 +170,7 @@ pub struct InitializeBlackjackGame<'info> {
         init,
         payer = payer,
         space = 8 + BlackjackGame::INIT_SPACE,
-        seeds = [b"blackjack_game".as_ref()],
+        seeds = [b"blackjack_game".as_ref(), game_id.to_le_bytes().as_ref()],
         bump,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
@@ -219,6 +213,7 @@ pub struct InitGenerateDeckOfShuffledCardsCompDef<'info> {
 
 #[queue_computation_accounts("deal_cards", payer)]
 #[derive(Accounts)]
+#[instruction(game_id: u64)]
 pub struct DealCards<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -257,7 +252,7 @@ pub struct DealCards<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [b"blackjack_game".as_ref()],
+        seeds = [b"blackjack_game".as_ref(), game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
@@ -302,14 +297,22 @@ pub struct InitDealCardsCompDef<'info> {
 #[derive(InitSpace)]
 pub struct BlackjackGame {
     pub deck: [[u8; 32]; 3],
-    // pub player_hand: [u8; 2],
-    // pub dealer_hand: [u8; 2],
+    pub player_hand: [[u8; 32]; 11],
+    pub dealer_hand: [[u8; 32]; 11],
+    pub nonce: u128,
+    pub game_id: u64,
+    pub player_pubkey: Pubkey,
     pub bump: u8,
 }
 
 #[event]
 pub struct CardsShuffledEvent {
     pub timestamp: i64,
+}
+
+#[event]
+pub struct CardDealtEvent {
+    pub card: u8,
 }
 
 #[error_code]

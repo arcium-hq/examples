@@ -26,8 +26,7 @@ import { expect } from "chai";
 describe("Blackjack", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace
-    .Blackjack as Program<Blackjack>;
+  const program = anchor.workspace.Blackjack as Program<Blackjack>;
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
@@ -45,14 +44,28 @@ describe("Blackjack", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("Should play a blackjack game", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false);
+    console.log("Initializing blackjack game");
+    const initBlackjackGameSig = await initGenerateDeckOfShuffledCardsCompDef(
+      program,
+      owner,
+      false
+    );
     console.log(
-      "Add together computation definition initialized with signature",
-      initATSig
+      "Generate deck of shuffled cards computation definition initialized with signature",
+      initBlackjackGameSig
+    );
+
+    const initDealCardsCompDefSig = await initDealCardsCompDef(
+      program,
+      owner,
+      false
+    );
+    console.log(
+      "Deal cards computation definition initialized with signature",
+      initDealCardsCompDefSig
     );
 
     const privateKey = x25519.utils.randomPrivateKey();
@@ -64,23 +77,16 @@ describe("Blackjack", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const val1 = BigInt(1);
-    const val2 = BigInt(2);
-    const plaintext = [val1, val2];
-
+    const gameId = BigInt(1);
     const nonce = randomBytes(16);
-    const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const sumEventPromise = awaitEvent("sumEvent");
+    const cardsShuffledEventPromise = awaitEvent("cardsShuffledEvent");
+    const cardDealtEventPromise = awaitEvent("cardDealtEvent");
 
-    // TODO: Remove this sleep once the CI bug is solved
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const queueSig = await program.methods
-      .addTogether(
-        Array.from(ciphertext[0]),
-        Array.from(ciphertext[1]),
-        Array.from(publicKey),
+    // Initialize the blackjack game
+    const initGameSig = await program.methods
+      .initializeBlackjackGame(
+        new anchor.BN(gameId.toString()),
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
@@ -90,26 +96,56 @@ describe("Blackjack", () => {
         executingPool: getExecutingPoolAcc(program.programId),
         compDefAccount: getCompDefAcc(
           program.programId,
-          Buffer.from(getCompDefAccOffset("add_together")).readUInt32LE()
+          Buffer.from(
+            getCompDefAccOffset("generate_deck_of_shuffled_cards")
+          ).readUInt32LE()
         ),
       })
       .rpc({ commitment: "confirmed" });
-    console.log("Queue sig is ", queueSig);
+    console.log("Initialize game sig is ", initGameSig);
 
-    const finalizeSig = await awaitComputationFinalization(
+    const finalizeInitSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      queueSig,
+      initGameSig,
       program.programId,
       "confirmed"
     );
-    console.log("Finalize sig is ", finalizeSig);
+    console.log("Finalize init sig is ", finalizeInitSig);
 
-    const sumEvent = await sumEventPromise;
-    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0];
-    expect(decrypted).to.equal(val1 + val2);
+    // Wait for cards to be shuffled
+    const cardsShuffledEvent = await cardsShuffledEventPromise;
+    console.log("Cards shuffled at timestamp:", cardsShuffledEvent.timestamp);
+
+    // Deal cards
+    const dealCardsSig = await program.methods
+      .dealCards(new anchor.BN(gameId.toString()))
+      .accountsPartial({
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        mxeAccount: getMXEAccAcc(program.programId),
+        mempoolAccount: getMempoolAcc(program.programId),
+        executingPool: getExecutingPoolAcc(program.programId),
+        compDefAccount: getCompDefAcc(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("deal_cards")).readUInt32LE()
+        ),
+      })
+      .rpc({ commitment: "confirmed" });
+    console.log("Deal cards sig is ", dealCardsSig);
+
+    const finalizeDealSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      dealCardsSig,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize deal sig is ", finalizeDealSig);
+
+    // Wait for card to be dealt
+    const cardDealtEvent = await cardDealtEventPromise;
+    console.log("Card dealt:", cardDealtEvent.card);
   });
 
-  async function initAddTogetherCompDef(
+  async function initGenerateDeckOfShuffledCardsCompDef(
     program: Program<Blackjack>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
@@ -117,7 +153,7 @@ describe("Blackjack", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("add_together");
+    const offset = getCompDefAccOffset("generate_deck_of_shuffled_cards");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -127,7 +163,7 @@ describe("Blackjack", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initAddTogetherCompDef()
+      .initGenerateDeckOfShuffledCardsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
@@ -137,14 +173,77 @@ describe("Blackjack", () => {
       .rpc({
         commitment: "confirmed",
       });
-    console.log("Init add together computation definition transaction", sig);
+    console.log(
+      "Init generate deck of shuffled cards computation definition transaction",
+      sig
+    );
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/add_together.arcis");
+      const rawCircuit = fs.readFileSync(
+        "build/generate_deck_of_shuffled_cards.arcis"
+      );
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "add_together",
+        "generate_deck_of_shuffled_cards",
+        program.programId,
+        rawCircuit,
+        true
+      );
+    } else {
+      const finalizeTx = await buildFinalizeCompDefTx(
+        provider as anchor.AnchorProvider,
+        Buffer.from(offset).readUInt32LE(),
+        program.programId
+      );
+
+      const latestBlockhash = await provider.connection.getLatestBlockhash();
+      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+      finalizeTx.sign(owner);
+
+      await provider.sendAndConfirm(finalizeTx);
+    }
+    return sig;
+  }
+
+  async function initDealCardsCompDef(
+    program: Program<Blackjack>,
+    owner: anchor.web3.Keypair,
+    uploadRawCircuit: boolean
+  ): Promise<string> {
+    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+      "ComputationDefinitionAccount"
+    );
+    const offset = getCompDefAccOffset("deal_cards");
+
+    const compDefPDA = PublicKey.findProgramAddressSync(
+      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+      getArciumProgAddress()
+    )[0];
+
+    console.log("Comp def pda is ", compDefPDA);
+
+    const sig = await program.methods
+      .initDealCardsCompDef()
+      .accounts({
+        compDefAccount: compDefPDA,
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAcc(program.programId),
+      })
+      .signers([owner])
+      .rpc({
+        commitment: "confirmed",
+      });
+    console.log("Init deal cards computation definition transaction", sig);
+
+    if (uploadRawCircuit) {
+      const rawCircuit = fs.readFileSync("build/deal_cards.arcis");
+
+      await uploadCircuit(
+        provider as anchor.AnchorProvider,
+        "deal_cards",
         program.programId,
         rawCircuit,
         true
