@@ -41,6 +41,8 @@ pub mod blackjack {
         ctx: Context<InitializeBlackjackGame>,
         nonce: u128,
     ) -> Result<()> {
+        ctx.accounts.blackjack_game.bump = ctx.bumps.blackjack_game;
+
         let args = vec![Argument::PlaintextU128(nonce)];
         queue_computation(
             ctx.accounts,
@@ -83,6 +85,50 @@ pub mod blackjack {
 
     pub fn init_deal_cards_comp_def(ctx: Context<InitDealCardsCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn deal_cards(ctx: Context<DealCards>, nonce: u128) -> Result<()> {
+        let args = vec![
+            Argument::PlaintextU128(nonce),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
+        ];
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "deal_cards")]
+    pub fn deal_cards_callback(
+        ctx: Context<DealCardsCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let deck: [[u8; 32]; 3] = bytes[16..]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.deck = deck;
+
+        emit!(CardsShuffledEvent {
+            timestamp: Clock::get()?.unix_timestamp,
+        });
         Ok(())
     }
 }
@@ -171,6 +217,69 @@ pub struct InitGenerateDeckOfShuffledCardsCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[queue_computation_accounts("deal_cards", payer)]
+#[derive(Accounts)]
+pub struct DealCards<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEAL_CARDS)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [b"blackjack_game".as_ref()],
+        bump = blackjack_game.bump,
+    )]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
+#[callback_accounts("deal_cards", payer)]
+#[derive(Accounts)]
+pub struct DealCardsCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEAL_CARDS)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
 #[init_computation_definition_accounts("deal_cards", payer)]
 #[derive(Accounts)]
 pub struct InitDealCardsCompDef<'info> {
@@ -195,6 +304,7 @@ pub struct BlackjackGame {
     pub deck: [[u8; 32]; 3],
     // pub player_hand: [u8; 2],
     // pub dealer_hand: [u8; 2],
+    pub bump: u8,
 }
 
 #[event]

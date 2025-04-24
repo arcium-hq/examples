@@ -74,11 +74,15 @@ mod circuits {
             for i in 0..21 {
                 bytes[i] = (card_one % 64) as u8;
                 bytes[i + 21] = (card_two % 64) as u8;
-                bytes[(i + 42) % 52] = (card_three % 64) as u8;
                 card_one >>= 6;
                 card_two >>= 6;
+            }
+
+            for i in 42..52 {
+                bytes[i] = (card_three % 64) as u8;
                 card_three >>= 6;
             }
+
             bytes
         }
     }
