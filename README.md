@@ -7,3 +7,4 @@ Examples built using the Arcium tooling
   - [Against Another Player](./rock_paper_scissors/against-player/)
   - [Against House](./rock_paper_scissors/against-house/)
 - [Confidential Medical Records](./share_medical_records/)
+- [MPC generated random coinflip](./coinflip/)
