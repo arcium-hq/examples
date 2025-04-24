@@ -47,7 +47,7 @@ pub mod blackjack {
 
         let args = vec![Argument::PlaintextU128(nonce)];
         queue_computation(
-        ctx.accounts,
+            ctx.accounts,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
