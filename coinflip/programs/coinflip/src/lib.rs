@@ -19,67 +19,53 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
+const COMP_DEF_OFFSET_FLIP: u32 = comp_def_offset("flip");
 
-declare_id!("2PiEBVRRcLRQcAyEPFQYoX7rPNTTB3Q8Up7XZJmKEeuQ");
+declare_id!("EiFoAJkimEAju8gcjR53yQmfoXDGrwY7F53Nv5BUKkXe");
 
 #[arcium_program]
-pub mod rock_paper_scissors {
+pub mod coinflip {
     use super::*;
 
-    pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
+    pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn compare_moves(
-        ctx: Context<CompareMoves>,
-        player_move: [u8; 32],
-        house_move: [u8; 32],
+    pub fn flip(
+        ctx: Context<Flip>,
+        user_choice: [u8; 32],
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let args = vec![
             Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(player_move),
-            Argument::EncryptedU8(house_move),
+            Argument::EncryptedU8(user_choice),
         ];
         queue_computation(ctx.accounts, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "compare_moves")]
-    pub fn compare_moves_callback(
-        ctx: Context<CompareMovesCallback>,
-        output: ComputationOutputs,
-    ) -> Result<()> {
+    #[arcium_callback(encrypted_ix = "flip")]
+    pub fn flip_callback(ctx: Context<FlipCallback>, output: ComputationOutputs) -> Result<()> {
         let bytes = if let ComputationOutputs::Bytes(bytes) = output {
             bytes
         } else {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        msg!("output: {:?}", bytes);
-
-        let result = bytes[0];
-        let result_str = match result {
-            0 => "Tie",
-            1 => "Win",
-            2 => "Loss",
-            _ => "Unknown",
-        };
-
-        emit!(CompareMovesEvent {
-            result: result_str.to_string(),
+        emit!(FlipEvent {
+            result: bytes[0] == 1,
         });
+
         Ok(())
     }
 }
 
-#[queue_computation_accounts("compare_moves", payer)]
+#[queue_computation_accounts("flip", payer)]
 #[derive(Accounts)]
-pub struct CompareMoves<'info> {
+pub struct Flip<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -97,7 +83,7 @@ pub struct CompareMoves<'info> {
     )]
     pub executing_pool: Account<'info, ExecutingPool>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_FLIP)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -118,14 +104,14 @@ pub struct CompareMoves<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("compare_moves", payer)]
+#[callback_accounts("flip", payer)]
 #[derive(Accounts)]
-pub struct CompareMovesCallback<'info> {
+pub struct FlipCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_FLIP)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -133,9 +119,9 @@ pub struct CompareMovesCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("compare_moves", payer)]
+#[init_computation_definition_accounts("flip", payer)]
 #[derive(Accounts)]
-pub struct InitCompareMovesCompDef<'info> {
+pub struct InitFlipCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -152,8 +138,8 @@ pub struct InitCompareMovesCompDef<'info> {
 }
 
 #[event]
-pub struct CompareMovesEvent {
-    pub result: String,
+pub struct FlipEvent {
+    pub result: bool,
 }
 
 #[error_code]
