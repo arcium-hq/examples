@@ -54,7 +54,6 @@ mod circuits {
             }
 
             let mut card_three = 0;
-
             for i in 42..52 {
                 card_three += FIRST_21_POWERS_OF_2_TIMES_6[i - 42] * array[i] as u128;
             }
@@ -126,10 +125,21 @@ mod circuits {
         (deck, initial_hand_hidden, initial_hand_visible)
     }
 
-    #[instruction]
-    pub fn deal_cards(deck_ctxt: Enc<Mxe, Deck>) -> u8 {
-        let deck = deck_ctxt.to_arcis();
+    // #[instruction]
+    // pub fn deal_cards(deck_ctxt: Enc<Mxe, Deck>) -> u8 {
+    //     let deck = deck_ctxt.to_arcis();
 
-        deck.to_array()[3].reveal()
+    //     deck.to_array()[3].reveal()
+    // }
+
+    #[instruction]
+    pub fn deal_cards(initial_hand_visible_ctxt: Enc<Client, InitialHandVisible>) -> (u8, u8, u8) {
+        let initial_hand_visible = initial_hand_visible_ctxt.to_arcis();
+
+        (
+            initial_hand_visible.player_card_one.reveal(),
+            initial_hand_visible.player_card_two.reveal(),
+            initial_hand_visible.dealer_card_one.reveal(),
+        )
     }
 }

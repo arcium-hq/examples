@@ -113,8 +113,16 @@ pub mod blackjack {
             .unwrap();
         offset += 32 * 3;
 
+        // let cards: [u8; 3] = bytes[offset..(offset + 3)].try_into().unwrap();
+        // offset += 3;
+
         msg!("Bytes len: {:?}", bytes.len());
         msg!("Offset: {:?}", offset);
+
+        msg!("Client nonce: {:?}", client_nonce);
+        msg!("Deck nonce: {:?}", deck_nonce);
+        msg!("Dealer nonce: {:?}", dealer_nonce);
+        msg!("Client pubkey: {:?}", client_pubkey);
 
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = visible_cards[0];
@@ -125,6 +133,7 @@ pub mod blackjack {
 
         blackjack_game.client_nonce = client_nonce;
         blackjack_game.dealer_nonce = dealer_nonce;
+        blackjack_game.player_enc_pubkey = client_pubkey;
 
         emit!(CardsShuffledAndDealtEvent {
             client_nonce,
@@ -142,9 +151,13 @@ pub mod blackjack {
 
     pub fn deal_cards(ctx: Context<DealCards>, game_id: u64) -> Result<()> {
         let args = vec![
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
+            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
+            Argument::EncryptedU8(ctx.accounts.blackjack_game.player_hand[0]),
+            Argument::EncryptedU8(ctx.accounts.blackjack_game.player_hand[1]),
+            Argument::EncryptedU8(ctx.accounts.blackjack_game.dealer_hand[0]),
         ];
+
         queue_computation(
             ctx.accounts,
             args,
@@ -168,9 +181,9 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let card = bytes[0];
+        let cards: [u8; 3] = bytes[0..3].try_into().unwrap();
 
-        emit!(CardDealtEvent { card });
+        emit!(CardDealtEvent { cards });
         Ok(())
     }
 }
@@ -353,6 +366,7 @@ pub struct BlackjackGame {
     pub dealer_nonce: u128,
     pub game_id: u64,
     pub player_pubkey: Pubkey,
+    pub player_enc_pubkey: [u8; 32],
     pub bump: u8,
 }
 
@@ -366,7 +380,7 @@ pub struct CardsShuffledAndDealtEvent {
 
 #[event]
 pub struct CardDealtEvent {
-    pub card: u8,
+    pub cards: [u8; 3],
 }
 
 #[error_code]

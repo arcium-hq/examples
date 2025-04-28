@@ -79,6 +79,12 @@ describe("Blackjack", () => {
     const mxeNonce = randomBytes(16);
     const mxeAgainNonce = randomBytes(16);
 
+    console.log("Client nonce is ", deserializeLE(clientNonce).toString());
+    console.log("Mxe nonce is ", deserializeLE(mxeNonce).toString());
+    console.log("Mxe again nonce is ", deserializeLE(mxeAgainNonce).toString());
+
+    console.log("Client pubkey is ", Array.from(publicKey));
+
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
     );
@@ -118,6 +124,7 @@ describe("Blackjack", () => {
     // Wait for cards to be shuffled
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
+    // console.log("Cards are ", cardsShuffledAndDealtEvent.cards);
     console.log(
       "Client nonce is ",
       cardsShuffledAndDealtEvent.clientNonce.toString()
@@ -126,9 +133,17 @@ describe("Blackjack", () => {
     const clientNonceFromEvent =
       cardsShuffledAndDealtEvent.clientNonce.toBuffer();
     const cards = cipher.decrypt(
-      cardsShuffledAndDealtEvent.visibleCards,
+      cardsShuffledAndDealtEvent.visibleCards, // [[u8; 32]; 3]
       new Uint8Array(clientNonceFromEvent)
     );
+
+    const newCards = [BigInt(0), BigInt(1), BigInt(2)];
+
+    console.log("Cards from event are ", cardsShuffledAndDealtEvent.visibleCards);
+    console.log("Encrypted cards are ", cipher.encrypt(newCards, new Uint8Array(clientNonceFromEvent)));
+    console.log("Encrypted cards are ", cipher.encrypt(newCards, new Uint8Array(clientNonce)));
+
+    console.log("Cards are ", cipher.decrypt(cardsShuffledAndDealtEvent.visibleCards, new Uint8Array(clientNonce)));
 
     console.log("User hand is ", cards[0], cards[1]);
     console.log("Dealer face up card is ", cards[2]);
@@ -160,7 +175,7 @@ describe("Blackjack", () => {
 
     // Wait for card to be dealt
     const cardDealtEvent = await cardDealtEventPromise;
-    console.log("Card dealt:", cardDealtEvent.card);
+    console.log("Cards dealt:", cardDealtEvent.cards);
   });
 
   async function initShuffleAndDealCardsCompDef(
