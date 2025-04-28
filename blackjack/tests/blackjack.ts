@@ -78,7 +78,6 @@ describe("Blackjack", () => {
     const gameId = BigInt(1);
     const mxeNonce = randomBytes(16);
 
-    
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
     );

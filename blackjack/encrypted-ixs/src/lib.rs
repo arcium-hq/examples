@@ -103,24 +103,28 @@ mod circuits {
         mxe: Mxe,
         client: Client,
     ) -> (
-        Enc<Mxe, (Deck, InitialHandHidden)>,
+        Enc<Mxe, Deck>,
+        Enc<Mxe, InitialHandHidden>,
         Enc<Client, InitialHandVisible>,
     ) {
         let mut deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut deck);
 
+        let encrypted_deck = mxe.from_arcis(Deck::from_array(deck));
+        let encrypted_initial_hand_hidden = mxe.from_arcis(InitialHandHidden {
+            dealer_card_two: deck[3],
+        });
+
+        let encrypted_initial_hand_visible = client.from_arcis(InitialHandVisible {
+            player_card_one: deck[0],
+            player_card_two: deck[1],
+            dealer_card_one: deck[2],
+        });
+
         (
-            mxe.from_arcis((
-                Deck::from_array(deck),
-                InitialHandHidden {
-                    dealer_card_two: deck[3],
-                },
-            )),
-            client.from_arcis(InitialHandVisible {
-                player_card_one: deck[0],
-                player_card_two: deck[1],
-                dealer_card_one: deck[2],
-            }),
+            encrypted_deck,
+            encrypted_initial_hand_hidden,
+            encrypted_initial_hand_visible,
         )
     }
 
@@ -128,6 +132,6 @@ mod circuits {
     pub fn deal_cards(deck_ctxt: Enc<Mxe, Deck>) -> u8 {
         let deck = deck_ctxt.to_arcis();
 
-        deck.to_array()[0].reveal()
+        deck.to_array()[1].reveal()
     }
 }
