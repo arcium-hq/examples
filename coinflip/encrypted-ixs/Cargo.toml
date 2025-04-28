@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis-imports = { version = "0.1.43", registry = "arcium" }
+arcis-imports = { version = "0.1.44", registry = "arcium" }
