@@ -10,7 +10,8 @@ mod circuits {
         48, 49, 50, 51,
     ];
 
-    const FIRST_21_POWERS_OF_2_TIMES_6: [u128; 21] = [ // 1 << i * 6 for i in 0..21
+    // 1 << i * 6 for i in 0..21
+    const FIRST_21_POWERS_OF_2_TIMES_6: [u128; 21] = [
         1,
         64,
         4096,
@@ -122,11 +123,7 @@ mod circuits {
             dealer_card_one: initial_deck[2],
         });
 
-        (
-            deck,
-            initial_hand_hidden,
-            initial_hand_visible,
-        )
+        (deck, initial_hand_hidden, initial_hand_visible)
     }
 
     #[instruction]
