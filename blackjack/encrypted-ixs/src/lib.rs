@@ -10,7 +10,7 @@ mod circuits {
         48, 49, 50, 51,
     ];
 
-    const FIRST_21_POWERS_OF_2_TIMES_6: [u128; 21] = [
+    const FIRST_21_POWERS_OF_2_TIMES_6: [u128; 21] = [ // 1 << i * 6 for i in 0..21
         1,
         64,
         4096,
@@ -101,30 +101,31 @@ mod circuits {
     #[instruction]
     pub fn shuffle_and_deal_cards(
         mxe: Mxe,
+        mxe_again: Mxe,
         client: Client,
     ) -> (
         Enc<Mxe, Deck>,
         Enc<Mxe, InitialHandHidden>,
         Enc<Client, InitialHandVisible>,
     ) {
-        let mut deck = INITIAL_DECK;
-        ArcisRNG::shuffle(&mut deck);
+        let mut initial_deck = INITIAL_DECK;
+        ArcisRNG::shuffle(&mut initial_deck);
 
-        let encrypted_deck = mxe.from_arcis(Deck::from_array(deck));
-        let encrypted_initial_hand_hidden = mxe.from_arcis(InitialHandHidden {
-            dealer_card_two: deck[3],
+        let deck = mxe.from_arcis(Deck::from_array(initial_deck));
+        let initial_hand_hidden = mxe_again.from_arcis(InitialHandHidden {
+            dealer_card_two: initial_deck[3],
         });
 
-        let encrypted_initial_hand_visible = client.from_arcis(InitialHandVisible {
-            player_card_one: deck[0],
-            player_card_two: deck[1],
-            dealer_card_one: deck[2],
+        let initial_hand_visible = client.from_arcis(InitialHandVisible {
+            player_card_one: initial_deck[0],
+            player_card_two: initial_deck[1],
+            dealer_card_one: initial_deck[2],
         });
 
         (
-            encrypted_deck,
-            encrypted_initial_hand_hidden,
-            encrypted_initial_hand_visible,
+            deck,
+            initial_hand_hidden,
+            initial_hand_visible,
         )
     }
 

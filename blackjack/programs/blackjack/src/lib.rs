@@ -39,6 +39,7 @@ pub mod blackjack {
         ctx: Context<InitializeBlackjackGame>,
         game_id: u64,
         mxe_nonce: u128,
+        mxe_again_nonce: u128,
         client_pubkey: [u8; 32],
         client_nonce: u128,
     ) -> Result<()> {
@@ -47,9 +48,11 @@ pub mod blackjack {
 
         let args = vec![
             Argument::PlaintextU128(mxe_nonce),
+            Argument::PlaintextU128(mxe_again_nonce),
             Argument::ArcisPubkey(client_pubkey),
             Argument::PlaintextU128(client_nonce),
         ];
+
         queue_computation(
             ctx.accounts,
             args,
@@ -73,37 +76,45 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let mxe_nonce = u128::from_le_bytes(bytes[0..16].try_into().unwrap());
+        let mut offset = 0;
 
-        let deck: [[u8; 32]; 3] = bytes[16..(16 + 32 * 3)]
+        let deck_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        offset += 16;
+
+        let deck: [[u8; 32]; 3] = bytes[offset..(offset + 32 * 3)]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
+        offset += 32 * 3;
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = deck;
-        blackjack_game.nonce = mxe_nonce;
+        blackjack_game.deck_nonce = deck_nonce;
 
-        let dealer_face_down_card: [u8; 32] =
-            bytes[(16 + 32 * 3)..(16 + 32 * 4)].try_into().unwrap();
+        let dealer_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        offset += 16;
 
-        let client_pubkey: [u8; 32] = bytes[(16 + 32 * 4)..(16 + 32 * 5)].try_into().unwrap();
+        let dealer_face_down_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
-        let client_nonce =
-            u128::from_le_bytes(bytes[(16 + 32 * 5)..(32 * 5 + 16 * 2)].try_into().unwrap());
+        let client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
-        let player_cards: [[u8; 32]; 2] = bytes[(16 * 2 + 32 * 5)..(16 * 2 + 32 * 7)]
+        let client_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        offset += 16;
+
+        let player_cards: [[u8; 32]; 2] = bytes[offset..(offset + 32 * 2)]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
+        offset += 32 * 2;
 
-        let dealer_face_up_card: [u8; 32] = bytes[(16 * 2 + 32 * 7)..(16 * 2 + 32 * 8)]
-            .try_into()
-            .unwrap();
+        let dealer_face_up_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = player_cards[0];
@@ -112,8 +123,11 @@ pub mod blackjack {
         blackjack_game.dealer_hand[0] = dealer_face_up_card;
         blackjack_game.dealer_hand[1] = dealer_face_down_card;
 
+        blackjack_game.client_nonce = client_nonce;
+        blackjack_game.dealer_nonce = dealer_nonce;
+
         emit!(CardsShuffledAndDealtEvent {
-            nonce: client_nonce,
+            client_nonce,
             user_hand: player_cards,
             dealer_face_up_card,
         });
@@ -127,7 +141,7 @@ pub mod blackjack {
 
     pub fn deal_cards(ctx: Context<DealCards>, game_id: u64) -> Result<()> {
         let args = vec![
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.nonce),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
         ];
         queue_computation(
@@ -333,7 +347,9 @@ pub struct BlackjackGame {
     pub deck: [[u8; 32]; 3],
     pub player_hand: [[u8; 32]; 11],
     pub dealer_hand: [[u8; 32]; 11],
-    pub nonce: u128,
+    pub deck_nonce: u128,
+    pub client_nonce: u128,
+    pub dealer_nonce: u128,
     pub game_id: u64,
     pub player_pubkey: Pubkey,
     pub bump: u8,
@@ -341,7 +357,7 @@ pub struct BlackjackGame {
 
 #[event]
 pub struct CardsShuffledAndDealtEvent {
-    pub nonce: u128,
+    pub client_nonce: u128,
     pub user_hand: [[u8; 32]; 2],
     pub dealer_face_up_card: [u8; 32],
 }

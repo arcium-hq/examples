@@ -77,6 +77,7 @@ describe("Blackjack", () => {
 
     const gameId = BigInt(1);
     const mxeNonce = randomBytes(16);
+    const mxeAgainNonce = randomBytes(16);
 
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
@@ -87,8 +88,9 @@ describe("Blackjack", () => {
       .initializeBlackjackGame(
         new anchor.BN(gameId.toString()),
         new anchor.BN(deserializeLE(mxeNonce).toString()),
+        new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
         Array.from(publicKey),
-        new anchor.BN(deserializeLE(clientNonce).toString()),
+        new anchor.BN(deserializeLE(clientNonce).toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -116,21 +118,20 @@ describe("Blackjack", () => {
     // Wait for cards to be shuffled
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
-    console.log("Nonce is ", cardsShuffledAndDealtEvent.nonce);
-    console.log(
-      "User hand is ",
-      cipher.decrypt(
-        cardsShuffledAndDealtEvent.userHand,
-        new Uint8Array(cardsShuffledAndDealtEvent.nonce.toBuffer())
-      )
+    console.log("Client nonce is ", cardsShuffledAndDealtEvent.clientNonce.toString());
+
+    const clientNonceFromEvent =
+      cardsShuffledAndDealtEvent.clientNonce.toBuffer();
+    const cards = cipher.decrypt(
+      [
+        ...cardsShuffledAndDealtEvent.userHand,
+        cardsShuffledAndDealtEvent.dealerFaceUpCard,
+      ],
+      new Uint8Array(clientNonceFromEvent)
     );
-    console.log(
-      "Dealer face up card is ",
-      cipher.decrypt(
-        [cardsShuffledAndDealtEvent.dealerFaceUpCard],
-        new Uint8Array(cardsShuffledAndDealtEvent.nonce.toBuffer())
-      )
-    );
+
+    console.log("User hand is ", cards[0], cards[1]);
+    console.log("Dealer face up card is ", cards[2]);
 
     // Deal cards
     const cardDealtEventPromise = awaitEvent("cardDealtEvent");
