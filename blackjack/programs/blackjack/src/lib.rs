@@ -1,3 +1,4 @@
+#[allow(unused_assignments)]
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
@@ -124,6 +125,8 @@ pub mod blackjack {
         blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.player_enc_pubkey = client_pubkey;
 
+        assert_eq!(offset, bytes.len());
+
         emit!(CardsShuffledAndDealtEvent {
             client_nonce,
             user_hand: [visible_cards[0], visible_cards[1]],
@@ -137,7 +140,7 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn deal_cards(ctx: Context<DealCards>, game_id: u64) -> Result<()> {
+    pub fn deal_cards(ctx: Context<DealCards>, _game_id: u64) -> Result<()> {
         let args = vec![
             Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
             Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
@@ -260,7 +263,7 @@ pub struct InitShuffleAndDealCardsCompDef<'info> {
 
 #[queue_computation_accounts("deal_cards", payer)]
 #[derive(Accounts)]
-#[instruction(game_id: u64)]
+#[instruction(_game_id: u64)]
 pub struct DealCards<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -299,7 +302,7 @@ pub struct DealCards<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        seeds = [b"blackjack_game".as_ref(), game_id.to_le_bytes().as_ref()],
+        seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
