@@ -73,10 +73,12 @@ describe("Blackjack", () => {
     ]);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
+    const clientNonce = randomBytes(16);
 
     const gameId = BigInt(1);
-    const nonce = randomBytes(16);
+    const mxeNonce = randomBytes(16);
 
+    
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
     );
@@ -85,7 +87,9 @@ describe("Blackjack", () => {
     const initGameSig = await program.methods
       .initializeBlackjackGame(
         new anchor.BN(gameId.toString()),
-        new anchor.BN(deserializeLE(nonce).toString())
+        new anchor.BN(deserializeLE(mxeNonce).toString()),
+        Array.from(publicKey),
+        new anchor.BN(deserializeLE(clientNonce).toString()),
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -95,7 +99,7 @@ describe("Blackjack", () => {
         compDefAccount: getCompDefAcc(
           program.programId,
           Buffer.from(
-            getCompDefAccOffset("generate_deck_of_shuffled_cards")
+            getCompDefAccOffset("shuffle_and_deal_cards")
           ).readUInt32LE()
         ),
       })

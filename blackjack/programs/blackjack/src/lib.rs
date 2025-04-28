@@ -38,12 +38,18 @@ pub mod blackjack {
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
         game_id: u64,
-        nonce: u128,
+        mxe_nonce: u128,
+        client_pubkey: [u8; 32],
+        client_nonce: u128,
     ) -> Result<()> {
         ctx.accounts.blackjack_game.bump = ctx.bumps.blackjack_game;
         ctx.accounts.blackjack_game.game_id = game_id;
 
-        let args = vec![Argument::PlaintextU128(nonce)];
+        let args = vec![
+            Argument::PlaintextU128(mxe_nonce),
+            Argument::ArcisPubkey(client_pubkey),
+            Argument::PlaintextU128(client_nonce),
+        ];
         queue_computation(
             ctx.accounts,
             args,
