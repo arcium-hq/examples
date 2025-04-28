@@ -48,14 +48,11 @@ describe("Blackjack", () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing blackjack game");
-    const initBlackjackGameSig = await initGenerateDeckOfShuffledCardsCompDef(
-      program,
-      owner,
-      false
-    );
+    const initShuffleAndDealCardsCompDefSig =
+      await initShuffleAndDealCardsCompDef(program, owner, false);
     console.log(
-      "Generate deck of shuffled cards computation definition initialized with signature",
-      initBlackjackGameSig
+      "Shuffle and deal cards computation definition initialized with signature",
+      initShuffleAndDealCardsCompDefSig
     );
 
     const initDealCardsCompDefSig = await initDealCardsCompDef(
@@ -80,8 +77,9 @@ describe("Blackjack", () => {
     const gameId = BigInt(1);
     const nonce = randomBytes(16);
 
-    const cardsShuffledEventPromise = awaitEvent("cardsShuffledEvent");
-    const cardDealtEventPromise = awaitEvent("cardDealtEvent");
+    const cardsShuffledAndDealtEventPromise = awaitEvent(
+      "cardsShuffledAndDealtEvent"
+    );
 
     // Initialize the blackjack game
     const initGameSig = await program.methods
@@ -113,10 +111,26 @@ describe("Blackjack", () => {
     console.log("Finalize init sig is ", finalizeInitSig);
 
     // Wait for cards to be shuffled
-    const cardsShuffledEvent = await cardsShuffledEventPromise;
-    console.log("Cards shuffled at timestamp:", cardsShuffledEvent.timestamp);
+    const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
+    console.log("Cards shuffled and dealt");
+    console.log("Nonce is ", cardsShuffledAndDealtEvent.nonce);
+    console.log(
+      "User hand is ",
+      cipher.decrypt(
+        cardsShuffledAndDealtEvent.userHand,
+        new Uint8Array(cardsShuffledAndDealtEvent.nonce.toBuffer())
+      )
+    );
+    console.log(
+      "Dealer face up card is ",
+      cipher.decrypt(
+        [cardsShuffledAndDealtEvent.dealerFaceUpCard],
+        new Uint8Array(cardsShuffledAndDealtEvent.nonce.toBuffer())
+      )
+    );
 
     // Deal cards
+    const cardDealtEventPromise = awaitEvent("cardDealtEvent");
     const dealCardsSig = await program.methods
       .dealCards(new anchor.BN(gameId.toString()))
       .accountsPartial({
@@ -145,7 +159,7 @@ describe("Blackjack", () => {
     console.log("Card dealt:", cardDealtEvent.card);
   });
 
-  async function initGenerateDeckOfShuffledCardsCompDef(
+  async function initShuffleAndDealCardsCompDef(
     program: Program<Blackjack>,
     owner: anchor.web3.Keypair,
     uploadRawCircuit: boolean
@@ -153,7 +167,7 @@ describe("Blackjack", () => {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("generate_deck_of_shuffled_cards");
+    const offset = getCompDefAccOffset("shuffle_and_deal_cards");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
@@ -163,7 +177,7 @@ describe("Blackjack", () => {
     console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initGenerateDeckOfShuffledCardsCompDef()
+      .initShuffleAndDealCardsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
@@ -174,18 +188,16 @@ describe("Blackjack", () => {
         commitment: "confirmed",
       });
     console.log(
-      "Init generate deck of shuffled cards computation definition transaction",
+      "Init shuffle and deal cards computation definition transaction",
       sig
     );
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync(
-        "build/generate_deck_of_shuffled_cards.arcis"
-      );
+      const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "generate_deck_of_shuffled_cards",
+        "shuffle_and_deal_cards",
         program.programId,
         rawCircuit,
         true

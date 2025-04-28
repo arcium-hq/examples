@@ -87,12 +87,41 @@ mod circuits {
         }
     }
 
+    // Initial hand is 2 player cards and 2 dealer cards (1 face up, 1 face down)
+    pub struct InitialHandVisible {
+        pub player_card_one: u8,
+        pub player_card_two: u8,
+        pub dealer_card_one: u8,
+    }
+
+    pub struct InitialHandHidden {
+        pub dealer_card_two: u8,
+    }
+
     #[instruction]
-    pub fn generate_deck_of_shuffled_cards(mxe: Mxe) -> Enc<Mxe, Deck> {
+    pub fn shuffle_and_deal_cards(
+        mxe: Mxe,
+        client: Client,
+    ) -> (
+        Enc<Mxe, (Deck, InitialHandHidden)>,
+        Enc<Client, InitialHandVisible>,
+    ) {
         let mut deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut deck);
 
-        mxe.from_arcis(Deck::from_array(deck))
+        (
+            mxe.from_arcis((
+                Deck::from_array(deck),
+                InitialHandHidden {
+                    dealer_card_two: deck[3],
+                },
+            )),
+            client.from_arcis(InitialHandVisible {
+                player_card_one: deck[0],
+                player_card_two: deck[1],
+                dealer_card_one: deck[2],
+            }),
+        )
     }
 
     #[instruction]

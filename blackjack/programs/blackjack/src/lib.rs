@@ -19,19 +19,17 @@ use arcium_macros::{
     queue_computation_accounts,
 };
 
-const COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS: u32 =
-    comp_def_offset("generate_deck_of_shuffled_cards");
+const COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS: u32 = comp_def_offset("shuffle_and_deal_cards");
 const COMP_DEF_OFFSET_DEAL_CARDS: u32 = comp_def_offset("deal_cards");
 
-declare_id!("Co1qsWYzoSMhY6SvixqDNJp6ch7B9YgbJTZwgejcsH6L");
+declare_id!("8YLMpSEWaLzpGqqGufakQ8FtPzvSm5kdm5VpsVPHeZTP");
 
 #[arcium_program]
 pub mod blackjack {
-
     use super::*;
 
-    pub fn init_generate_deck_of_shuffled_cards_comp_def(
-        ctx: Context<InitGenerateDeckOfShuffledCardsCompDef>,
+    pub fn init_shuffle_and_deal_cards_comp_def(
+        ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
@@ -58,9 +56,9 @@ pub mod blackjack {
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "generate_deck_of_shuffled_cards")]
-    pub fn generate_deck_of_shuffled_cards_callback(
-        ctx: Context<GenerateDeckOfShuffledCardsCallback>,
+    #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards")]
+    pub fn shuffle_and_deal_cards_callback(
+        ctx: Context<ShuffleAndDealCardsCallback>,
         output: ComputationOutputs,
     ) -> Result<()> {
         let bytes = if let ComputationOutputs::Bytes(bytes) = output {
@@ -69,7 +67,9 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let deck: [[u8; 32]; 3] = bytes[16..]
+        let mxe_nonce = u128::from_le_bytes(bytes[0..16].try_into().unwrap());
+
+        let deck: [[u8; 32]; 3] = bytes[16..(16 + 32 * 3)]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
@@ -78,10 +78,38 @@ pub mod blackjack {
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = deck;
-        blackjack_game.nonce = u128::from_le_bytes(bytes[0..16].try_into().unwrap());
+        blackjack_game.nonce = mxe_nonce;
 
-        emit!(CardsShuffledEvent {
-            timestamp: Clock::get()?.unix_timestamp,
+        let dealer_face_down_card: [u8; 32] =
+            bytes[(16 + 32 * 3)..(16 + 32 * 4)].try_into().unwrap();
+
+        let client_pubkey: [u8; 32] = bytes[(16 + 32 * 4)..(16 + 32 * 5)].try_into().unwrap();
+
+        let client_nonce =
+            u128::from_le_bytes(bytes[(16 + 32 * 5)..(32 * 5 + 16 * 2)].try_into().unwrap());
+
+        let player_cards: [[u8; 32]; 2] = bytes[(16 * 2 + 32 * 5)..(16 * 2 + 32 * 7)]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let dealer_face_up_card: [u8; 32] = bytes[(16 * 2 + 32 * 7)..(16 * 2 + 32 * 8)]
+            .try_into()
+            .unwrap();
+
+        // Initialize player hand with first two cards
+        blackjack_game.player_hand[0] = player_cards[0];
+        blackjack_game.player_hand[1] = player_cards[1];
+        // Initialize dealer hand with face up card and face down card
+        blackjack_game.dealer_hand[0] = dealer_face_up_card;
+        blackjack_game.dealer_hand[1] = dealer_face_down_card;
+
+        emit!(CardsShuffledAndDealtEvent {
+            nonce: client_nonce,
+            user_hand: player_cards,
+            dealer_face_up_card,
         });
         Ok(())
     }
@@ -126,7 +154,7 @@ pub mod blackjack {
     }
 }
 
-#[queue_computation_accounts("generate_deck_of_shuffled_cards", payer)]
+#[queue_computation_accounts("shuffle_and_deal_cards", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct InitializeBlackjackGame<'info> {
@@ -147,7 +175,7 @@ pub struct InitializeBlackjackGame<'info> {
     )]
     pub executing_pool: Account<'info, ExecutingPool>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -176,14 +204,14 @@ pub struct InitializeBlackjackGame<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("generate_deck_of_shuffled_cards", payer)]
+#[callback_accounts("shuffle_and_deal_cards", payer)]
 #[derive(Accounts)]
-pub struct GenerateDeckOfShuffledCardsCallback<'info> {
+pub struct ShuffleAndDealCardsCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_GENERATE_DECK_OF_SHUFFLED_CARDS)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -193,9 +221,9 @@ pub struct GenerateDeckOfShuffledCardsCallback<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[init_computation_definition_accounts("generate_deck_of_shuffled_cards", payer)]
+#[init_computation_definition_accounts("shuffle_and_deal_cards", payer)]
 #[derive(Accounts)]
-pub struct InitGenerateDeckOfShuffledCardsCompDef<'info> {
+pub struct InitShuffleAndDealCardsCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -306,8 +334,10 @@ pub struct BlackjackGame {
 }
 
 #[event]
-pub struct CardsShuffledEvent {
-    pub timestamp: i64,
+pub struct CardsShuffledAndDealtEvent {
+    pub nonce: u128,
+    pub user_hand: [[u8; 32]; 2],
+    pub dealer_face_up_card: [u8; 32],
 }
 
 #[event]
