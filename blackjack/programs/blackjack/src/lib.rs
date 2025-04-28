@@ -78,7 +78,7 @@ pub mod blackjack {
 
         let mut offset = 0;
 
-        let deck_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        let deck_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
         let deck: [[u8; 32]; 3] = bytes[offset..(offset + 32 * 3)]
@@ -93,7 +93,7 @@ pub mod blackjack {
         blackjack_game.deck = deck;
         blackjack_game.deck_nonce = deck_nonce;
 
-        let dealer_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        let dealer_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
         let dealer_face_down_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
@@ -102,7 +102,7 @@ pub mod blackjack {
         let client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
-        let client_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
+        let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
         let visible_cards: [[u8; 32]; 3] = bytes[offset..(offset + 32 * 3)]
@@ -112,17 +112,6 @@ pub mod blackjack {
             .try_into()
             .unwrap();
         offset += 32 * 3;
-
-        // let cards: [u8; 3] = bytes[offset..(offset + 3)].try_into().unwrap();
-        // offset += 3;
-
-        msg!("Bytes len: {:?}", bytes.len());
-        msg!("Offset: {:?}", offset);
-
-        msg!("Client nonce: {:?}", client_nonce);
-        msg!("Deck nonce: {:?}", deck_nonce);
-        msg!("Dealer nonce: {:?}", dealer_nonce);
-        msg!("Client pubkey: {:?}", client_pubkey);
 
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = visible_cards[0];
@@ -137,9 +126,8 @@ pub mod blackjack {
 
         emit!(CardsShuffledAndDealtEvent {
             client_nonce,
-            visible_cards,
-            // user_hand: [visible_cards[0], visible_cards[1]],
-            // dealer_face_up_card: visible_cards[2],
+            user_hand: [visible_cards[0], visible_cards[1]],
+            dealer_face_up_card: visible_cards[2],
         });
         Ok(())
     }
@@ -151,11 +139,8 @@ pub mod blackjack {
 
     pub fn deal_cards(ctx: Context<DealCards>, game_id: u64) -> Result<()> {
         let args = vec![
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
-            Argument::EncryptedU8(ctx.accounts.blackjack_game.player_hand[0]),
-            Argument::EncryptedU8(ctx.accounts.blackjack_game.player_hand[1]),
-            Argument::EncryptedU8(ctx.accounts.blackjack_game.dealer_hand[0]),
+            Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
         ];
 
         queue_computation(
@@ -181,9 +166,9 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        let cards: [u8; 3] = bytes[0..3].try_into().unwrap();
+        let card: u8 = bytes[0];
 
-        emit!(CardDealtEvent { cards });
+        emit!(CardDealtEvent { card });
         Ok(())
     }
 }
@@ -361,9 +346,9 @@ pub struct BlackjackGame {
     pub deck: [[u8; 32]; 3],
     pub player_hand: [[u8; 32]; 11],
     pub dealer_hand: [[u8; 32]; 11],
-    pub deck_nonce: u128,
-    pub client_nonce: u128,
-    pub dealer_nonce: u128,
+    pub deck_nonce: [u8; 16],
+    pub client_nonce: [u8; 16],
+    pub dealer_nonce: [u8; 16],
     pub game_id: u64,
     pub player_pubkey: Pubkey,
     pub player_enc_pubkey: [u8; 32],
@@ -372,15 +357,14 @@ pub struct BlackjackGame {
 
 #[event]
 pub struct CardsShuffledAndDealtEvent {
-    pub client_nonce: u128,
-    pub visible_cards: [[u8; 32]; 3],
-    // pub user_hand: [[u8; 32]; 2],
-    // pub dealer_face_up_card: [u8; 32],
+    pub client_nonce: [u8; 16],
+    pub user_hand: [[u8; 32]; 2],
+    pub dealer_face_up_card: [u8; 32],
 }
 
 #[event]
 pub struct CardDealtEvent {
-    pub cards: [u8; 3],
+    pub card: u8,
 }
 
 #[error_code]
