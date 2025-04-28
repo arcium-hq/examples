@@ -105,22 +105,22 @@ pub mod blackjack {
         let client_nonce = u128::from_le_bytes(bytes[offset..(offset + 16)].try_into().unwrap());
         offset += 16;
 
-        let player_cards: [[u8; 32]; 2] = bytes[offset..(offset + 32 * 2)]
+        let visible_cards: [[u8; 32]; 3] = bytes[offset..(offset + 32 * 3)]
             .chunks_exact(32)
             .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        offset += 32 * 2;
+        offset += 32 * 3;
 
-        let dealer_face_up_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
-        offset += 32;
+        msg!("Bytes len: {:?}", bytes.len());
+        msg!("Offset: {:?}", offset);
 
         // Initialize player hand with first two cards
-        blackjack_game.player_hand[0] = player_cards[0];
-        blackjack_game.player_hand[1] = player_cards[1];
+        blackjack_game.player_hand[0] = visible_cards[0];
+        blackjack_game.player_hand[1] = visible_cards[1];
         // Initialize dealer hand with face up card and face down card
-        blackjack_game.dealer_hand[0] = dealer_face_up_card;
+        blackjack_game.dealer_hand[0] = visible_cards[2];
         blackjack_game.dealer_hand[1] = dealer_face_down_card;
 
         blackjack_game.client_nonce = client_nonce;
@@ -128,8 +128,9 @@ pub mod blackjack {
 
         emit!(CardsShuffledAndDealtEvent {
             client_nonce,
-            user_hand: player_cards,
-            dealer_face_up_card,
+            visible_cards,
+            // user_hand: [visible_cards[0], visible_cards[1]],
+            // dealer_face_up_card: visible_cards[2],
         });
         Ok(())
     }
@@ -358,8 +359,9 @@ pub struct BlackjackGame {
 #[event]
 pub struct CardsShuffledAndDealtEvent {
     pub client_nonce: u128,
-    pub user_hand: [[u8; 32]; 2],
-    pub dealer_face_up_card: [u8; 32],
+    pub visible_cards: [[u8; 32]; 3],
+    // pub user_hand: [[u8; 32]; 2],
+    // pub dealer_face_up_card: [u8; 32],
 }
 
 #[event]

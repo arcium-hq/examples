@@ -118,15 +118,15 @@ describe("Blackjack", () => {
     // Wait for cards to be shuffled
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
-    console.log("Client nonce is ", cardsShuffledAndDealtEvent.clientNonce.toString());
+    console.log(
+      "Client nonce is ",
+      cardsShuffledAndDealtEvent.clientNonce.toString()
+    );
 
     const clientNonceFromEvent =
       cardsShuffledAndDealtEvent.clientNonce.toBuffer();
     const cards = cipher.decrypt(
-      [
-        ...cardsShuffledAndDealtEvent.userHand,
-        cardsShuffledAndDealtEvent.dealerFaceUpCard,
-      ],
+      cardsShuffledAndDealtEvent.visibleCards,
       new Uint8Array(clientNonceFromEvent)
     );
 

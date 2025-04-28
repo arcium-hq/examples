@@ -130,6 +130,6 @@ mod circuits {
     pub fn deal_cards(deck_ctxt: Enc<Mxe, Deck>) -> u8 {
         let deck = deck_ctxt.to_arcis();
 
-        deck.to_array()[1].reveal()
+        deck.to_array()[3].reveal()
     }
 }
