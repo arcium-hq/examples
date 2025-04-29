@@ -150,7 +150,12 @@ mod circuits {
 
         let player_hand = client.from_arcis(Hand::from_array(player_cards));
 
-        (deck, dealer_hand, player_hand, client_again.from_arcis(dealer_cards[0]))
+        (
+            deck,
+            dealer_hand,
+            player_hand,
+            client_again.from_arcis(dealer_cards[0]),
+        )
     }
 
     pub struct PlayerHand {
