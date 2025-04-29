@@ -24,6 +24,8 @@ const COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS: u32 = comp_def_offset("shuffle_and
 const COMP_DEF_OFFSET_PLAYER_HIT: u32 = comp_def_offset("player_hit");
 const COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN: u32 = comp_def_offset("player_double_down");
 const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
+const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
+const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
 declare_id!("8YLMpSEWaLzpGqqGufakQ8FtPzvSm5kdm5VpsVPHeZTP");
 
@@ -57,7 +59,7 @@ pub mod blackjack {
         blackjack_game.client_nonce = [0; 16];
         blackjack_game.dealer_nonce = [0; 16];
         blackjack_game.player_enc_pubkey = client_pubkey;
-        blackjack_game.game_state = 0;
+        blackjack_game.game_state = GameState::Initial;
         blackjack_game.player_hand_size = 0;
         blackjack_game.dealer_hand_size = 0;
 
@@ -139,7 +141,7 @@ pub mod blackjack {
         blackjack_game.client_nonce = client_nonce;
         blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.player_enc_pubkey = client_pubkey;
-        blackjack_game.game_state = 1; // It is now the player's turn
+        blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
 
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = visible_cards[0];
@@ -167,19 +169,12 @@ pub mod blackjack {
     }
 
     pub fn player_hit(ctx: Context<PlayerHit>, _game_id: u64) -> Result<()> {
-        require_eq!(
-            ctx.accounts.blackjack_game.game_state,
-            1,
+        require!(
+            ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
         );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_stood,
-            false,
-            ErrorCode::InvalidMove
-        );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_doubled,
-            false,
+        require!(
+            ctx.accounts.blackjack_game.player_has_stood == false,
             ErrorCode::InvalidMove
         );
 
@@ -242,7 +237,7 @@ pub mod blackjack {
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
 
-        blackjack_game.game_state = if is_bust { 2 } else { 1 }; // Dealer's turn if bust, player's turn otherwise
+        blackjack_game.game_state = if is_bust { GameState::DealerTurn } else { GameState::PlayerTurn }; // Dealer's turn if bust, player's turn otherwise
 
         emit!(PlayerHitEvent { card, client_nonce });
         Ok(())
@@ -256,19 +251,12 @@ pub mod blackjack {
     }
 
     pub fn player_double_down(ctx: Context<PlayerDoubleDown>, _game_id: u64) -> Result<()> {
-        require_eq!(
-            ctx.accounts.blackjack_game.game_state,
-            1,
+        require!(
+            ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
         );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_stood,
-            false,
-            ErrorCode::InvalidMove
-        );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_doubled,
-            false,
+        require!(
+            ctx.accounts.blackjack_game.player_has_stood == false,
             ErrorCode::InvalidMove
         );
 
@@ -327,8 +315,9 @@ pub mod blackjack {
         blackjack_game.player_hand[hand_size as usize] = card;
         blackjack_game.player_hand_size += 1;
         blackjack_game.client_nonce = client_nonce;
+        blackjack_game.player_has_stood = true;
 
-        blackjack_game.game_state = 2; // Dealer's turn (no need to check for bust, as double down always ends the player's turn)
+        blackjack_game.game_state = GameState::DealerTurn; // Dealer's turn after double down
 
         emit!(PlayerDoubleDownEvent { card, client_nonce });
         Ok(())
@@ -340,19 +329,12 @@ pub mod blackjack {
     }
 
     pub fn player_stand(ctx: Context<PlayerStand>, _game_id: u64) -> Result<()> {
-        require_eq!(
-            ctx.accounts.blackjack_game.game_state,
-            1,
+        require!(
+            ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
         );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_stood,
-            false,
-            ErrorCode::InvalidMove
-        );
-        require_eq!(
-            ctx.accounts.blackjack_game.player_has_doubled,
-            false,
+        require!(
+            ctx.accounts.blackjack_game.player_has_stood == false,
             ErrorCode::InvalidMove
         );
 
@@ -363,19 +345,8 @@ pub mod blackjack {
                 ctx.accounts.blackjack_game.client_nonce,
             )),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
-            // Dealer hand
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.dealer_nonce,
-            )),
-            Argument::Account(
-                ctx.accounts.blackjack_game.key(),
-                8 + 32 * 3 + 32 * 11,
-                32 * 11,
-            ),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
-            // Dealer hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
         ];
 
         queue_computation(
@@ -406,29 +377,107 @@ pub mod blackjack {
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
 
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.player_has_stood = true;
+
+        if is_bust {
+            // This should never happen
+            blackjack_game.game_state = GameState::PlayerTurn;
+        } else {
+            blackjack_game.game_state = GameState::DealerTurn;
+            emit!(PlayerStandEvent {
+                is_bust,
+            });
+        }
+
+        Ok(())
+    }
+
+    pub fn init_dealer_play_comp_def(ctx: Context<InitDealerPlayCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn dealer_play(ctx: Context<DealerPlay>, _game_id: u64) -> Result<()> {
+        require!(
+            ctx.accounts.blackjack_game.game_state == GameState::DealerTurn,
+            ErrorCode::InvalidGameState
+        );
+
+        let args = vec![
+            // Deck
+            Argument::PlaintextU128(u128::from_le_bytes(
+                ctx.accounts.blackjack_game.deck_nonce,
+            )),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
+            // Dealer hand
+            Argument::PlaintextU128(u128::from_le_bytes(
+                ctx.accounts.blackjack_game.dealer_nonce,
+            )),
+            Argument::Account(
+                ctx.accounts.blackjack_game.key(),
+                8 + 32 * 3 + 32 * 11,
+                32 * 11,
+            ),
+            // Player hand size
+            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            // Dealer hand size
+            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
+        ];
+
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "dealer_play")]
+    pub fn dealer_play_callback(
+        ctx: Context<DealerPlayCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let mut offset = 0;
+
         let _client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
-        offset += 32;
+        let dealer_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        offset += 32 * 11;
+
+        let dealer_hand_size: u8 = bytes[offset];
+        offset += 1;
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
-        blackjack_game.player_has_stood = true;
-        blackjack_game.client_nonce = client_nonce;
+        blackjack_game.dealer_hand = dealer_hand;
+        blackjack_game.dealer_hand_size = dealer_hand_size;
+        blackjack_game.dealer_nonce = client_nonce;
+        blackjack_game.game_state = GameState::Resolved;
 
-        if is_bust {
-            // This should never happen
-            blackjack_game.game_state = 1; // Player's turn
-        } else {
-            blackjack_game.game_state = 2; // Dealer's turn
-            emit!(PlayerStandEvent {
-                is_bust,
-                dealer_face_up_card: card
-            });
-        }
+        emit!(DealerPlayEvent {
+            dealer_hand,
+            dealer_hand_size,
+            client_nonce,
+        });
 
         Ok(())
     }
@@ -768,6 +817,89 @@ pub struct InitPlayerStandCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[queue_computation_accounts("dealer_play", payer)]
+#[derive(Accounts)]
+#[instruction(_game_id: u64)]
+pub struct DealerPlay<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        mut,
+        seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
+        bump = blackjack_game.bump,
+    )]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
+#[callback_accounts("dealer_play", payer)]
+#[derive(Accounts)]
+pub struct DealerPlayCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
+#[init_computation_definition_accounts("dealer_play", payer)]
+#[derive(Accounts)]
+pub struct InitDealerPlayCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct BlackjackGame {
@@ -781,20 +913,28 @@ pub struct BlackjackGame {
     pub player_pubkey: Pubkey,
     pub player_enc_pubkey: [u8; 32],
     pub bump: u8,
-    pub game_state: u8, // 0 = initial, 1 = player turn, 2 = dealer turn, 3 = resolved
+    pub game_state: GameState, // 0 = initial, 1 = player turn, 2 = dealer turn, 3 = resolved
     pub player_hand_size: u8, // Number of cards in player's hand
     pub dealer_hand_size: u8, // Number of cards in dealer's hand
-    pub player_has_doubled: bool, // Whether player has doubled down
     pub player_has_stood: bool, // Whether player has stood
     pub game_result: u8, // Result of the game (0-4)
                         // pub player_bet: u64, // Player's current bet
 }
 
+#[repr(u8)]
+#[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum GameState {
+    Initial = 0,
+    PlayerTurn = 1,
+    DealerTurn = 2,
+    Resolved = 3,
+}
+
 #[event]
 pub struct CardsShuffledAndDealtEvent {
-    pub client_nonce: [u8; 16],
     pub user_hand: [[u8; 32]; 2],
     pub dealer_face_up_card: [u8; 32],
+    pub client_nonce: [u8; 16],
 }
 
 #[event]
@@ -812,7 +952,13 @@ pub struct PlayerDoubleDownEvent {
 #[event]
 pub struct PlayerStandEvent {
     pub is_bust: bool,
-    pub dealer_face_up_card: [u8; 32],
+}
+
+#[event]
+pub struct DealerPlayEvent {
+    pub dealer_hand: [[u8; 32]; 11],
+    pub dealer_hand_size: u8,
+    pub client_nonce: [u8; 16],
 }
 
 #[error_code]

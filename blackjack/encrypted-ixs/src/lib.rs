@@ -172,22 +172,11 @@ mod circuits {
     #[instruction]
     pub fn player_stand(
         player_hand_ctxt: Enc<Client, PlayerHand>,
-        dealer_hand_ctxt: Enc<Client, DealerHand>,
         player_hand_size: u8,
-        dealer_hand_size: u8,
-    ) -> (bool, Enc<Client, u8>) {
+    ) -> bool {
         let player_hand = player_hand_ctxt.to_arcis();
-        let dealer_hand = dealer_hand_ctxt.to_arcis();
-        let player_hand_value = calculate_hand_value(&player_hand.cards, player_hand_size);
-
-        let is_bust = player_hand_value > 21;
-        let card_to_return = if !is_bust {
-            dealer_hand.cards[dealer_hand_size as usize]
-        } else {
-            53
-        };
-
-        (is_bust, player_hand_ctxt.owner.from_arcis(card_to_return))
+        let value = calculate_hand_value(&player_hand.cards, player_hand_size);
+        value > 21
     }
 
     // Returns true if the player has busted, if not, returns the new card
@@ -221,29 +210,29 @@ mod circuits {
     #[instruction]
     pub fn dealer_play(
         deck_ctxt: Enc<Mxe, Deck>,
-        client: Client,
-        dealer_face_up_card: u8,
-        dealer_face_down_card: u8,
+        dealer_hand_ctxt: Enc<Client, DealerHand>,
+        player_hand_size: u8,
+        dealer_hand_size: u8,
     ) -> (
-        Enc<Mxe, Deck>,       // Updated deck
-        Enc<Client, [u8; 3]>, // Cards dealt to dealer (up to 3 cards)
+        Enc<Client, DealerHand>,
+        u8,
     ) {
         let deck = deck_ctxt.to_arcis();
-        let deck_array = deck.to_array();
+        let mut deck_array = deck.to_array();
+        let mut dealer = dealer_hand_ctxt.to_arcis().cards;
+        let mut size = dealer_hand_size as usize;
 
-        // For simplicity, we'll just reveal the hole card and deal one more card
-        // In a real implementation, we would need to calculate hand value and follow dealer rules
-        let start_index = 5; // 4 initial cards + 1 player card
+        for i in 0..7 {
+            let val = calculate_hand_value(&dealer, size as u8);
+            if val < 17 {
+                let idx = (player_hand_size as usize + size) as usize;
+                dealer[size] = deck_array[idx];
+                size += 1;
+            }
+        }
 
-        // Dealer's hand starts with the two initial cards and one more card
-        let dealer_hand = [
-            dealer_face_up_card,
-            dealer_face_down_card,
-            deck_array[start_index],
-        ];
-
-        // Return the updated deck and the dealer's hand
-        (deck_ctxt, client.from_arcis(dealer_hand))
+        let dealer_cards = dealer_hand_ctxt.owner.from_arcis(DealerHand { cards: dealer });
+        (dealer_cards, (size as u8).reveal())
     }
 
     // Helper function to calculate the value of a hand
@@ -284,14 +273,17 @@ mod circuits {
     #[instruction]
     pub fn resolve_game(
         client: Client,
-        player_hand: [u8; 11],
-        dealer_hand: [u8; 11],
+        player_hand: Enc<Client, PlayerHand>,
+        dealer_hand: Enc<Client, DealerHand>,
         player_hand_length: u8,
         dealer_hand_length: u8,
     ) -> Enc<Client, u8> {
+        let player_hand = player_hand.to_arcis();
+        let dealer_hand = dealer_hand.to_arcis();
+
         // Calculate hand values
-        let player_value = calculate_hand_value(&player_hand, player_hand_length);
-        let dealer_value = calculate_hand_value(&dealer_hand, dealer_hand_length);
+        let player_value = calculate_hand_value(&player_hand.cards, player_hand_length);
+        let dealer_value = calculate_hand_value(&dealer_hand.cards, dealer_hand_length);
 
         // Determine the winner
         // 0 = player busts (dealer wins)
