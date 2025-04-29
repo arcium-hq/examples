@@ -44,9 +44,19 @@ pub mod blackjack {
         client_pubkey: [u8; 32],
         client_nonce: u128,
     ) -> Result<()> {
-        ctx.accounts.blackjack_game.bump = ctx.bumps.blackjack_game;
-        ctx.accounts.blackjack_game.game_id = game_id;
+        // Initialize the blackjack game account
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.bump = ctx.bumps.blackjack_game;
+        blackjack_game.game_id = game_id;
+        blackjack_game.player_pubkey = ctx.accounts.payer.key();
+        blackjack_game.player_hand = [[0; 32]; 11];
+        blackjack_game.dealer_hand = [[0; 32]; 11];
+        blackjack_game.deck_nonce = [0; 16];
+        blackjack_game.client_nonce = [0; 16];
+        blackjack_game.dealer_nonce = [0; 16];
+        blackjack_game.player_enc_pubkey = client_pubkey;
 
+        // Queue the shuffle and deal cards computation
         let args = vec![
             Argument::PlaintextU128(mxe_nonce),
             Argument::PlaintextU128(mxe_again_nonce),
@@ -77,6 +87,7 @@ pub mod blackjack {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
+        // Keep track of the offset in the bytes array
         let mut offset = 0;
 
         let deck_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
@@ -89,10 +100,6 @@ pub mod blackjack {
             .try_into()
             .unwrap();
         offset += 32 * 3;
-
-        let blackjack_game = &mut ctx.accounts.blackjack_game;
-        blackjack_game.deck = deck;
-        blackjack_game.deck_nonce = deck_nonce;
 
         let dealer_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
@@ -114,6 +121,14 @@ pub mod blackjack {
             .unwrap();
         offset += 32 * 3;
 
+        // Update the blackjack game account
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.deck = deck;
+        blackjack_game.deck_nonce = deck_nonce;
+        blackjack_game.client_nonce = client_nonce;
+        blackjack_game.dealer_nonce = dealer_nonce;
+        blackjack_game.player_enc_pubkey = client_pubkey;
+
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = visible_cards[0];
         blackjack_game.player_hand[1] = visible_cards[1];
@@ -121,10 +136,7 @@ pub mod blackjack {
         blackjack_game.dealer_hand[0] = visible_cards[2];
         blackjack_game.dealer_hand[1] = dealer_face_down_card;
 
-        blackjack_game.client_nonce = client_nonce;
-        blackjack_game.dealer_nonce = dealer_nonce;
-        blackjack_game.player_enc_pubkey = client_pubkey;
-
+        // Assert that we have read the entire bytes array
         assert_eq!(offset, bytes.len());
 
         emit!(CardsShuffledAndDealtEvent {

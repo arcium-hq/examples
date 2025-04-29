@@ -116,10 +116,11 @@ mod circuits {
             dealer_card_two: initial_deck[3],
         });
 
+        // Cards are dealt clockwise, starting with the player
         let initial_hand_visible = client.from_arcis(InitialHandVisible {
             player_card_one: initial_deck[0],
-            player_card_two: initial_deck[1],
-            dealer_card_one: initial_deck[2],
+            player_card_two: initial_deck[2],
+            dealer_card_one: initial_deck[1],
         });
 
         (deck, initial_hand_hidden, initial_hand_visible)
