@@ -174,7 +174,7 @@ pub mod blackjack {
             ErrorCode::InvalidGameState
         );
         require!(
-            ctx.accounts.blackjack_game.player_has_stood == false,
+            !ctx.accounts.blackjack_game.player_has_stood,
             ErrorCode::InvalidMove
         );
 
@@ -237,7 +237,11 @@ pub mod blackjack {
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
 
-        blackjack_game.game_state = if is_bust { GameState::DealerTurn } else { GameState::PlayerTurn }; // Dealer's turn if bust, player's turn otherwise
+        blackjack_game.game_state = if is_bust {
+            GameState::DealerTurn
+        } else {
+            GameState::PlayerTurn
+        }; // Dealer's turn if bust, player's turn otherwise
 
         emit!(PlayerHitEvent { card, client_nonce });
         Ok(())
@@ -256,7 +260,7 @@ pub mod blackjack {
             ErrorCode::InvalidGameState
         );
         require!(
-            ctx.accounts.blackjack_game.player_has_stood == false,
+            !ctx.accounts.blackjack_game.player_has_stood,
             ErrorCode::InvalidMove
         );
 
@@ -334,7 +338,7 @@ pub mod blackjack {
             ErrorCode::InvalidGameState
         );
         require!(
-            ctx.accounts.blackjack_game.player_has_stood == false,
+            !ctx.accounts.blackjack_game.player_has_stood,
             ErrorCode::InvalidMove
         );
 
@@ -385,9 +389,7 @@ pub mod blackjack {
             blackjack_game.game_state = GameState::PlayerTurn;
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
-            emit!(PlayerStandEvent {
-                is_bust,
-            });
+            emit!(PlayerStandEvent { is_bust });
         }
 
         Ok(())
@@ -406,9 +408,7 @@ pub mod blackjack {
 
         let args = vec![
             // Deck
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.deck_nonce,
-            )),
+            Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
             Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
             // Dealer hand
             Argument::PlaintextU128(u128::from_le_bytes(
@@ -478,6 +478,97 @@ pub mod blackjack {
             dealer_hand_size,
             client_nonce,
         });
+
+        Ok(())
+    }
+
+    pub fn init_resolve_game_comp_def(ctx: Context<InitResolveGameCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, true, None, None)?;
+        Ok(())
+    }
+
+    pub fn resolve_game(ctx: Context<ResolveGame>, _game_id: u64) -> Result<()> {
+        require!(
+            ctx.accounts.blackjack_game.game_state == GameState::Resolving,
+            ErrorCode::InvalidGameState
+        );
+
+        let args = vec![
+            // Player hand
+            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
+            Argument::PlaintextU128(u128::from_le_bytes(
+                ctx.accounts.blackjack_game.client_nonce,
+            )),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
+            // Dealer hand
+            Argument::PlaintextU128(u128::from_le_bytes(
+                ctx.accounts.blackjack_game.dealer_nonce,
+            )),
+            Argument::Account(
+                ctx.accounts.blackjack_game.key(),
+                8 + 32 * 3 + 32 * 11,
+                32 * 11,
+            ),
+            // Player hand size
+            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            // Dealer hand size
+            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
+        ];
+
+        queue_computation(
+            ctx.accounts,
+            args,
+            vec![CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }],
+            None,
+        )?;
+        Ok(())
+    }
+
+    #[arcium_callback(encrypted_ix = "resolve_game")]
+    pub fn resolve_game_callback(
+        ctx: Context<ResolveGameCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
+
+        let result = bytes[0];
+
+        if result == 0 {
+            // Player busts (dealer wins)
+            emit!(ResultEvent {
+                winner: "Dealer".to_string(),
+            });
+        } else if result == 1 {
+            // Dealer busts (player wins)
+            emit!(ResultEvent {
+                winner: "Player".to_string(),
+            });
+        } else if result == 2 {
+            // Player wins
+            emit!(ResultEvent {
+                winner: "Player".to_string(),
+            });
+        } else if result == 3 {
+            // Dealer wins
+            emit!(ResultEvent {
+                winner: "Dealer".to_string(),
+            });
+        } else {
+            // Push (tie)
+            emit!(ResultEvent {
+                winner: "Tie".to_string(),
+            });
+        }
+
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.game_state = GameState::Resolved;
 
         Ok(())
     }
@@ -900,6 +991,89 @@ pub struct InitDealerPlayCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[queue_computation_accounts("resolve_game", payer)]
+#[derive(Accounts)]
+#[instruction(_game_id: u64)]
+pub struct ResolveGame<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    #[account(
+        mut,
+        address = derive_mempool_pda!()
+    )]
+    pub mempool_account: Account<'info, Mempool>,
+    #[account(
+        mut,
+        address = derive_execpool_pda!()
+    )]
+    pub executing_pool: Account<'info, ExecutingPool>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+    #[account(
+        mut,
+        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+    )]
+    pub pool_account: Account<'info, StakingPoolAccount>,
+    #[account(
+        address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
+    )]
+    pub clock_account: Account<'info, ClockAccount>,
+    pub system_program: Program<'info, System>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        mut,
+        seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
+        bump = blackjack_game.bump,
+    )]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
+#[callback_accounts("resolve_game", payer)]
+#[derive(Accounts)]
+pub struct ResolveGameCallback<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
+    )]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub blackjack_game: Account<'info, BlackjackGame>,
+}
+
+#[init_computation_definition_accounts("resolve_game", payer)]
+#[derive(Accounts)]
+pub struct InitResolveGameCompDef<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    #[account(mut)]
+    /// CHECK: comp_def_account, checked by arcium program.
+    /// Can't check it here as it's not initialized yet.
+    pub comp_def_account: UncheckedAccount<'info>,
+    pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct BlackjackGame {
@@ -914,11 +1088,11 @@ pub struct BlackjackGame {
     pub player_enc_pubkey: [u8; 32],
     pub bump: u8,
     pub game_state: GameState, // 0 = initial, 1 = player turn, 2 = dealer turn, 3 = resolved
-    pub player_hand_size: u8, // Number of cards in player's hand
-    pub dealer_hand_size: u8, // Number of cards in dealer's hand
+    pub player_hand_size: u8,  // Number of cards in player's hand
+    pub dealer_hand_size: u8,  // Number of cards in dealer's hand
     pub player_has_stood: bool, // Whether player has stood
-    pub game_result: u8, // Result of the game (0-4)
-                        // pub player_bet: u64, // Player's current bet
+    pub game_result: u8,       // Result of the game (0-4)
+                               // pub player_bet: u64, // Player's current bet
 }
 
 #[repr(u8)]
@@ -927,7 +1101,8 @@ pub enum GameState {
     Initial = 0,
     PlayerTurn = 1,
     DealerTurn = 2,
-    Resolved = 3,
+    Resolving = 3,
+    Resolved = 4,
 }
 
 #[event]
@@ -959,6 +1134,11 @@ pub struct DealerPlayEvent {
     pub dealer_hand: [[u8; 32]; 11],
     pub dealer_hand_size: u8,
     pub client_nonce: [u8; 16],
+}
+
+#[event]
+pub struct ResultEvent {
+    pub winner: String,
 }
 
 #[error_code]

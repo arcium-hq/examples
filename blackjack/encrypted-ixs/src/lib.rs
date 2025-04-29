@@ -170,10 +170,7 @@ mod circuits {
 
     // Returns true if the player has busted
     #[instruction]
-    pub fn player_stand(
-        player_hand_ctxt: Enc<Client, PlayerHand>,
-        player_hand_size: u8,
-    ) -> bool {
+    pub fn player_stand(player_hand_ctxt: Enc<Client, PlayerHand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis();
         let value = calculate_hand_value(&player_hand.cards, player_hand_size);
         value > 21
@@ -213,10 +210,7 @@ mod circuits {
         dealer_hand_ctxt: Enc<Client, DealerHand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (
-        Enc<Client, DealerHand>,
-        u8,
-    ) {
+    ) -> (Enc<Client, DealerHand>, u8) {
         let deck = deck_ctxt.to_arcis();
         let mut deck_array = deck.to_array();
         let mut dealer = dealer_hand_ctxt.to_arcis().cards;
@@ -231,7 +225,9 @@ mod circuits {
             }
         }
 
-        let dealer_cards = dealer_hand_ctxt.owner.from_arcis(DealerHand { cards: dealer });
+        let dealer_cards = dealer_hand_ctxt
+            .owner
+            .from_arcis(DealerHand { cards: dealer });
         (dealer_cards, (size as u8).reveal())
     }
 
@@ -272,12 +268,11 @@ mod circuits {
     // Function to resolve the game and determine the winner
     #[instruction]
     pub fn resolve_game(
-        client: Client,
         player_hand: Enc<Client, PlayerHand>,
         dealer_hand: Enc<Client, DealerHand>,
         player_hand_length: u8,
         dealer_hand_length: u8,
-    ) -> Enc<Client, u8> {
+    ) -> u8 {
         let player_hand = player_hand.to_arcis();
         let dealer_hand = dealer_hand.to_arcis();
 
@@ -303,6 +298,6 @@ mod circuits {
             4 // Push (tie)
         };
 
-        client.from_arcis(result)
+        result.reveal()
     }
 }
