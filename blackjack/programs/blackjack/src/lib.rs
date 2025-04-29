@@ -47,14 +47,16 @@ pub mod blackjack {
         mxe_again_nonce: u128,
         client_pubkey: [u8; 32],
         client_nonce: u128,
+        client_again_pubkey: [u8; 32],
+        client_again_nonce: u128,
     ) -> Result<()> {
         // Initialize the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.bump = ctx.bumps.blackjack_game;
         blackjack_game.game_id = game_id;
         blackjack_game.player_pubkey = ctx.accounts.payer.key();
-        blackjack_game.player_hand = [[0; 32]; 11];
-        blackjack_game.dealer_hand = [[0; 32]; 11];
+        blackjack_game.player_hand = [0; 32];
+        blackjack_game.dealer_hand = [0; 32];
         blackjack_game.deck_nonce = [0; 16];
         blackjack_game.client_nonce = [0; 16];
         blackjack_game.dealer_nonce = [0; 16];
@@ -69,6 +71,8 @@ pub mod blackjack {
             Argument::PlaintextU128(mxe_again_nonce),
             Argument::ArcisPubkey(client_pubkey),
             Argument::PlaintextU128(client_nonce),
+            Argument::ArcisPubkey(client_again_pubkey),
+            Argument::PlaintextU128(client_again_nonce),
         ];
 
         queue_computation(
@@ -111,7 +115,7 @@ pub mod blackjack {
         let dealer_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let dealer_face_down_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        let dealer_cards: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
         let client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
@@ -120,19 +124,17 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let visible_cards: [[u8; 32]; 3] = bytes[offset..(offset + 32 * 3)]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        offset += 32 * 3;
+        let player_cards: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
-        let player_num_cards: u8 = bytes[offset];
-        offset += 1;
+        let _dealer_client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
-        let dealer_num_cards: u8 = bytes[offset];
-        offset += 1;
+        let dealer_client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
+        offset += 16;
+
+        let dealer_face_up_card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
         // Update the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
@@ -144,21 +146,20 @@ pub mod blackjack {
         blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
 
         // Initialize player hand with first two cards
-        blackjack_game.player_hand[0] = visible_cards[0];
-        blackjack_game.player_hand[1] = visible_cards[1];
+        blackjack_game.player_hand = player_cards;
         // Initialize dealer hand with face up card and face down card
-        blackjack_game.dealer_hand[0] = visible_cards[2];
-        blackjack_game.dealer_hand[1] = dealer_face_down_card;
-        blackjack_game.player_hand_size = player_num_cards;
-        blackjack_game.dealer_hand_size = dealer_num_cards;
+        blackjack_game.dealer_hand = dealer_cards;
+        blackjack_game.player_hand_size = 2;
+        blackjack_game.dealer_hand_size = 2;
 
         // Assert that we have read the entire bytes array
         assert_eq!(offset, bytes.len());
 
         emit!(CardsShuffledAndDealtEvent {
             client_nonce,
-            user_hand: [visible_cards[0], visible_cards[1]],
-            dealer_face_up_card: visible_cards[2],
+            dealer_client_nonce,
+            user_hand: player_cards,
+            dealer_face_up_card: dealer_face_up_card,
         });
         Ok(())
     }
@@ -245,12 +246,11 @@ pub mod blackjack {
             emit!(PlayerBustEvent { client_nonce });
         } else {
             blackjack_game.game_state = GameState::PlayerTurn;
-            blackjack_game.player_hand_size += 1;
-
             emit!(PlayerHitEvent {
                 card: player_hand[blackjack_game.player_hand_size as usize],
                 client_nonce
             });
+            blackjack_game.player_hand_size += 1;
         }
 
         Ok(())
@@ -1101,8 +1101,8 @@ pub struct InitResolveGameCompDef<'info> {
 #[derive(InitSpace)]
 pub struct BlackjackGame {
     pub deck: [[u8; 32]; 3],
-    pub player_hand: [[u8; 32]; 11],
-    pub dealer_hand: [[u8; 32]; 11],
+    pub player_hand: [u8; 32],
+    pub dealer_hand: [u8; 32],
     pub deck_nonce: [u8; 16],
     pub client_nonce: [u8; 16],
     pub dealer_nonce: [u8; 16],
@@ -1130,9 +1130,10 @@ pub enum GameState {
 
 #[event]
 pub struct CardsShuffledAndDealtEvent {
-    pub user_hand: [[u8; 32]; 2],
+    pub user_hand: [u8; 32],
     pub dealer_face_up_card: [u8; 32],
     pub client_nonce: [u8; 16],
+    pub dealer_client_nonce: [u8; 16],
 }
 
 #[event]

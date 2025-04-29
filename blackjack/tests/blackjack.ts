@@ -73,6 +73,7 @@ describe("Blackjack", () => {
       "Player stand computation definition initialized with signature",
       initPlayerStandCompDefSig
     );
+    await new Promise((res) => setTimeout(res, 1000));
     const initPlayerDoubleDownCompDefSig = await initPlayerDoubleDownCompDef(
       program,
       owner,
@@ -82,7 +83,7 @@ describe("Blackjack", () => {
       "Player double down computation definition initialized with signature",
       initPlayerDoubleDownCompDefSig
     );
-    await new Promise((res) => setTimeout(res, 2000));
+    await new Promise((res) => setTimeout(res, 1000));
     const initDealerPlayCompDefSig = await initDealerPlayCompDef(
       program,
       owner,
@@ -193,7 +194,6 @@ describe("Blackjack", () => {
     );
     console.log("Finalize hit sig:", finalizeHitSig);
     const playerHitEvent = await playerHitEventPromise;
-    console.log("Player hit card:", playerHitEvent.card);
     const decryptedHitCard = cipher.decrypt(
       [playerHitEvent.card],
       new Uint8Array(playerHitEvent.clientNonce)

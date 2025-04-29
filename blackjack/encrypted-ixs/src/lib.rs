@@ -94,8 +94,31 @@ mod circuits {
         pub dealer_card_one: u8,
     }
 
-    pub struct InitialHandHidden {
-        pub dealer_card_two: u8,
+    pub struct Hand {
+        pub cards: u128,
+    }
+
+    impl Hand {
+        pub fn from_array(array: [u8; 11]) -> Hand {
+            let mut cards = 0;
+            for i in 0..11 {
+                cards += POWS_OF_SIXTY_FOUR[i] * array[i] as u128;
+            }
+
+            Hand { cards }
+        }
+
+        fn to_array(&self) -> [u8; 11] {
+            let mut cards = self.cards;
+
+            let mut bytes = [0u8; 11];
+            for i in 0..11 {
+                bytes[i] = (cards % 64) as u8;
+                cards >>= 6;
+            }
+
+            bytes
+        }
     }
 
     #[instruction]
@@ -103,29 +126,31 @@ mod circuits {
         mxe: Mxe,
         mxe_again: Mxe,
         client: Client,
+        client_again: Client,
     ) -> (
-        Enc<Mxe, Deck>,                  // 16 + 32 x 3
-        Enc<Mxe, InitialHandHidden>,     // 16 + 32 x 1
-        Enc<Client, InitialHandVisible>, // 32 + 16 + 32 x 3
-        (u8, u8),
+        Enc<Mxe, Deck>,    // 16 + 32 x 3
+        Enc<Mxe, Hand>,    // 16 + 32
+        Enc<Client, Hand>, // 32 + 16 + 32
+        Enc<Client, u8>,   // 32 + 16 + 1
     ) {
         let mut initial_deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
 
         let deck = mxe.from_arcis(Deck::from_array(initial_deck));
-        let initial_hand_hidden = mxe_again.from_arcis(InitialHandHidden {
-            dealer_card_two: initial_deck[3],
-        });
 
-        // Cards are dealt clockwise, starting with the player
-        let initial_hand_visible: Enc<Client, InitialHandVisible> =
-            client.from_arcis(InitialHandVisible {
-                player_card_one: initial_deck[0],
-                player_card_two: initial_deck[2],
-                dealer_card_one: initial_deck[1],
-            });
+        let mut dealer_cards = [0; 11];
+        dealer_cards[0] = initial_deck[1];
+        dealer_cards[1] = initial_deck[3];
 
-        (deck, initial_hand_hidden, initial_hand_visible, (2, 2))
+        let dealer_hand = mxe_again.from_arcis(Hand::from_array(dealer_cards));
+
+        let mut player_cards = [0; 11];
+        player_cards[0] = initial_deck[0];
+        player_cards[1] = initial_deck[2];
+
+        let player_hand = client.from_arcis(Hand::from_array(player_cards));
+
+        (deck, dealer_hand, player_hand, client_again.from_arcis(dealer_cards[0]))
     }
 
     pub struct PlayerHand {
@@ -222,7 +247,8 @@ mod circuits {
     #[instruction]
     pub fn dealer_play(
         deck_ctxt: Enc<Mxe, Deck>,
-        dealer_hand_ctxt: Enc<Client, DealerHand>,
+        dealer_hand_ctxt: Enc<Mxe, DealerHand>,
+        client: Client,
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Client, DealerHand>, u8) {
@@ -240,9 +266,7 @@ mod circuits {
             }
         }
 
-        let dealer_cards = dealer_hand_ctxt
-            .owner
-            .from_arcis(DealerHand { cards: dealer });
+        let dealer_cards = client.from_arcis(DealerHand { cards: dealer });
         (dealer_cards, (size as u8).reveal())
     }
 
