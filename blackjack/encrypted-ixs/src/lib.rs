@@ -142,15 +142,17 @@ mod circuits {
         player_hand_ctxt: Enc<Client, PlayerHand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, u8>, bool) {
+    ) -> (Enc<Client, PlayerHand>, bool) {
         let deck = deck_ctxt.to_arcis();
         let deck_array = deck.to_array();
 
-        let player_hand = player_hand_ctxt.to_arcis();
+        let mut player_hand = player_hand_ctxt.to_arcis();
 
         let player_hand_value = calculate_hand_value(&player_hand.cards, player_hand_size);
 
-        let new_card = if player_hand_value < 21 {
+        let is_bust = player_hand_value > 21;
+
+        let new_card = if !is_bust {
             let card_index = (player_hand_size + dealer_hand_size) as usize;
 
             // Get the next card from the deck
@@ -159,12 +161,16 @@ mod circuits {
             53
         };
 
+        player_hand.cards[player_hand_size as usize] = new_card;
+
         let player_updated_hand_value =
             calculate_hand_value(&player_hand.cards, player_hand_size + 1);
 
         (
-            player_hand_ctxt.owner.from_arcis(new_card),
-            player_updated_hand_value > 21,
+            player_hand_ctxt.owner.from_arcis(PlayerHand {
+                cards: player_hand.cards,
+            }),
+            is_bust.reveal(),
         )
     }
 
@@ -183,15 +189,17 @@ mod circuits {
         player_hand_ctxt: Enc<Client, PlayerHand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> Enc<Client, u8> {
+    ) -> (Enc<Client, PlayerHand>, bool) {
         let deck = deck_ctxt.to_arcis();
         let deck_array = deck.to_array();
 
-        let player_hand = player_hand_ctxt.to_arcis();
+        let mut player_hand = player_hand_ctxt.to_arcis();
 
         let player_hand_value = calculate_hand_value(&player_hand.cards, player_hand_size);
 
-        let new_card = if player_hand_value < 21 {
+        let is_bust = player_hand_value > 21;
+
+        let new_card = if !is_bust {
             let card_index = (player_hand_size + dealer_hand_size) as usize;
 
             // Get the next card from the deck
@@ -200,7 +208,14 @@ mod circuits {
             53
         };
 
-        player_hand_ctxt.owner.from_arcis(new_card)
+        player_hand.cards[player_hand_size as usize] = new_card;
+
+        (
+            player_hand_ctxt.owner.from_arcis(PlayerHand {
+                cards: player_hand.cards,
+            }),
+            is_bust.reveal(),
+        )
     }
 
     // Function for dealer to play (reveal hole card and follow rules)

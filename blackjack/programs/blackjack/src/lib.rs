@@ -225,25 +225,34 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
-        offset += 32;
-
-        let blackjack_game = &mut ctx.accounts.blackjack_game;
-        let hand_size = blackjack_game.player_hand_size;
-        blackjack_game.player_hand[hand_size as usize] = card;
-        blackjack_game.player_hand_size += 1;
-        blackjack_game.client_nonce = client_nonce;
+        let player_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        offset += 32 * 11;
 
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
 
-        blackjack_game.game_state = if is_bust {
-            GameState::DealerTurn
-        } else {
-            GameState::PlayerTurn
-        }; // Dealer's turn if bust, player's turn otherwise
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.player_hand = player_hand;
+        blackjack_game.client_nonce = client_nonce;
 
-        emit!(PlayerHitEvent { card, client_nonce });
+        if is_bust {
+            blackjack_game.game_state = GameState::DealerTurn;
+            emit!(PlayerBustEvent { client_nonce });
+        } else {
+            blackjack_game.game_state = GameState::PlayerTurn;
+            blackjack_game.player_hand_size += 1;
+
+            emit!(PlayerHitEvent {
+                card: player_hand[blackjack_game.player_hand_size as usize],
+                client_nonce
+            });
+        }
+
         Ok(())
     }
 
@@ -311,19 +320,33 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let card: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
-        offset += 32;
+        let player_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
+            .chunks_exact(32)
+            .map(|c| c.try_into().unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        offset += 32 * 11;
+
+        let is_bust: bool = bytes[offset] == 1;
+        offset += 1;
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
-        let hand_size = blackjack_game.player_hand_size;
-        blackjack_game.player_hand[hand_size as usize] = card;
-        blackjack_game.player_hand_size += 1;
+        blackjack_game.player_hand = player_hand;
         blackjack_game.client_nonce = client_nonce;
         blackjack_game.player_has_stood = true;
 
-        blackjack_game.game_state = GameState::DealerTurn; // Dealer's turn after double down
+        if is_bust {
+            blackjack_game.game_state = GameState::DealerTurn;
+            emit!(PlayerBustEvent { client_nonce });
+        } else {
+            blackjack_game.game_state = GameState::DealerTurn;
+            emit!(PlayerDoubleDownEvent {
+                card: player_hand[blackjack_game.player_hand_size as usize],
+                client_nonce
+            });
+        }
 
-        emit!(PlayerDoubleDownEvent { card, client_nonce });
         Ok(())
     }
 
@@ -1127,6 +1150,11 @@ pub struct PlayerDoubleDownEvent {
 #[event]
 pub struct PlayerStandEvent {
     pub is_bust: bool,
+}
+
+#[event]
+pub struct PlayerBustEvent {
+    pub client_nonce: [u8; 16],
 }
 
 #[event]
