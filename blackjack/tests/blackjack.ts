@@ -63,6 +63,7 @@ describe("Blackjack", () => {
       "Player hit computation definition initialized with signature",
       initPlayerHitCompDefSig
     );
+    await new Promise((res) => setTimeout(res, 1000));
     const initPlayerStandCompDefSig = await initPlayerStandCompDef(
       program,
       owner,
@@ -81,6 +82,7 @@ describe("Blackjack", () => {
       "Player double down computation definition initialized with signature",
       initPlayerDoubleDownCompDefSig
     );
+    await new Promise((res) => setTimeout(res, 2000));
     const initDealerPlayCompDefSig = await initDealerPlayCompDef(
       program,
       owner,
@@ -90,6 +92,7 @@ describe("Blackjack", () => {
       "Dealer play computation definition initialized with signature",
       initDealerPlayCompDefSig
     );
+    await new Promise((res) => setTimeout(res, 1000));
     const initResolveGameCompDefSig = await initResolveGameCompDef(
       program,
       owner,
@@ -117,6 +120,7 @@ describe("Blackjack", () => {
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
     );
+    await new Promise((res) => setTimeout(res, 1000));
 
     // Initialize the blackjack game
     const initGameSig = await program.methods
@@ -154,16 +158,12 @@ describe("Blackjack", () => {
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
 
-    const clientNonceFromEvent = new Uint8Array(
-      cardsShuffledAndDealtEvent.clientNonce
-    );
-
     const cards = cipher.decrypt(
       [
         ...cardsShuffledAndDealtEvent.userHand,
         cardsShuffledAndDealtEvent.dealerFaceUpCard,
       ],
-      clientNonceFromEvent
+      new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
     );
 
     console.log("User hand is ", cards[0], cards[1]);
