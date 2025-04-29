@@ -11,7 +11,7 @@ mod circuits {
     ];
 
     // 1 << i * 6 for i in 0..21
-    const FIRST_21_POWERS_OF_2_TIMES_6: [u128; 21] = [
+    const POWS_OF_SIXTY_FOUR: [u128; 21] = [
         1,
         64,
         4096,
