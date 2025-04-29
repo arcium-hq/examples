@@ -56,8 +56,8 @@ pub mod blackjack {
         blackjack_game.dealer_nonce = [0; 16];
         blackjack_game.player_enc_pubkey = client_pubkey;
         blackjack_game.game_state = 0;
-        blackjack_game.player_hand_size = [0; 32];
-        blackjack_game.dealer_hand_size = [0; 32];
+        blackjack_game.player_hand_size = 0;
+        blackjack_game.dealer_hand_size = 0;
 
         // Queue the shuffle and deal cards computation
         let args = vec![
