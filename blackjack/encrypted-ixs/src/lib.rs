@@ -45,17 +45,17 @@ mod circuits {
         pub fn from_array(array: [u8; 52]) -> Deck {
             let mut card_one = 0;
             for i in 0..21 {
-                card_one += FIRST_21_POWERS_OF_2_TIMES_6[i] * array[i] as u128;
+                card_one += POWS_OF_SIXTY_FOUR[i] * array[i] as u128;
             }
 
             let mut card_two = 0;
             for i in 21..42 {
-                card_two += FIRST_21_POWERS_OF_2_TIMES_6[i - 21] * array[i] as u128;
+                card_two += POWS_OF_SIXTY_FOUR[i - 21] * array[i] as u128;
             }
 
             let mut card_three = 0;
             for i in 42..52 {
-                card_three += FIRST_21_POWERS_OF_2_TIMES_6[i - 42] * array[i] as u128;
+                card_three += POWS_OF_SIXTY_FOUR[i - 42] * array[i] as u128;
             }
 
             Deck {
