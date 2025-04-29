@@ -107,6 +107,7 @@ mod circuits {
         Enc<Mxe, Deck>,                  // 16 + 32 x 3
         Enc<Mxe, InitialHandHidden>,     // 16 + 32 x 1
         Enc<Client, InitialHandVisible>, // 32 + 16 + 32 x 3
+        (u8, u8),
     ) {
         let mut initial_deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
@@ -123,13 +124,326 @@ mod circuits {
             dealer_card_one: initial_deck[1],
         });
 
-        (deck, initial_hand_hidden, initial_hand_visible)
+        (deck, initial_hand_hidden, initial_hand_visible, (2, 2))
     }
 
+    // New function for player to hit (take another card)
     #[instruction]
-    pub fn deal_cards(deck_ctxt: Enc<Mxe, Deck>) -> u8 {
+    pub fn player_hit(
+        deck_ctxt: Enc<Mxe, Deck>,
+        client: Client,
+        player_hand_size: u8,
+    ) -> (
+        Enc<Mxe, Deck>,  // Updated deck
+        Enc<Client, u8>, // New card dealt to player
+    ) {
         let deck = deck_ctxt.to_arcis();
+        let deck_array = deck.to_array();
 
-        deck.to_array()[3].reveal()
+        // Calculate the index of the next card to deal (4 + player_hand_size)
+        // 4 is the number of cards already dealt (2 player + 2 dealer)
+        let card_index = 4 + player_hand_size as usize;
+
+        // Get the next card from the deck
+        let new_card = deck_array[card_index];
+
+        // Return the updated deck and the new card
+        (deck_ctxt, client.from_arcis(new_card))
+    }
+
+    // Function for player to stand (end turn)
+    #[instruction]
+    pub fn player_stand(deck_ctxt: Enc<Mxe, Deck>) -> Enc<Mxe, Deck> {
+        // Simply return the deck unchanged
+        // This is a placeholder for future logic that might be needed
+        deck_ctxt
+    }
+
+    // Function for player to double down (double bet and take one more card)
+    #[instruction]
+    pub fn player_double_down(
+        deck_ctxt: Enc<Mxe, Deck>,
+        client: Client,
+    ) -> (
+        Enc<Mxe, Deck>,  // Updated deck
+        Enc<Client, u8>, // New card dealt to player
+    ) {
+        let deck = deck_ctxt.to_arcis();
+        let deck_array = deck.to_array();
+
+        // For double down, we always deal exactly one more card
+        // The index is 4 (2 player + 2 dealer) + 0 (no additional cards yet)
+        let card_index = 4;
+
+        // Get the next card from the deck
+        let new_card = deck_array[card_index];
+
+        // Return the updated deck and the new card
+        (deck_ctxt, client.from_arcis(new_card))
+    }
+
+    // Function for dealer to play (reveal hole card and follow rules)
+    #[instruction]
+    pub fn dealer_play(
+        deck_ctxt: Enc<Mxe, Deck>,
+        client: Client,
+        dealer_face_up_card: u8,
+        dealer_face_down_card: u8,
+    ) -> (
+        Enc<Mxe, Deck>,       // Updated deck
+        Enc<Client, [u8; 3]>, // Cards dealt to dealer (up to 3 cards)
+    ) {
+        let deck = deck_ctxt.to_arcis();
+        let deck_array = deck.to_array();
+
+        // For simplicity, we'll just reveal the hole card and deal one more card
+        // In a real implementation, we would need to calculate hand value and follow dealer rules
+        let start_index = 5; // 4 initial cards + 1 player card
+
+        // Dealer's hand starts with the two initial cards and one more card
+        let dealer_hand = [
+            dealer_face_up_card,
+            dealer_face_down_card,
+            deck_array[start_index],
+        ];
+
+        // Return the updated deck and the dealer's hand
+        (deck_ctxt, client.from_arcis(dealer_hand))
+    }
+
+    // Helper function to calculate the value of a hand
+    // Takes a fixed array of 11 cards and a hand_length parameter
+    fn calculate_hand_value(hand: &[u8; 11], hand_length: u8) -> u8 {
+        let mut value = 0;
+        let mut has_ace = false;
+
+        // Process each card individually with conditional logic
+        // Card 0
+        let rank0 = if 0 < hand_length as usize {
+            (hand[0] % 13) + 1
+        } else {
+            0
+        };
+        if 0 < hand_length as usize {
+            if rank0 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank0 > 10 {
+                value += 10;
+            } else {
+                value += rank0;
+            }
+        }
+
+        // Card 1
+        let rank1 = if 1 < hand_length as usize {
+            (hand[1] % 13) + 1
+        } else {
+            0
+        };
+        if 1 < hand_length as usize {
+            if rank1 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank1 > 10 {
+                value += 10;
+            } else {
+                value += rank1;
+            }
+        }
+
+        // Card 2
+        let rank2 = if 2 < hand_length as usize {
+            (hand[2] % 13) + 1
+        } else {
+            0
+        };
+        if 2 < hand_length as usize {
+            if rank2 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank2 > 10 {
+                value += 10;
+            } else {
+                value += rank2;
+            }
+        }
+
+        // Card 3
+        let rank3 = if 3 < hand_length as usize {
+            (hand[3] % 13) + 1
+        } else {
+            0
+        };
+        if 3 < hand_length as usize {
+            if rank3 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank3 > 10 {
+                value += 10;
+            } else {
+                value += rank3;
+            }
+        }
+
+        // Card 4
+        let rank4 = if 4 < hand_length as usize {
+            (hand[4] % 13) + 1
+        } else {
+            0
+        };
+        if 4 < hand_length as usize {
+            if rank4 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank4 > 10 {
+                value += 10;
+            } else {
+                value += rank4;
+            }
+        }
+
+        // Card 5
+        let rank5 = if 5 < hand_length as usize {
+            (hand[5] % 13) + 1
+        } else {
+            0
+        };
+        if 5 < hand_length as usize {
+            if rank5 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank5 > 10 {
+                value += 10;
+            } else {
+                value += rank5;
+            }
+        }
+
+        // Card 6
+        let rank6 = if 6 < hand_length as usize {
+            (hand[6] % 13) + 1
+        } else {
+            0
+        };
+        if 6 < hand_length as usize {
+            if rank6 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank6 > 10 {
+                value += 10;
+            } else {
+                value += rank6;
+            }
+        }
+
+        // Card 7
+        let rank7 = if 7 < hand_length as usize {
+            (hand[7] % 13) + 1
+        } else {
+            0
+        };
+        if 7 < hand_length as usize {
+            if rank7 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank7 > 10 {
+                value += 10;
+            } else {
+                value += rank7;
+            }
+        }
+
+        // Card 8
+        let rank8 = if 8 < hand_length as usize {
+            (hand[8] % 13) + 1
+        } else {
+            0
+        };
+        if 8 < hand_length as usize {
+            if rank8 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank8 > 10 {
+                value += 10;
+            } else {
+                value += rank8;
+            }
+        }
+
+        // Card 9
+        let rank9 = if 9 < hand_length as usize {
+            (hand[9] % 13) + 1
+        } else {
+            0
+        };
+        if 9 < hand_length as usize {
+            if rank9 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank9 > 10 {
+                value += 10;
+            } else {
+                value += rank9;
+            }
+        }
+
+        // Card 10
+        let rank10 = if 10 < hand_length as usize {
+            (hand[10] % 13) + 1
+        } else {
+            0
+        };
+        if 10 < hand_length as usize {
+            if rank10 == 1 {
+                value += 11;
+                has_ace = true;
+            } else if rank10 > 10 {
+                value += 10;
+            } else {
+                value += rank10;
+            }
+        }
+
+        // Adjust for aces if needed
+        if value > 21 && has_ace {
+            value -= 10;
+        }
+
+        value
+    }
+
+    // Function to resolve the game and determine the winner
+    #[instruction]
+    pub fn resolve_game(
+        client: Client,
+        player_hand: [u8; 11],
+        dealer_hand: [u8; 11],
+        player_hand_length: u8,
+        dealer_hand_length: u8,
+    ) -> Enc<Client, u8> {
+        // Calculate hand values
+        let player_value = calculate_hand_value(&player_hand, player_hand_length);
+        let dealer_value = calculate_hand_value(&dealer_hand, dealer_hand_length);
+
+        // Determine the winner
+        // 0 = player busts (dealer wins)
+        // 1 = dealer busts (player wins)
+        // 2 = player wins
+        // 3 = dealer wins
+        // 4 = push (tie)
+        let result = if player_value > 21 {
+            0 // Player busts
+        } else if dealer_value > 21 {
+            1 // Dealer busts
+        } else if player_value > dealer_value {
+            2 // Player wins
+        } else if dealer_value > player_value {
+            3 // Dealer wins
+        } else {
+            4 // Push (tie)
+        };
+
+        client.from_arcis(result)
     }
 }

@@ -55,6 +55,9 @@ pub mod blackjack {
         blackjack_game.client_nonce = [0; 16];
         blackjack_game.dealer_nonce = [0; 16];
         blackjack_game.player_enc_pubkey = client_pubkey;
+        blackjack_game.game_state = 0;
+        blackjack_game.player_hand_size = [0; 32];
+        blackjack_game.dealer_hand_size = [0; 32];
 
         // Queue the shuffle and deal cards computation
         let args = vec![
@@ -121,6 +124,12 @@ pub mod blackjack {
             .unwrap();
         offset += 32 * 3;
 
+        let player_num_cards: u8 = bytes[offset];
+        offset += 1;
+
+        let dealer_num_cards: u8 = bytes[offset];
+        offset += 1;
+
         // Update the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = deck;
@@ -128,6 +137,7 @@ pub mod blackjack {
         blackjack_game.client_nonce = client_nonce;
         blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.player_enc_pubkey = client_pubkey;
+        blackjack_game.game_state = 1; // It is now the player's turn
 
         // Initialize player hand with first two cards
         blackjack_game.player_hand[0] = visible_cards[0];
@@ -135,6 +145,8 @@ pub mod blackjack {
         // Initialize dealer hand with face up card and face down card
         blackjack_game.dealer_hand[0] = visible_cards[2];
         blackjack_game.dealer_hand[1] = dealer_face_down_card;
+        blackjack_game.player_hand_size = player_num_cards;
+        blackjack_game.dealer_hand_size = dealer_num_cards;
 
         // Assert that we have read the entire bytes array
         assert_eq!(offset, bytes.len());
@@ -368,6 +380,12 @@ pub struct BlackjackGame {
     pub player_pubkey: Pubkey,
     pub player_enc_pubkey: [u8; 32],
     pub bump: u8,
+    pub game_state: u8, // 0 = initial, 1 = player turn, 2 = dealer turn, 3 = resolved
+    pub player_hand_size: u8, // Number of cards in player's hand
+    pub dealer_hand_size: u8, // Number of cards in dealer's hand
+                        // pub player_bet: u64, // Player's current bet
+                        // pub player_has_doubled: bool, // Whether player has doubled down
+                        // pub game_result: u8, // Result of the game (0-4)
 }
 
 #[event]
@@ -386,4 +404,6 @@ pub struct CardDealtEvent {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Invalid game state")]
+    InvalidGameState,
 }
