@@ -10,7 +10,7 @@ mod circuits {
         48, 49, 50, 51,
     ];
 
-    // 1 << i * 6 for i in 0..21
+    // 1 << (i * 6) for i in 0..21
     const POWS_OF_SIXTY_FOUR: [u128; 21] = [
         1,
         64,
