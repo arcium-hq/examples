@@ -205,7 +205,7 @@ describe("Blackjack", () => {
         blackjackGame: blackjackGamePDA,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
     console.log("Initialize game TX Signature:", initGameSig);
 
     console.log("Waiting for shuffle/deal computation finalization...");
@@ -305,7 +305,7 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", skipPreflight: true });
+          .rpc({ commitment: "confirmed" });
         console.log("Player Hit TX Signature:", playerHitSig);
 
         console.log("Waiting for player hit computation finalization...");
@@ -392,7 +392,7 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", skipPreflight: true });
+          .rpc({ commitment: "confirmed" });
         console.log("Player Stand TX Signature:", playerStandSig);
 
         console.log("Waiting for player stand computation finalization...");
@@ -436,8 +436,8 @@ describe("Blackjack", () => {
       const dealerPlaySig = await program.methods
         .dealerPlay(
           dealerPlayComputationOffset,
-          new anchor.BN(deserializeLE(dealerPlayNonce).toString()),
-          new anchor.BN(gameId.toString())
+          new anchor.BN(gameId.toString()),
+          new anchor.BN(deserializeLE(dealerPlayNonce).toString())
         )
         .accountsPartial({
           computationAccount: getComputationAcc(
@@ -455,7 +455,7 @@ describe("Blackjack", () => {
           blackjackGame: blackjackGamePDA,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", skipPreflight: true });
+        .rpc({ commitment: "confirmed" });
       console.log("Dealer Play TX Signature:", dealerPlaySig);
 
       console.log("Waiting for dealer play computation finalization...");
@@ -523,7 +523,7 @@ describe("Blackjack", () => {
           payer: owner.publicKey,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", skipPreflight: true });
+        .rpc({ commitment: "confirmed" });
       console.log("Resolve Game TX Signature:", resolveSig);
 
       console.log("Waiting for resolve game computation finalization...");
@@ -586,7 +586,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
@@ -611,7 +611,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Shuffle/Deal CompDef finalized.");
     }
@@ -648,7 +647,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_hit.arcis");
@@ -673,7 +672,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Player Hit CompDef finalized.");
     }
@@ -710,7 +708,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_stand.arcis");
@@ -735,7 +733,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Player Stand CompDef finalized.");
     }
@@ -772,7 +769,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
@@ -797,7 +794,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Player DoubleDown CompDef finalized.");
     }
@@ -834,7 +830,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
@@ -859,7 +855,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Dealer Play CompDef finalized.");
     }
@@ -896,7 +891,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
       })
-      .rpc({ commitment: "confirmed", skipPreflight: true });
+      .rpc({ commitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
@@ -921,7 +916,6 @@ describe("Blackjack", () => {
       finalizeTx.sign(owner);
       await provider.sendAndConfirm(finalizeTx, [owner], {
         commitment: "confirmed",
-        skipPreflight: true,
       });
       console.log("Resolve Game CompDef finalized.");
     }

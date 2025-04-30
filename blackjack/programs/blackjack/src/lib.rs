@@ -445,8 +445,8 @@ pub mod blackjack {
     pub fn dealer_play(
         ctx: Context<DealerPlay>,
         computation_offset: u64,
-        nonce: u128,
         _game_id: u64,
+        nonce: u128,
     ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::DealerTurn,
@@ -463,6 +463,7 @@ pub mod blackjack {
             )),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
             // Client nonce
+            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
             Argument::PlaintextU128(nonce),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
