@@ -73,7 +73,6 @@ describe("Coinflip", () => {
 
     const computationOffset = new anchor.BN(randomBytes(8), "hex");
 
-
     const queueSig = await program.methods
       .flip(
         computationOffset,
