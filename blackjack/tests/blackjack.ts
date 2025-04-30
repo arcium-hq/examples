@@ -200,7 +200,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
         ),
-        // blackjackGame: blackjackGamePDA,
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player hit sig:", playerHitSig);
@@ -231,7 +231,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
         ),
-        // blackjackGame: blackjackGamePDA,
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player stand sig:", playerStandSig);
