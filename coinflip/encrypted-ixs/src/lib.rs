@@ -9,7 +9,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn flip(input_ctxt: Enc<Client, UserChoice>) -> bool {
+    pub fn flip(input_ctxt: Enc<Shared, UserChoice>) -> bool {
         let input = input_ctxt.to_arcis();
 
         let flip = ArcisRNG::bool();

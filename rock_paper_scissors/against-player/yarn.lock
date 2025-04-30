@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/arcium-sdk@0.1.44":
-  version "0.1.44"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.44/7878f4837ffcb2af3a82a930a237f8bd3eb1c96d#7878f4837ffcb2af3a82a930a237f8bd3eb1c96d"
-  integrity sha512-4wYejcBuy58Gr/6kgGSZ7i8SslLHEw4Bo9afLFusPAJap90VGJhOR4Kkce+oJM9Y/R67jh9Fep7me+6cWmiw2A==
+"@arcium-hq/arcium-sdk@0.1.45":
+  version "0.1.45"
+  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.45/7c6a820272023c4e0aad36f0974cb8e4923751c3#7c6a820272023c4e0aad36f0974cb8e4923751c3"
+  integrity sha512-ixgWsrYE5Ba8/udswVXKgcVGy6Dzp8ORRZmnj5KGEoj6QVXRwyoQd4OngZMAhCVeT5bzrezMw6gqd+sAQ+zQyA==
   dependencies:
     "@coral-xyz/anchor" "0.31"
     "@noble/curves" "^1.8.1"
@@ -151,9 +151,9 @@
   integrity sha512-Z61JK7DKDtdKTWwLeElSEBcWGRLY8g95ic5FoQqI9CMx0ns/Ghep3B4DfcEimiKMvtamNVULVNKEsiwV3aQmXw==
 
 "@types/node@*":
-  version "22.15.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.15.2.tgz#1db55aa64618ee93a58c8912f74beefe44aca905"
-  integrity sha512-uKXqKN9beGoMdBfcaTY1ecwz6ctxuJAcUlwE55938g0ZJ8lRxwAZqRz2AJ4pzpt5dHdTPMB863UZ0ESiFUcP7A==
+  version "22.15.3"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.15.3.tgz#b7fb9396a8ec5b5dfb1345d8ac2502060e9af68b"
+  integrity sha512-lX7HFZeHf4QG/J7tBZqrCAXwz9J5RD56Y6MpP0eJkka8p+K0RY/yBTW7CYFJ4VGCclxqOLKmiGP5juQc6MKgcw==
   dependencies:
     undici-types "~6.21.0"
 

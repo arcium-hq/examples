@@ -18,6 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
+  getComputationAcc,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -70,13 +71,20 @@ describe("RockPaperScissorsAgainstRng", () => {
 
     const playRpsEventPromise = awaitEvent("playRpsEvent");
 
+    const computationOffset = new anchor.BN(randomBytes(8), "hex");
+
     const queueSig = await program.methods
       .playRps(
+        computationOffset,
         Array.from(ciphertext[0]),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          computationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -91,7 +99,7 @@ describe("RockPaperScissorsAgainstRng", () => {
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      queueSig,
+      computationOffset,
       program.programId,
       "confirmed"
     );
@@ -130,10 +138,7 @@ describe("RockPaperScissorsAgainstRng", () => {
       .rpc({
         commitment: "confirmed",
       });
-    console.log(
-      "Init play rps computation definition transaction",
-      sig
-    );
+    console.log("Init play rps computation definition transaction", sig);
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/play_rps.arcis");
