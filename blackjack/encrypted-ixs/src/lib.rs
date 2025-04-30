@@ -131,20 +131,20 @@ mod circuits {
         Enc<Mxe, Deck>,    // 16 + 32 x 3
         Enc<Mxe, Hand>,    // 16 + 32
         Enc<Client, Hand>, // 32 + 16 + 32
-        Enc<Client, u8>,   // 32 + 16 + 1
+        Enc<Client, u8>,   // 32 + 16 + 32
     ) {
         let mut initial_deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
 
         let deck = mxe.from_arcis(Deck::from_array(initial_deck));
 
-        let mut dealer_cards = [0; 11];
+        let mut dealer_cards = [53; 11];
         dealer_cards[0] = initial_deck[1];
         dealer_cards[1] = initial_deck[3];
 
         let dealer_hand = mxe_again.from_arcis(Hand::from_array(dealer_cards));
 
-        let mut player_cards = [0; 11];
+        let mut player_cards = [53; 11];
         player_cards[0] = initial_deck[0];
         player_cards[1] = initial_deck[2];
 
@@ -154,7 +154,7 @@ mod circuits {
             deck,
             dealer_hand,
             player_hand,
-            client_again.from_arcis(dealer_cards[0]),
+            client_again.from_arcis(initial_deck[1]),
         )
     }
 

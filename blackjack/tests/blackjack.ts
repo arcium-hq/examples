@@ -18,6 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
+  serializeLE,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -119,6 +120,15 @@ describe("Blackjack", () => {
     const mxeNonce = randomBytes(16);
     const mxeAgainNonce = randomBytes(16);
 
+    const blackjackGamePDA = PublicKey.findProgramAddressSync(
+      [
+        program.programId.toBuffer(),
+        Buffer.from("blackjack_game"),
+        Buffer.from(gameId.toString()),
+      ],
+      getArciumProgAddress()
+    )[0];
+
     const cardsShuffledAndDealtEventPromise = awaitEvent(
       "cardsShuffledAndDealtEvent"
     );
@@ -160,15 +170,46 @@ describe("Blackjack", () => {
     // Wait for cards to be shuffled
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
+    console.log(
+      "Cards encrypted player hand is ",
+      cardsShuffledAndDealtEvent.playerHand
+    );
+    console.log(
+      "Dealer face up card is ",
+      cardsShuffledAndDealtEvent.dealerFaceUpCard
+    );
 
-    const cards = cipher.decrypt(
-      cardsShuffledAndDealtEvent.userHand,
+    console.log(
+      "dealer client pubkey is ",
+      cardsShuffledAndDealtEvent.dealerClientPubkey
+    );
+    console.log("pubkey", Array.from(publicKey));
+
+    console.log(
+      "dealer client nonce is ",
+      new Uint8Array(cardsShuffledAndDealtEvent.dealerClientNonce)
+    );
+    console.log("dealer client nonce", new Uint8Array(dealerClientNonce));
+
+    console.log(
+      "client nonce is ",
+      new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
+    );
+    console.log("client nonce", new Uint8Array(clientNonce));
+
+    const compressedPlayerHand = cipher.decrypt(
+      [cardsShuffledAndDealtEvent.playerHand],
       new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
     );
 
-    console.log("User hand is ", cards[0], cards[1]);
+    console.log("Cards decrypted player hand is ", compressedPlayerHand);
+
+    const playerHand = decompressHand(compressedPlayerHand[0]);
+
+    console.log("Player hand is ", playerHand);
+
     const dealerFaceUpCard = cipher.decrypt(
-      cardsShuffledAndDealtEvent.dealerFaceUpCard,
+      [cardsShuffledAndDealtEvent.dealerFaceUpCard],
       new Uint8Array(cardsShuffledAndDealtEvent.dealerClientNonce)
     );
     console.log("Dealer face up card is ", dealerFaceUpCard[0]);
@@ -186,6 +227,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
         ),
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player hit sig:", playerHitSig);
@@ -197,11 +239,12 @@ describe("Blackjack", () => {
     );
     console.log("Finalize hit sig:", finalizeHitSig);
     const playerHitEvent = await playerHitEventPromise;
-    const decryptedHitCard = cipher.decrypt(
-      [playerHitEvent.card],
+    const decryptedHitHand = cipher.decrypt(
+      [playerHitEvent.playerHand],
       new Uint8Array(playerHitEvent.clientNonce)
-    )[0];
-    console.log("Decrypted hit card:", decryptedHitCard);
+    );
+    const hitHand = decompressHand(decryptedHitHand[0]);
+    console.log("Decrypted hit card:", hitHand[0]);
 
     const playerStandEventPromise = awaitEvent("playerStandEvent");
     const playerStandSig = await program.methods
@@ -215,6 +258,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
         ),
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player stand sig:", playerStandSig);
@@ -229,9 +273,13 @@ describe("Blackjack", () => {
     console.log("Player stand event is bust?", playerStandEvent.isBust);
     expect(typeof playerStandEvent.isBust).to.equal("boolean");
 
+    const dealerPlayNonce = randomBytes(16);
     const dealerPlayEventPromise = awaitEvent("dealerPlayEvent");
     const dealerPlaySig = await program.methods
-      .dealerPlay(new anchor.BN(gameId.toString()))
+      .dealerPlay(
+        new anchor.BN(gameId.toString()),
+        new anchor.BN(deserializeLE(dealerPlayNonce).toString())
+      )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -252,17 +300,12 @@ describe("Blackjack", () => {
     );
     console.log("Finalize dealer play sig:", finalizeDealerPlaySig);
     const dealerPlayEvent = await dealerPlayEventPromise;
-    console.log(
-      "Dealer hand:",
-      dealerPlayEvent.dealerHand,
-      "size:",
-      dealerPlayEvent.dealerHandSize
-    );
     const decryptedDealerHand = cipher.decrypt(
-      dealerPlayEvent.dealerHand.slice(0, dealerPlayEvent.dealerHandSize),
-      new Uint8Array(dealerPlayEvent.clientNonce)
+      [dealerPlayEvent.dealerHand],
+      new Uint8Array(dealerPlayEvent.dealerNonce)
     );
-    console.log("Decrypted dealer hand:", decryptedDealerHand);
+    const dealerHand = decompressHand(decryptedDealerHand[0]);
+    console.log("Decrypted dealer hand:", dealerHand);
 
     const resultEventPromise = awaitEvent("resultEvent");
     const resolveSig = await (program as any).methods
@@ -645,6 +688,35 @@ describe("Blackjack", () => {
     return sig;
   }
 });
+
+/**
+ * Decompresses a hand represented as a u128 (packed using base-64) back into an array of card numbers.
+ * Assumes the input bytes represent a little-endian u128.
+ * Mirrors the Hand::to_array logic from Rust.
+ * @param compressedHandValue The bigint value representing the compressed u128 hand.
+ * @returns An array of card numbers (u8 values).
+ */
+function decompressHand(compressedHandValue: bigint): number[] {
+  let currentHandValue = compressedHandValue;
+  const cards: number[] = [];
+  const numCardsInHand = 11; // Based on Rust Hand::to_array loop
+
+  for (let i = 0; i < numCardsInHand; i++) {
+    const card = currentHandValue % 64n; // Get the last 6 bits
+    cards.push(Number(card));
+    currentHandValue >>= 6n; // Shift right by 6 bits
+  }
+
+  // Filter out potential padding/unused card slots (represented by high values like 53 or 0 after shifts)
+  // Based on INITIAL_DECK, valid cards are 0-51. 53 might be used as a sentinel.
+  // The packing might leave 0s in unused slots if the hand has < 11 cards.
+  // A value of 0 could be a valid Ace of Clubs, so filtering requires care.
+  // Let's assume the length is implicitly known or handled elsewhere for now.
+  // A simple filter for > 51 might be reasonable if 53+ are never valid cards.
+  // return cards.filter(card => card <= 51);
+  // For now, returning all 11 potential slots, consumer needs to know actual hand length.
+  return cards;
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);

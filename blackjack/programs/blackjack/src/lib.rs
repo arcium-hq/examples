@@ -113,7 +113,7 @@ pub mod blackjack {
         let dealer_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let dealer_cards: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        let dealer_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
         let client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
@@ -122,10 +122,10 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let player_cards: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        let player_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
-        let _dealer_client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        let dealer_client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
         let dealer_client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
@@ -144,9 +144,9 @@ pub mod blackjack {
         blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
 
         // Initialize player hand with first two cards
-        blackjack_game.player_hand = player_cards;
+        blackjack_game.player_hand = player_hand;
         // Initialize dealer hand with face up card and face down card
-        blackjack_game.dealer_hand = dealer_cards;
+        blackjack_game.dealer_hand = dealer_hand;
         blackjack_game.player_hand_size = 2;
         blackjack_game.dealer_hand_size = 2;
 
@@ -154,10 +154,11 @@ pub mod blackjack {
         assert_eq!(offset, bytes.len());
 
         emit!(CardsShuffledAndDealtEvent {
+            dealer_client_pubkey,
             client_nonce,
             dealer_client_nonce,
-            user_hand: player_cards,
-            dealer_face_up_card: dealer_face_up_card,
+            player_hand,
+            dealer_face_up_card,
         });
         Ok(())
     }
@@ -1121,10 +1122,11 @@ pub enum GameState {
 
 #[event]
 pub struct CardsShuffledAndDealtEvent {
-    pub user_hand: [u8; 32],
+    pub player_hand: [u8; 32],
     pub dealer_face_up_card: [u8; 32],
     pub client_nonce: [u8; 16],
     pub dealer_client_nonce: [u8; 16],
+    pub dealer_client_pubkey: [u8; 32],
 }
 
 #[event]
