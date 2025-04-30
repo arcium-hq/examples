@@ -1,14 +1,14 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
     derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
+    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
     types::{Argument, CallbackAccount},
@@ -41,6 +41,7 @@ pub mod blackjack {
 
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
+        computation_offset: u64,
         game_id: u64,
         mxe_nonce: u128,
         mxe_again_nonce: u128,
@@ -75,6 +76,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -172,7 +174,11 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn player_hit(ctx: Context<PlayerHit>, _game_id: u64) -> Result<()> {
+    pub fn player_hit(
+        ctx: Context<PlayerHit>,
+        computation_offset: u64,
+        _game_id: u64,
+    ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
@@ -200,6 +206,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -263,7 +270,11 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn player_double_down(ctx: Context<PlayerDoubleDown>, _game_id: u64) -> Result<()> {
+    pub fn player_double_down(
+        ctx: Context<PlayerDoubleDown>,
+        computation_offset: u64,
+        _game_id: u64,
+    ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
@@ -291,6 +302,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -352,7 +364,11 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn player_stand(ctx: Context<PlayerStand>, _game_id: u64) -> Result<()> {
+    pub fn player_stand(
+        ctx: Context<PlayerStand>,
+        computation_offset: u64,
+        _game_id: u64,
+    ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::PlayerTurn,
             ErrorCode::InvalidGameState
@@ -375,6 +391,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -422,7 +439,12 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn dealer_play(ctx: Context<DealerPlay>, nonce: u128, _game_id: u64) -> Result<()> {
+    pub fn dealer_play(
+        ctx: Context<DealerPlay>,
+        computation_offset: u64,
+        nonce: u128,
+        _game_id: u64,
+    ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::DealerTurn,
             ErrorCode::InvalidGameState
@@ -447,6 +469,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -510,7 +533,11 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn resolve_game(ctx: Context<ResolveGame>, _game_id: u64) -> Result<()> {
+    pub fn resolve_game(
+        ctx: Context<ResolveGame>,
+        computation_offset: u64,
+        _game_id: u64,
+    ) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::Resolving,
             ErrorCode::InvalidGameState
@@ -536,6 +563,7 @@ pub mod blackjack {
 
         queue_computation(
             ctx.accounts,
+            computation_offset,
             args,
             vec![CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
@@ -595,7 +623,7 @@ pub mod blackjack {
 
 #[queue_computation_accounts("shuffle_and_deal_cards", payer)]
 #[derive(Accounts)]
-#[instruction(game_id: u64)]
+#[instruction(game_id: u64, computation_offset: u64)]
 pub struct InitializeBlackjackGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -607,12 +635,20 @@ pub struct InitializeBlackjackGame<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
@@ -680,7 +716,7 @@ pub struct InitShuffleAndDealCardsCompDef<'info> {
 
 #[queue_computation_accounts("player_hit", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64)]
+#[instruction(_game_id: u64, computation_offset: u64)]
 pub struct PlayerHit<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -692,12 +728,20 @@ pub struct PlayerHit<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT)
     )]
@@ -763,7 +807,7 @@ pub struct InitPlayerHitCompDef<'info> {
 
 #[queue_computation_accounts("player_double_down", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64)]
+#[instruction(_game_id: u64, computation_offset: u64)]
 pub struct PlayerDoubleDown<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -775,12 +819,20 @@ pub struct PlayerDoubleDown<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN)
     )]
@@ -846,7 +898,7 @@ pub struct InitPlayerDoubleDownCompDef<'info> {
 
 #[queue_computation_accounts("player_stand", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64)]
+#[instruction(_game_id: u64, computation_offset: u64)]
 pub struct PlayerStand<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -858,12 +910,20 @@ pub struct PlayerStand<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND)
     )]
@@ -929,7 +989,7 @@ pub struct InitPlayerStandCompDef<'info> {
 
 #[queue_computation_accounts("dealer_play", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64)]
+#[instruction(_game_id: u64, computation_offset: u64)]
 pub struct DealerPlay<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -941,12 +1001,20 @@ pub struct DealerPlay<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
     )]
@@ -1012,7 +1080,7 @@ pub struct InitDealerPlayCompDef<'info> {
 
 #[queue_computation_accounts("resolve_game", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64)]
+#[instruction(_game_id: u64, computation_offset: u64)]
 pub struct ResolveGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -1024,12 +1092,20 @@ pub struct ResolveGame<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
     )]

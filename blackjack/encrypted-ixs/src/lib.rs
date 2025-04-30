@@ -125,13 +125,13 @@ mod circuits {
     pub fn shuffle_and_deal_cards(
         mxe: Mxe,
         mxe_again: Mxe,
-        client: Client,
-        client_again: Client,
+        client: Shared,
+        client_again: Shared,
     ) -> (
         Enc<Mxe, Deck>,    // 16 + 32 x 3
         Enc<Mxe, Hand>,    // 16 + 32
-        Enc<Client, Hand>, // 32 + 16 + 32
-        Enc<Client, u8>,   // 32 + 16 + 32
+        Enc<Shared, Hand>, // 32 + 16 + 32
+        Enc<Shared, u8>,   // 32 + 16 + 32
     ) {
         let mut initial_deck = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
@@ -161,10 +161,10 @@ mod circuits {
     #[instruction]
     pub fn player_hit(
         deck_ctxt: Enc<Mxe, Deck>,
-        player_hand_ctxt: Enc<Client, Hand>,
+        player_hand_ctxt: Enc<Shared, Hand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, Hand>, bool) {
+    ) -> (Enc<Shared, Hand>, bool) {
         let deck = deck_ctxt.to_arcis().to_array();
 
         let mut player_hand = player_hand_ctxt.to_arcis().to_array();
@@ -196,7 +196,7 @@ mod circuits {
 
     // Returns true if the player has busted
     #[instruction]
-    pub fn player_stand(player_hand_ctxt: Enc<Client, Hand>, player_hand_size: u8) -> bool {
+    pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis().to_array();
         let value = calculate_hand_value(&player_hand, player_hand_size);
         value > 21
@@ -206,10 +206,10 @@ mod circuits {
     #[instruction]
     pub fn player_double_down(
         deck_ctxt: Enc<Mxe, Deck>,
-        player_hand_ctxt: Enc<Client, Hand>,
+        player_hand_ctxt: Enc<Shared, Hand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, Hand>, bool) {
+    ) -> (Enc<Shared, Hand>, bool) {
         let deck = deck_ctxt.to_arcis();
         let deck_array = deck.to_array();
 
@@ -243,10 +243,10 @@ mod circuits {
     pub fn dealer_play(
         deck_ctxt: Enc<Mxe, Deck>,
         dealer_hand_ctxt: Enc<Mxe, Hand>,
-        client: Client,
+        client: Shared,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Mxe, Hand>, Enc<Client, Hand>, u8) {
+    ) -> (Enc<Mxe, Hand>, Enc<Shared, Hand>, u8) {
         let deck = deck_ctxt.to_arcis();
         let mut deck_array = deck.to_array();
         let mut dealer = dealer_hand_ctxt.to_arcis().to_array();
@@ -305,7 +305,7 @@ mod circuits {
     // Function to resolve the game and determine the winner
     #[instruction]
     pub fn resolve_game(
-        player_hand: Enc<Client, Hand>,
+        player_hand: Enc<Shared, Hand>,
         dealer_hand: Enc<Mxe, Hand>,
         player_hand_length: u8,
         dealer_hand_length: u8,

@@ -121,6 +121,8 @@ describe("Blackjack", () => {
     const mxeNonce = randomBytes(16);
     const mxeAgainNonce = randomBytes(16);
 
+    const computationOffset = new anchor.BN(randomBytes(8), "hex");
+
     // Correctly calculate PDA using blackjack program ID and proper serialization for gameId
     const gameIdBuffer = Buffer.alloc(8); // u64 is 8 bytes
     gameIdBuffer.writeBigUInt64LE(gameId); // Write bigint as little-endian u64
@@ -138,6 +140,7 @@ describe("Blackjack", () => {
     // Initialize the blackjack game
     const initGameSig = await program.methods
       .initializeBlackjackGame(
+        computationOffset,
         new anchor.BN(gameId.toString()),
         new anchor.BN(deserializeLE(mxeNonce).toString()),
         new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
@@ -162,7 +165,7 @@ describe("Blackjack", () => {
 
     const finalizeInitSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      initGameSig,
+      computationOffset,
       program.programId,
       "confirmed"
     );
@@ -187,10 +190,12 @@ describe("Blackjack", () => {
     );
     console.log("Dealer face up card is ", dealerFaceUpCard[0]);
 
+    const playerHitComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     // Full gameplay: player hit, stand, dealer play, and resolve game
     const playerHitEventPromise = awaitEvent("playerHitEvent");
     const playerHitSig = await program.methods
-      .playerHit(new anchor.BN(gameId.toString()))
+      .playerHit(playerHitComputationOffset, new anchor.BN(gameId.toString()))
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -206,7 +211,7 @@ describe("Blackjack", () => {
     console.log("Player hit sig:", playerHitSig);
     const finalizeHitSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerHitSig,
+      playerHitComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -219,9 +224,14 @@ describe("Blackjack", () => {
     const hitHand = decompressHand(decryptedHitHand[0]);
     console.log("Decrypted hit card:", hitHand[0]);
 
+    const playerStandComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     const playerStandEventPromise = awaitEvent("playerStandEvent");
     const playerStandSig = await program.methods
-      .playerStand(new anchor.BN(gameId.toString()))
+      .playerStand(
+        playerStandComputationOffset,
+        new anchor.BN(gameId.toString())
+      )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -237,7 +247,7 @@ describe("Blackjack", () => {
     console.log("Player stand sig:", playerStandSig);
     const finalizeStandSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerStandSig,
+      playerStandComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -246,12 +256,15 @@ describe("Blackjack", () => {
     console.log("Player stand event is bust?", playerStandEvent.isBust);
     expect(typeof playerStandEvent.isBust).to.equal("boolean");
 
+    const dealerPlayComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     const dealerPlayNonce = randomBytes(16);
     const dealerPlayEventPromise = awaitEvent("dealerPlayEvent");
     const dealerPlaySig = await program.methods
       .dealerPlay(
-        new anchor.BN(gameId.toString()),
-        new anchor.BN(deserializeLE(dealerPlayNonce).toString())
+        dealerPlayComputationOffset,
+        new anchor.BN(deserializeLE(dealerPlayNonce).toString()),
+        new anchor.BN(gameId.toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -268,7 +281,7 @@ describe("Blackjack", () => {
     console.log("Dealer play sig:", dealerPlaySig);
     const finalizeDealerPlaySig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      dealerPlaySig,
+      dealerPlayComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -281,9 +294,11 @@ describe("Blackjack", () => {
     const dealerHand = decompressHand(decryptedDealerHand[0]);
     console.log("Decrypted dealer hand:", dealerHand);
 
+    const resolveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     const resultEventPromise = awaitEvent("resultEvent");
     const resolveSig = await (program as any).methods
-      .resolveGame(new anchor.BN(gameId.toString()))
+      .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
@@ -299,7 +314,7 @@ describe("Blackjack", () => {
     console.log("Resolve game sig:", resolveSig);
     const finalizeResolveSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      resolveSig,
+      resolveComputationOffset,
       program.programId,
       "confirmed"
     );
