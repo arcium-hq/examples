@@ -143,6 +143,11 @@ pub mod blackjack {
         blackjack_game.player_enc_pubkey = client_pubkey;
         blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
 
+        require!(
+            dealer_client_pubkey == blackjack_game.player_enc_pubkey,
+            ErrorCode::InvalidDealerClientPubkey
+        );
+
         // Initialize player hand with first two cards
         blackjack_game.player_hand = player_hand;
         // Initialize dealer hand with face up card and face down card
@@ -154,7 +159,6 @@ pub mod blackjack {
         assert_eq!(offset, bytes.len());
 
         emit!(CardsShuffledAndDealtEvent {
-            dealer_client_pubkey,
             client_nonce,
             dealer_client_nonce,
             player_hand,
@@ -1126,7 +1130,6 @@ pub struct CardsShuffledAndDealtEvent {
     pub dealer_face_up_card: [u8; 32],
     pub client_nonce: [u8; 16],
     pub dealer_client_nonce: [u8; 16],
-    pub dealer_client_pubkey: [u8; 32],
 }
 
 #[event]
@@ -1171,4 +1174,6 @@ pub enum ErrorCode {
     InvalidGameState,
     #[msg("Invalid move")]
     InvalidMove,
+    #[msg("Invalid dealer client pubkey")]
+    InvalidDealerClientPubkey,
 }

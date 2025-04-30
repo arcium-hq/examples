@@ -18,7 +18,6 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
-  serializeLE,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -31,9 +30,11 @@ describe("Blackjack", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async (eventName: string): Promise<any> => {
+  const awaitEvent = async <T extends keyof Event>(
+    eventName: T
+  ): Promise<Event[T]> => {
     let listenerId: number;
-    const event = await new Promise<any>((res) => {
+    const event = await new Promise<Event[T]>((res) => {
       listenerId = program.addEventListener(eventName as any, (evt: any) => {
         res(evt);
       });
@@ -170,39 +171,11 @@ describe("Blackjack", () => {
     // Wait for cards to be shuffled
     const cardsShuffledAndDealtEvent = await cardsShuffledAndDealtEventPromise;
     console.log("Cards shuffled and dealt");
-    console.log(
-      "Cards encrypted player hand is ",
-      cardsShuffledAndDealtEvent.playerHand
-    );
-    console.log(
-      "Dealer face up card is ",
-      cardsShuffledAndDealtEvent.dealerFaceUpCard
-    );
-
-    console.log(
-      "dealer client pubkey is ",
-      cardsShuffledAndDealtEvent.dealerClientPubkey
-    );
-    console.log("pubkey", Array.from(publicKey));
-
-    console.log(
-      "dealer client nonce is ",
-      new Uint8Array(cardsShuffledAndDealtEvent.dealerClientNonce)
-    );
-    console.log("dealer client nonce", new Uint8Array(dealerClientNonce));
-
-    console.log(
-      "client nonce is ",
-      new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
-    );
-    console.log("client nonce", new Uint8Array(clientNonce));
 
     const compressedPlayerHand = cipher.decrypt(
       [cardsShuffledAndDealtEvent.playerHand],
       new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
     );
-
-    console.log("Cards decrypted player hand is ", compressedPlayerHand);
 
     const playerHand = decompressHand(compressedPlayerHand[0]);
 
@@ -302,7 +275,7 @@ describe("Blackjack", () => {
     const dealerPlayEvent = await dealerPlayEventPromise;
     const decryptedDealerHand = cipher.decrypt(
       [dealerPlayEvent.dealerHand],
-      new Uint8Array(dealerPlayEvent.dealerNonce)
+      new Uint8Array(dealerPlayEvent.clientNonce)
     );
     const dealerHand = decompressHand(decryptedDealerHand[0]);
     console.log("Decrypted dealer hand:", dealerHand);
