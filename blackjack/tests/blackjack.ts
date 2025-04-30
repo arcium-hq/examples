@@ -121,13 +121,13 @@ describe("Blackjack", () => {
     const mxeNonce = randomBytes(16);
     const mxeAgainNonce = randomBytes(16);
 
+    // Correctly calculate PDA using blackjack program ID and proper serialization for gameId
+    const gameIdBuffer = Buffer.alloc(8); // u64 is 8 bytes
+    gameIdBuffer.writeBigUInt64LE(gameId); // Write bigint as little-endian u64
+
     const blackjackGamePDA = PublicKey.findProgramAddressSync(
-      [
-        program.programId.toBuffer(),
-        Buffer.from("blackjack_game"),
-        Buffer.from(gameId.toString()),
-      ],
-      getArciumProgAddress()
+      [Buffer.from("blackjack_game"), gameIdBuffer],
+      program.programId // Use the Blackjack program ID
     )[0];
 
     const cardsShuffledAndDealtEventPromise = awaitEvent(
@@ -200,7 +200,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
         ),
-        blackjackGame: blackjackGamePDA,
+        // blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player hit sig:", playerHitSig);
@@ -231,7 +231,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
         ),
-        blackjackGame: blackjackGamePDA,
+        // blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Player stand sig:", playerStandSig);
@@ -262,6 +262,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
         ),
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Dealer play sig:", dealerPlaySig);
@@ -292,6 +293,7 @@ describe("Blackjack", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
         ),
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Resolve game sig:", resolveSig);
