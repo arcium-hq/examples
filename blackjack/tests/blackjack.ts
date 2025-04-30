@@ -18,6 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
+  getComputationAcc,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -149,6 +150,10 @@ describe("Blackjack", () => {
         new anchor.BN(deserializeLE(dealerClientNonce).toString())
       )
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          computationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -197,6 +202,10 @@ describe("Blackjack", () => {
     const playerHitSig = await program.methods
       .playerHit(playerHitComputationOffset, new anchor.BN(gameId.toString()))
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerHitComputationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -233,6 +242,10 @@ describe("Blackjack", () => {
         new anchor.BN(gameId.toString())
       )
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerStandComputationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -267,6 +280,10 @@ describe("Blackjack", () => {
         new anchor.BN(gameId.toString())
       )
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          dealerPlayComputationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -300,6 +317,10 @@ describe("Blackjack", () => {
     const resolveSig = await (program as any).methods
       .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          resolveComputationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
