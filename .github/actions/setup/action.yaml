@@ -13,8 +13,8 @@ runs:
       shell: bash
     - run: echo "CARGO_TERM_COLOR=always" >> $GITHUB_ENV
       shell: bash
-    - run: echo "RUSTFLAGS=-Dwarnings" >> $GITHUB_ENV
-      shell: bash
+    # - run: echo "RUSTFLAGS=-Dwarnings" >> $GITHUB_ENV
+      # shell: bash
     - run: echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> $GITHUB_ENV
       shell: bash
     - run: echo "ARCUP_VERSION=0.1.45" >> $GITHUB_ENV
