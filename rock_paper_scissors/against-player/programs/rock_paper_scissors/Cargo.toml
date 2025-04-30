@@ -1,0 +1,27 @@
+[package]
+name = "rock_paper_scissors"
+version = "0.1.0"
+description = "Created with Arcium & Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "rock_paper_scissors"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+
+arcium-client = { default-features = false, version = "0.1.45", registry = "arcium" }
+arcium-macros = { version = "0.1.45", registry = "arcium" }
+arcium-anchor = { version = "0.1.45", registry = "arcium" }
+
+# Bytemuck hotfix https://github.com/Lokathor/bytemuck/issues/306
+bytemuck_derive = ">=1.8.1, <1.9.0"

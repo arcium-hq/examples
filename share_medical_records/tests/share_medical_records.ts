@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { ShareMedicalRecords } from "../target/types/share_medical_records";
 import { randomBytes } from "crypto";
 import {
@@ -18,6 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
+  getComputationAcc,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -45,7 +46,7 @@ describe("ShareMedicalRecords", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("can store and share patient data confidentially!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing share patient data computation definition");
@@ -119,14 +120,21 @@ describe("ShareMedicalRecords", () => {
       "receivedPatientDataEvent"
     );
 
+    const computationOffset = new anchor.BN(randomBytes(8), "hex");
+
     const queueSig = await program.methods
       .sharePatientData(
+        computationOffset,
         Array.from(receiverPubKey),
         new anchor.BN(deserializeLE(receiverNonce).toString()),
         Array.from(senderPublicKey),
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
+        computationAccount: getComputationAcc(
+          program.programId,
+          computationOffset
+        ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -145,7 +153,7 @@ describe("ShareMedicalRecords", () => {
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      queueSig,
+      computationOffset,
       program.programId,
       "confirmed"
     );
@@ -168,7 +176,7 @@ describe("ShareMedicalRecords", () => {
         receivedPatientDataEvent.bloodType,
         receivedPatientDataEvent.weight,
         receivedPatientDataEvent.height,
-        ...receivedPatientDataEvent.allergies
+        ...receivedPatientDataEvent.allergies,
       ],
       new Uint8Array(receivedPatientDataEvent.nonce)
     );
@@ -180,10 +188,13 @@ describe("ShareMedicalRecords", () => {
     expect(decryptedFields[3]).to.equal(patientData[3], "Blood type mismatch");
     expect(decryptedFields[4]).to.equal(patientData[4], "Weight mismatch");
     expect(decryptedFields[5]).to.equal(patientData[5], "Height mismatch");
-    
+
     // Verify allergies
     for (let i = 0; i < 5; i++) {
-      expect(decryptedFields[6 + i]).to.equal(patientData[6 + i], `Allergy ${i} mismatch`);
+      expect(decryptedFields[6 + i]).to.equal(
+        patientData[6 + i],
+        `Allergy ${i} mismatch`
+      );
     }
 
     console.log("All patient data fields successfully decrypted and verified");
