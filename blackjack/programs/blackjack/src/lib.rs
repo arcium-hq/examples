@@ -191,7 +191,7 @@ pub mod blackjack {
         let args = vec![
             // Deck
             Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
             Argument::PlaintextU128(u128::from_le_bytes(
@@ -287,7 +287,7 @@ pub mod blackjack {
         let args = vec![
             // Deck
             Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
             Argument::PlaintextU128(u128::from_le_bytes(
@@ -426,6 +426,9 @@ pub mod blackjack {
         if is_bust {
             // This should never happen
             blackjack_game.game_state = GameState::PlayerTurn;
+            emit!(PlayerBustEvent {
+                client_nonce: blackjack_game.client_nonce
+            });
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerStandEvent { is_bust });
@@ -453,7 +456,7 @@ pub mod blackjack {
         let args = vec![
             // Deck
             Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 0, 32 * 3),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Dealer hand
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.dealer_nonce,
