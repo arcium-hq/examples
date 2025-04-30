@@ -26,7 +26,7 @@ const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
 const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
 const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
-declare_id!("8YLMpSEWaLzpGqqGufakQ8FtPzvSm5kdm5VpsVPHeZTP");
+declare_id!("A7sNeBnrQAFxmj6BVmoYC6PYnebURaar7xhKuaEyRh4j");
 
 #[arcium_program]
 pub mod blackjack {
@@ -623,7 +623,7 @@ pub mod blackjack {
 
 #[queue_computation_accounts("shuffle_and_deal_cards", payer)]
 #[derive(Accounts)]
-#[instruction(game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, game_id: u64)]
 pub struct InitializeBlackjackGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -716,7 +716,7 @@ pub struct InitShuffleAndDealCardsCompDef<'info> {
 
 #[queue_computation_accounts("player_hit", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, _game_id: u64)]
 pub struct PlayerHit<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -807,7 +807,7 @@ pub struct InitPlayerHitCompDef<'info> {
 
 #[queue_computation_accounts("player_double_down", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, _game_id: u64)]
 pub struct PlayerDoubleDown<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -898,7 +898,7 @@ pub struct InitPlayerDoubleDownCompDef<'info> {
 
 #[queue_computation_accounts("player_stand", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, _game_id: u64)]
 pub struct PlayerStand<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -989,7 +989,7 @@ pub struct InitPlayerStandCompDef<'info> {
 
 #[queue_computation_accounts("dealer_play", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, _game_id: u64)]
 pub struct DealerPlay<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -1080,7 +1080,7 @@ pub struct InitDealerPlayCompDef<'info> {
 
 #[queue_computation_accounts("resolve_game", payer)]
 #[derive(Accounts)]
-#[instruction(_game_id: u64, computation_offset: u64)]
+#[instruction(computation_offset: u64, _game_id: u64)]
 pub struct ResolveGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,

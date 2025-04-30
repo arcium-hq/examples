@@ -57,6 +57,7 @@ describe("Blackjack", () => {
       "Shuffle and deal cards computation definition initialized with signature",
       initShuffleAndDealCardsCompDefSig
     );
+    await new Promise((res) => setTimeout(res, 1000));
     const initPlayerHitCompDefSig = await initPlayerHitCompDef(
       program,
       owner,
@@ -124,7 +125,6 @@ describe("Blackjack", () => {
 
     const computationOffset = new anchor.BN(randomBytes(8), "hex");
 
-    // Correctly calculate PDA using blackjack program ID and proper serialization for gameId
     const gameIdBuffer = Buffer.alloc(8); // u64 is 8 bytes
     gameIdBuffer.writeBigUInt64LE(gameId); // Write bigint as little-endian u64
 
@@ -164,6 +164,7 @@ describe("Blackjack", () => {
             getCompDefAccOffset("shuffle_and_deal_cards")
           ).readUInt32LE()
         ),
+        blackjackGame: blackjackGamePDA,
       })
       .rpc({ commitment: "confirmed" });
     console.log("Initialize game sig is ", initGameSig);
