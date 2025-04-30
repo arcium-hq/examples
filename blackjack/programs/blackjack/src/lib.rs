@@ -1,4 +1,3 @@
-#[allow(unused_assignments)]
 use anchor_lang::prelude::*;
 use arcium_anchor::{
     comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
@@ -47,7 +46,6 @@ pub mod blackjack {
         mxe_again_nonce: u128,
         client_pubkey: [u8; 32],
         client_nonce: u128,
-        client_again_pubkey: [u8; 32],
         client_again_nonce: u128,
     ) -> Result<()> {
         // Initialize the blackjack game account
@@ -71,7 +69,7 @@ pub mod blackjack {
             Argument::PlaintextU128(mxe_again_nonce),
             Argument::ArcisPubkey(client_pubkey),
             Argument::PlaintextU128(client_nonce),
-            Argument::ArcisPubkey(client_again_pubkey),
+            Argument::ArcisPubkey(client_pubkey),
             Argument::PlaintextU128(client_again_nonce),
         ];
 
@@ -188,7 +186,7 @@ pub mod blackjack {
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.client_nonce,
             )),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
             // Dealer hand size
@@ -226,16 +224,13 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let player_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        offset += 32 * 11;
+        let player_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
+
+        assert_eq!(offset, bytes.len());
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
@@ -247,7 +242,7 @@ pub mod blackjack {
         } else {
             blackjack_game.game_state = GameState::PlayerTurn;
             emit!(PlayerHitEvent {
-                card: player_hand[blackjack_game.player_hand_size as usize],
+                player_hand,
                 client_nonce
             });
             blackjack_game.player_hand_size += 1;
@@ -282,7 +277,7 @@ pub mod blackjack {
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.client_nonce,
             )),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
             // Dealer hand size
@@ -320,16 +315,13 @@ pub mod blackjack {
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let player_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        offset += 32 * 11;
+        let player_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
         let is_bust: bool = bytes[offset] == 1;
         offset += 1;
+
+        assert_eq!(offset, bytes.len());
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
@@ -342,7 +334,7 @@ pub mod blackjack {
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerDoubleDownEvent {
-                card: player_hand[blackjack_game.player_hand_size as usize],
+                player_hand,
                 client_nonce
             });
         }
@@ -371,7 +363,7 @@ pub mod blackjack {
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.client_nonce,
             )),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
         ];
@@ -407,6 +399,8 @@ pub mod blackjack {
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_has_stood = true;
 
+        assert_eq!(offset, bytes.len());
+
         if is_bust {
             // This should never happen
             blackjack_game.game_state = GameState::PlayerTurn;
@@ -423,7 +417,7 @@ pub mod blackjack {
         Ok(())
     }
 
-    pub fn dealer_play(ctx: Context<DealerPlay>, _game_id: u64) -> Result<()> {
+    pub fn dealer_play(ctx: Context<DealerPlay>, nonce: u128, _game_id: u64) -> Result<()> {
         require!(
             ctx.accounts.blackjack_game.game_state == GameState::DealerTurn,
             ErrorCode::InvalidGameState
@@ -437,11 +431,9 @@ pub mod blackjack {
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.dealer_nonce,
             )),
-            Argument::Account(
-                ctx.accounts.blackjack_game.key(),
-                8 + 32 * 3 + 32 * 11,
-                32 * 11,
-            ),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
+            // Client nonce
+            Argument::PlaintextU128(nonce),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
             // Dealer hand size
@@ -473,31 +465,34 @@ pub mod blackjack {
 
         let mut offset = 0;
 
+        let dealer_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
+        offset += 16;
+
+        let dealer_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
+
         let _client_pubkey: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
         offset += 32;
 
         let client_nonce: [u8; 16] = bytes[offset..(offset + 16)].try_into().unwrap();
         offset += 16;
 
-        let dealer_hand: [[u8; 32]; 11] = bytes[offset..(offset + 32 * 11)]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        offset += 32 * 11;
+        let dealer_client_hand: [u8; 32] = bytes[offset..(offset + 32)].try_into().unwrap();
+        offset += 32;
 
         let dealer_hand_size: u8 = bytes[offset];
         offset += 1;
 
+        assert_eq!(offset, bytes.len());
+
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.dealer_hand = dealer_hand;
+        blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.dealer_hand_size = dealer_hand_size;
-        blackjack_game.dealer_nonce = client_nonce;
         blackjack_game.game_state = GameState::Resolved;
 
         emit!(DealerPlayEvent {
-            dealer_hand,
+            dealer_hand: dealer_client_hand,
             dealer_hand_size,
             client_nonce,
         });
@@ -522,16 +517,12 @@ pub mod blackjack {
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.client_nonce,
             )),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32 * 11),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Dealer hand
             Argument::PlaintextU128(u128::from_le_bytes(
                 ctx.accounts.blackjack_game.dealer_nonce,
             )),
-            Argument::Account(
-                ctx.accounts.blackjack_game.key(),
-                8 + 32 * 3 + 32 * 11,
-                32 * 11,
-            ),
+            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
             // Dealer hand size
@@ -1138,13 +1129,13 @@ pub struct CardsShuffledAndDealtEvent {
 
 #[event]
 pub struct PlayerHitEvent {
-    pub card: [u8; 32],
+    pub player_hand: [u8; 32],
     pub client_nonce: [u8; 16],
 }
 
 #[event]
 pub struct PlayerDoubleDownEvent {
-    pub card: [u8; 32],
+    pub player_hand: [u8; 32],
     pub client_nonce: [u8; 16],
 }
 
@@ -1160,7 +1151,7 @@ pub struct PlayerBustEvent {
 
 #[event]
 pub struct DealerPlayEvent {
-    pub dealer_hand: [[u8; 32]; 11],
+    pub dealer_hand: [u8; 32],
     pub dealer_hand_size: u8,
     pub client_nonce: [u8; 16],
 }

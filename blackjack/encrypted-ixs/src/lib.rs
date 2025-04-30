@@ -158,27 +158,18 @@ mod circuits {
         )
     }
 
-    pub struct PlayerHand {
-        pub cards: [u8; 11],
-    }
-
-    pub struct DealerHand {
-        pub cards: [u8; 11],
-    }
-
     #[instruction]
     pub fn player_hit(
         deck_ctxt: Enc<Mxe, Deck>,
-        player_hand_ctxt: Enc<Client, PlayerHand>,
+        player_hand_ctxt: Enc<Client, Hand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, PlayerHand>, bool) {
-        let deck = deck_ctxt.to_arcis();
-        let deck_array = deck.to_array();
+    ) -> (Enc<Client, Hand>, bool) {
+        let deck = deck_ctxt.to_arcis().to_array();
 
-        let mut player_hand = player_hand_ctxt.to_arcis();
+        let mut player_hand = player_hand_ctxt.to_arcis().to_array();
 
-        let player_hand_value = calculate_hand_value(&player_hand.cards, player_hand_size);
+        let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
 
         let is_bust = player_hand_value > 21;
 
@@ -186,29 +177,28 @@ mod circuits {
             let card_index = (player_hand_size + dealer_hand_size) as usize;
 
             // Get the next card from the deck
-            deck_array[card_index]
+            deck[card_index]
         } else {
             53
         };
 
-        player_hand.cards[player_hand_size as usize] = new_card;
+        player_hand[player_hand_size as usize] = new_card;
 
-        let player_updated_hand_value =
-            calculate_hand_value(&player_hand.cards, player_hand_size + 1);
+        let player_updated_hand_value = calculate_hand_value(&player_hand, player_hand_size + 1);
 
         (
-            player_hand_ctxt.owner.from_arcis(PlayerHand {
-                cards: player_hand.cards,
-            }),
+            player_hand_ctxt
+                .owner
+                .from_arcis(Hand::from_array(player_hand)),
             is_bust.reveal(),
         )
     }
 
     // Returns true if the player has busted
     #[instruction]
-    pub fn player_stand(player_hand_ctxt: Enc<Client, PlayerHand>, player_hand_size: u8) -> bool {
-        let player_hand = player_hand_ctxt.to_arcis();
-        let value = calculate_hand_value(&player_hand.cards, player_hand_size);
+    pub fn player_stand(player_hand_ctxt: Enc<Client, Hand>, player_hand_size: u8) -> bool {
+        let player_hand = player_hand_ctxt.to_arcis().to_array();
+        let value = calculate_hand_value(&player_hand, player_hand_size);
         value > 21
     }
 
@@ -216,16 +206,16 @@ mod circuits {
     #[instruction]
     pub fn player_double_down(
         deck_ctxt: Enc<Mxe, Deck>,
-        player_hand_ctxt: Enc<Client, PlayerHand>,
+        player_hand_ctxt: Enc<Client, Hand>,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, PlayerHand>, bool) {
+    ) -> (Enc<Client, Hand>, bool) {
         let deck = deck_ctxt.to_arcis();
         let deck_array = deck.to_array();
 
-        let mut player_hand = player_hand_ctxt.to_arcis();
+        let mut player_hand = player_hand_ctxt.to_arcis().to_array();
 
-        let player_hand_value = calculate_hand_value(&player_hand.cards, player_hand_size);
+        let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
 
         let is_bust = player_hand_value > 21;
 
@@ -238,12 +228,12 @@ mod circuits {
             53
         };
 
-        player_hand.cards[player_hand_size as usize] = new_card;
+        player_hand[player_hand_size as usize] = new_card;
 
         (
-            player_hand_ctxt.owner.from_arcis(PlayerHand {
-                cards: player_hand.cards,
-            }),
+            player_hand_ctxt
+                .owner
+                .from_arcis(Hand::from_array(player_hand)),
             is_bust.reveal(),
         )
     }
@@ -252,14 +242,14 @@ mod circuits {
     #[instruction]
     pub fn dealer_play(
         deck_ctxt: Enc<Mxe, Deck>,
-        dealer_hand_ctxt: Enc<Mxe, DealerHand>,
+        dealer_hand_ctxt: Enc<Mxe, Hand>,
         client: Client,
         player_hand_size: u8,
         dealer_hand_size: u8,
-    ) -> (Enc<Client, DealerHand>, u8) {
+    ) -> (Enc<Mxe, Hand>, Enc<Client, Hand>, u8) {
         let deck = deck_ctxt.to_arcis();
         let mut deck_array = deck.to_array();
-        let mut dealer = dealer_hand_ctxt.to_arcis().cards;
+        let mut dealer = dealer_hand_ctxt.to_arcis().to_array();
         let mut size = dealer_hand_size as usize;
 
         for i in 0..7 {
@@ -271,8 +261,11 @@ mod circuits {
             }
         }
 
-        let dealer_cards = client.from_arcis(DealerHand { cards: dealer });
-        (dealer_cards, (size as u8).reveal())
+        (
+            dealer_hand_ctxt.owner.from_arcis(Hand::from_array(dealer)),
+            client.from_arcis(Hand::from_array(dealer)),
+            (size as u8).reveal(),
+        )
     }
 
     // Helper function to calculate the value of a hand
@@ -312,17 +305,17 @@ mod circuits {
     // Function to resolve the game and determine the winner
     #[instruction]
     pub fn resolve_game(
-        player_hand: Enc<Client, PlayerHand>,
-        dealer_hand: Enc<Client, DealerHand>,
+        player_hand: Enc<Client, Hand>,
+        dealer_hand: Enc<Mxe, Hand>,
         player_hand_length: u8,
         dealer_hand_length: u8,
     ) -> u8 {
-        let player_hand = player_hand.to_arcis();
-        let dealer_hand = dealer_hand.to_arcis();
+        let player_hand = player_hand.to_arcis().to_array();
+        let dealer_hand = dealer_hand.to_arcis().to_array();
 
         // Calculate hand values
-        let player_value = calculate_hand_value(&player_hand.cards, player_hand_length);
-        let dealer_value = calculate_hand_value(&dealer_hand.cards, dealer_hand_length);
+        let player_value = calculate_hand_value(&player_hand, player_hand_length);
+        let dealer_value = calculate_hand_value(&dealer_hand, dealer_hand_length);
 
         // Determine the winner
         // 0 = player busts (dealer wins)

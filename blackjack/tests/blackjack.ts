@@ -113,6 +113,7 @@ describe("Blackjack", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
     const clientNonce = randomBytes(16);
+    const dealerClientNonce = randomBytes(16);
 
     const gameId = BigInt(1);
     const mxeNonce = randomBytes(16);
@@ -130,7 +131,8 @@ describe("Blackjack", () => {
         new anchor.BN(deserializeLE(mxeNonce).toString()),
         new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
         Array.from(publicKey),
-        new anchor.BN(deserializeLE(clientNonce).toString())
+        new anchor.BN(deserializeLE(clientNonce).toString()),
+        new anchor.BN(deserializeLE(dealerClientNonce).toString())
       )
       .accountsPartial({
         clusterAccount: arciumEnv.arciumClusterPubkey,
@@ -160,15 +162,16 @@ describe("Blackjack", () => {
     console.log("Cards shuffled and dealt");
 
     const cards = cipher.decrypt(
-      [
-        ...cardsShuffledAndDealtEvent.userHand,
-        cardsShuffledAndDealtEvent.dealerFaceUpCard,
-      ],
+      cardsShuffledAndDealtEvent.userHand,
       new Uint8Array(cardsShuffledAndDealtEvent.clientNonce)
     );
 
     console.log("User hand is ", cards[0], cards[1]);
-    console.log("Dealer face up card is ", cards[2]);
+    const dealerFaceUpCard = cipher.decrypt(
+      cardsShuffledAndDealtEvent.dealerFaceUpCard,
+      new Uint8Array(cardsShuffledAndDealtEvent.dealerClientNonce)
+    );
+    console.log("Dealer face up card is ", dealerFaceUpCard[0]);
 
     // Full gameplay: player hit, stand, dealer play, and resolve game
     const playerHitEventPromise = awaitEvent("playerHitEvent");
