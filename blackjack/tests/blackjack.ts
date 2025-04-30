@@ -30,13 +30,13 @@ describe("Blackjack", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <T extends keyof Event>(
-    eventName: T
-  ): Promise<Event[T]> => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[T]>((res) => {
-      listenerId = program.addEventListener(eventName as any, (evt: any) => {
-        res(evt);
+    const event = await new Promise<Event[E]>((res) => {
+      listenerId = program.addEventListener(eventName, (event) => {
+        res(event);
       });
     });
     await program.removeEventListener(listenerId);
