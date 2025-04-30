@@ -21,7 +21,7 @@ mod circuits {
 
     #[instruction]
     pub fn vote(
-        vote: Enc<Client, UserVote>,
+        vote: Enc<Shared, UserVote>,
         vote_stats_ctxt: Enc<Mxe, VoteStats>,
     ) -> Enc<Mxe, VoteStats> {
         let user_vote = vote.to_arcis();

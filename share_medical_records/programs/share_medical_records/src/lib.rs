@@ -1,14 +1,14 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
     derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
+    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
     types::Argument,
@@ -58,6 +58,7 @@ pub mod share_medical_records {
 
     pub fn share_patient_data(
         ctx: Context<SharePatientData>,
+        computation_offset: u64,
         receiver: [u8; 32],
         receiver_nonce: u128,
         sender_pub_key: [u8; 32],
@@ -74,7 +75,7 @@ pub mod share_medical_records {
                 PatientData::INIT_SPACE as u32,
             ),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
         Ok(())
     }
 
@@ -128,6 +129,7 @@ pub struct StorePatientData<'info> {
 
 #[queue_computation_accounts("share_patient_data", payer)]
 #[derive(Accounts)]
+#[instruction(computation_offset: u64)]
 pub struct SharePatientData<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -139,12 +141,20 @@ pub struct SharePatientData<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHARE_PATIENT_DATA)
     )]

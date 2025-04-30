@@ -268,9 +268,9 @@ checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
 name = "arcis"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "02e3e46feaa5d3ce503c82f3541c10e90782849ecd7e1e59b101245ba785ab1d"
+checksum = "b2ac60cc7ba4c7647e6ee4b080901f2bd2654f637e4296772c31e96fe7edf65d"
 dependencies = [
  "aes",
  "arcis-diagnostics",
@@ -291,18 +291,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-diagnostics"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "ccaae31147f4f8452ffe2d016a0e4a3ddeca1cd5d0d3340ed27bebeed45665c6"
+checksum = "6f780a469347c557d16e0581d312c09a26ac3326e8fb44e8ec77e1ee1e2e7408"
 dependencies = [
  "colored",
 ]
 
 [[package]]
 name = "arcis-imports"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "44dd552e77b09f086187f2f8bb773cfd3ab44aa1d13e7d8a45a80d99bf7f0bbd"
+checksum = "ef4e89a8802d2d568d01a9bf0bdd43ea6d7af72c57a51639fb8ce4266647c577"
 dependencies = [
  "arcis",
  "arcis-interpreter-proc-macros",
@@ -312,9 +312,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-interface"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "b89891880d727f122369cf50dbd0fef08b977b10b2203d3919d173c0cd1ed426"
+checksum = "e50fe0f4aa36ee32201832bad38311057fd032f1377f94336f29738ace056338"
 dependencies = [
  "serde",
  "serde_json",
@@ -322,9 +322,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-internal-expr-macro"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "f1a03d46ca76ef14dad87e164ef86228432590f2a2d71d63ed609f28aaa10d93"
+checksum = "aee0563da9dd931c92ae76b557e977a5fed3c82c68fe371ba62766e2a8e1e455"
 dependencies = [
  "indexmap",
  "proc-macro2",
@@ -335,9 +335,9 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "20b6f7e9f91a491986a093a2802501dd5614aec83478a5f925992b9c6a67e708"
+checksum = "1886b18c972c86c53c05fef036e61089d36083d8783f73995ad345d4c85c291e"
 dependencies = [
  "arcis",
  "arcis-interface",
@@ -352,18 +352,18 @@ dependencies = [
 
 [[package]]
 name = "arcis-interpreter-proc-macros"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "31c5cf4deb6ec286873030edc83e067d2a7c7cb04879fb019b58a7a15e18e339"
+checksum = "a5e51101672c0238d03cf942beeb2a47c5127ab9ee09a6c0c129349e04d92b18"
 dependencies = [
  "arcis-interpreter",
 ]
 
 [[package]]
 name = "arcium-anchor"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "8d147b983c4fb4ddfeff6dae2c056a47501ea3d7af9a79a7035d177126039f46"
+checksum = "bd7c8bacfbf979055d5a84677e054cde6c9ef15322385c76af69f76fc04e4476"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
@@ -373,18 +373,19 @@ dependencies = [
 
 [[package]]
 name = "arcium-client"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "05d3655b76c77123914cffd1990f5f74cd9423ddf74888c99e7cb97d990025b1"
+checksum = "3004830c7234b7a54a325bc08413b4ce9aea005f835338edf65372472f26772b"
 dependencies = [
  "anchor-lang",
+ "bytemuck",
 ]
 
 [[package]]
 name = "arcium-macros"
-version = "0.1.44"
+version = "0.1.45"
 source = "sparse+https://crates.arcium.com/api/v1/crates/"
-checksum = "91564b09fb050548be545a877dd4e8eac68b90213b0e5a3031587d37cb70e770"
+checksum = "d39e346c8f37acb6e598054eaed216f1b9505f56c6692bc8bef82521d8fc3a00"
 dependencies = [
  "arcis-interface",
  "proc-macro2",
@@ -583,9 +584,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck"
-version = "1.22.0"
+version = "1.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6b1fc10dbac614ebc03540c9dbd60e83887fda27794998c6528f1782047d540"
+checksum = "9134a6ef01ce4b366b50689c94f82c14bc72bc5d0386829828a2e2752ef7958c"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -646,7 +647,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a98356df42a2eb1bd8f1793ae4ee4de48e384dd974ce5eac8eee802edb7492be"
 dependencies = [
  "serde",
- "toml 0.8.21",
+ "toml 0.8.22",
 ]
 
 [[package]]
@@ -2906,9 +2907,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.21"
+version = "0.8.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "900f6c86a685850b1bc9f6223b20125115ee3f31e01207d81655bbcc0aea9231"
+checksum = "05ae329d1f08c4d17a59bed7ff5b5a769d062e64a62d34a3261b219e62cd5aae"
 dependencies = [
  "serde",
  "serde_spanned",
@@ -2927,9 +2928,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.25"
+version = "0.22.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10558ed0bd2a1562e630926a2d1f0b98c827da99fabd3fe20920a59642504485"
+checksum = "310068873db2c5b3e7659d2cc35d21855dbafa50d1ce336397c666e3cb08137e"
 dependencies = [
  "indexmap",
  "serde",
@@ -2941,9 +2942,9 @@ dependencies = [
 
 [[package]]
 name = "toml_write"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28391a4201ba7eb1984cfeb6862c0b3ea2cfe23332298967c749dddc0d6cd976"
+checksum = "bfb942dfe1d8e29a7ee7fcbde5bd2b9a25fb89aa70caea2eba3bee836ff41076"
 
 [[package]]
 name = "typenum"

@@ -18,6 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
+  getComputationAcc,
 } from "@arcium-hq/arcium-sdk";
 import * as fs from "fs";
 import * as os from "os";
@@ -111,15 +112,22 @@ describe("RockPaperScissors", () => {
     const gameId = 1;
     const nonce = randomBytes(16);
 
+    const initComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Initializing a new game");
     const initGameTx = await program.methods
       .initGame(
+        initComputationOffset,
         new anchor.BN(gameId),
         playerA.publicKey,
         playerB.publicKey,
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          initComputationOffset
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -138,7 +146,7 @@ describe("RockPaperScissors", () => {
     // Wait for initGame computation finalization
     const initGameFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      initGameTx,
+      initComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -168,9 +176,12 @@ describe("RockPaperScissors", () => {
       playerANonce
     );
 
+    const playerAMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Player A making a move (Rock)");
     const playerAMoveTx = await program.methods
       .playerMove(
+        playerAMoveComputationOffset,
         Array.from(playerACiphertext[0]),
         Array.from(playerACiphertext[1]),
         Array.from(playerAPublicKey),
@@ -178,6 +189,10 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         payer: playerA.publicKey,
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerAMoveComputationOffset
+        ),
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
         executingPool: getExecutingPoolAcc(program.programId),
@@ -202,7 +217,7 @@ describe("RockPaperScissors", () => {
     // Wait for player A move computation finalization
     const playerAMoveFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerAMoveTx,
+      playerAMoveComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -232,15 +247,22 @@ describe("RockPaperScissors", () => {
       playerBNonce
     );
 
+    const playerBMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Player B making a move (Scissors)");
     const playerBMoveTx = await program.methods
       .playerMove(
+        playerBMoveComputationOffset,
         Array.from(playerBCiphertext[0]),
         Array.from(playerBCiphertext[1]),
         Array.from(playerBPublicKey),
         new anchor.BN(deserializeLE(playerBNonce).toString())
       )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerBMoveComputationOffset
+        ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -266,7 +288,7 @@ describe("RockPaperScissors", () => {
     // Wait for player B move computation finalization
     const playerBMoveFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerBMoveTx,
+      playerBMoveComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -275,10 +297,16 @@ describe("RockPaperScissors", () => {
     // Compare moves to determine the winner
     const gameEventPromise = awaitEvent("compareMovesEvent");
 
+    const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Comparing moves");
     const compareTx = await program.methods
-      .compareMoves()
+      .compareMoves(compareComputationOffset)
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          compareComputationOffset
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -300,7 +328,7 @@ describe("RockPaperScissors", () => {
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      compareTx,
+      compareComputationOffset,
       program.programId,
       "confirmed"
     );
@@ -333,10 +361,22 @@ describe("RockPaperScissors", () => {
     const nonce2 = randomBytes(16);
     const nonceValue2 = new anchor.BN(deserializeLE(nonce2).toString());
 
+    const initComputationOffset2 = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Initializing a new game");
     const initGameTx2 = await program.methods
-      .initGame(gameId2, playerA.publicKey, playerB.publicKey, nonceValue2)
+      .initGame(
+        initComputationOffset2,
+        gameId2,
+        playerA.publicKey,
+        playerB.publicKey,
+        nonceValue2
+      )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          initComputationOffset2
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -355,7 +395,7 @@ describe("RockPaperScissors", () => {
     // Wait for initGame computation finalization
     const initGameFinalizeSig2 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      initGameTx2,
+      initComputationOffset2,
       program.programId,
       "confirmed"
     );
@@ -386,14 +426,24 @@ describe("RockPaperScissors", () => {
 
     console.log("Unauthorized player attempting to make a move");
     try {
+      const unauthorizedMoveComputationOffset = new anchor.BN(
+        randomBytes(8),
+        "hex"
+      );
+
       await program.methods
         .playerMove(
+          unauthorizedMoveComputationOffset,
           Array.from(unauthorizedCiphertext[0]),
           Array.from(unauthorizedCiphertext[1]),
           Array.from(unauthorizedPublicKey),
           new anchor.BN(deserializeLE(unauthorizedNonce).toString())
         )
         .accounts({
+          computationAccount: getComputationAcc(
+            program.programId,
+            unauthorizedMoveComputationOffset
+          ),
           payer: unauthorizedPlayer.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
           mempoolAccount: getMempoolAcc(program.programId),
@@ -456,15 +506,22 @@ describe("RockPaperScissors", () => {
       );
       const scenarioNonce = randomBytes(16);
 
+      const initComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
       console.log("Initializing a new game");
       const initGameTx = await program.methods
         .initGame(
+          initComputationOffset3,
           scenarioGameId,
           playerA.publicKey,
           playerB.publicKey,
           new anchor.BN(deserializeLE(scenarioNonce).toString())
         )
         .accounts({
+          computationAccount: getComputationAcc(
+            program.programId,
+            initComputationOffset3
+          ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
           mempoolAccount: getMempoolAcc(program.programId),
@@ -483,7 +540,7 @@ describe("RockPaperScissors", () => {
       // Wait for initGame computation finalization
       const initGameFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        initGameTx,
+        initComputationOffset3,
         program.programId,
         "confirmed"
       );
@@ -496,15 +553,22 @@ describe("RockPaperScissors", () => {
         playerAMoveNonce
       );
 
+      const playerAMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       console.log("Player A making a move");
       const playerAMoveTx = await program.methods
         .playerMove(
+          playerAMoveComputationOffset,
           Array.from(playerAMoveCiphertext[0]),
           Array.from(playerAMoveCiphertext[1]),
           Array.from(playerAPublicKey),
           new anchor.BN(deserializeLE(playerAMoveNonce).toString())
         )
         .accounts({
+          computationAccount: getComputationAcc(
+            program.programId,
+            playerAMoveComputationOffset
+          ),
           payer: playerA.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
           mempoolAccount: getMempoolAcc(program.programId),
@@ -530,7 +594,7 @@ describe("RockPaperScissors", () => {
       // Wait for player A move computation finalization
       const playerAMoveFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        playerAMoveTx,
+        playerAMoveComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -543,15 +607,22 @@ describe("RockPaperScissors", () => {
         playerBMoveNonce
       );
 
+      const playerBMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       console.log("Player B making a move");
       const playerBMoveTx = await program.methods
         .playerMove(
+          playerBMoveComputationOffset,
           Array.from(playerBMoveCiphertext[0]),
           Array.from(playerBMoveCiphertext[1]),
           Array.from(playerBPublicKey),
           new anchor.BN(deserializeLE(playerBMoveNonce).toString())
         )
         .accounts({
+          computationAccount: getComputationAcc(
+            program.programId,
+            playerBMoveComputationOffset
+          ),
           payer: playerB.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
           mempoolAccount: getMempoolAcc(program.programId),
@@ -577,7 +648,7 @@ describe("RockPaperScissors", () => {
       // Wait for player B move computation finalization
       const playerBMoveFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        playerBMoveTx,
+        playerBMoveComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -586,10 +657,16 @@ describe("RockPaperScissors", () => {
       // Compare moves to determine the winner
       const gameEventPromise = awaitEvent("compareMovesEvent");
 
+      const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       console.log("Comparing moves");
       const compareTx = await program.methods
-        .compareMoves()
+        .compareMoves(compareComputationOffset)
         .accounts({
+          computationAccount: getComputationAcc(
+            program.programId,
+            compareComputationOffset
+          ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAcc(program.programId),
           mempoolAccount: getMempoolAcc(program.programId),
@@ -613,7 +690,7 @@ describe("RockPaperScissors", () => {
 
       const finalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        compareTx,
+        compareComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -648,15 +725,22 @@ describe("RockPaperScissors", () => {
     );
     const nonce3 = randomBytes(16);
 
+    const initComputationOffset4 = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Initializing a new game for invalid move test");
     const initGameTx3 = await program.methods
       .initGame(
+        initComputationOffset4,
         gameId3,
         playerA.publicKey,
         playerB.publicKey,
         new anchor.BN(deserializeLE(nonce3).toString())
       )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          initComputationOffset4
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -675,7 +759,7 @@ describe("RockPaperScissors", () => {
     // Wait for initGame computation finalization
     const initGameFinalizeSig3 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      initGameTx3,
+      initComputationOffset4,
       program.programId,
       "confirmed"
     );
@@ -693,15 +777,22 @@ describe("RockPaperScissors", () => {
       playerANonce3
     );
 
+    const playerAMoveComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Player A making a valid move (0)");
     const playerAMoveTx3 = await program.methods
       .playerMove(
+        playerAMoveComputationOffset3,
         Array.from(playerACiphertext3[0]),
         Array.from(playerACiphertext3[1]),
         Array.from(playerAPublicKey),
         new anchor.BN(deserializeLE(playerANonce3).toString())
       )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerAMoveComputationOffset3
+        ),
         payer: playerA.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -724,7 +815,7 @@ describe("RockPaperScissors", () => {
     // Wait for player A move computation finalization
     const playerAMoveFinalizeSig3 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerAMoveTx3,
+      playerAMoveComputationOffset3,
       program.programId,
       "confirmed"
     );
@@ -739,15 +830,22 @@ describe("RockPaperScissors", () => {
       playerBNonce3
     );
 
+    const playerBMoveComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Player B making an invalid move (4)");
     const playerBMoveTx3 = await program.methods
       .playerMove(
+        playerBMoveComputationOffset3,
         Array.from(playerBCiphertext3[0]),
         Array.from(playerBCiphertext3[1]),
         Array.from(playerBPublicKey),
         new anchor.BN(deserializeLE(playerBNonce3).toString())
       )
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          playerBMoveComputationOffset3
+        ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -770,7 +868,7 @@ describe("RockPaperScissors", () => {
     // Wait for player B move computation finalization
     const playerBMoveFinalizeSig3 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      playerBMoveTx3,
+      playerBMoveComputationOffset3,
       program.programId,
       "confirmed"
     );
@@ -779,10 +877,16 @@ describe("RockPaperScissors", () => {
     // Compare moves
     const gameEventPromise3 = awaitEvent("compareMovesEvent");
 
+    const compareComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
     console.log("Comparing moves for invalid move test");
     const compareTx3 = await program.methods
-      .compareMoves()
+      .compareMoves(compareComputationOffset3)
       .accounts({
+        computationAccount: getComputationAcc(
+          program.programId,
+          compareComputationOffset3
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAcc(program.programId),
         mempoolAccount: getMempoolAcc(program.programId),
@@ -803,7 +907,7 @@ describe("RockPaperScissors", () => {
 
     const finalizeSig3 = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      compareTx3,
+      compareComputationOffset3,
       program.programId,
       "confirmed"
     );
