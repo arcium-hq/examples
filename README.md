@@ -8,3 +8,4 @@ Examples built using the Arcium tooling
   - [Against House](./rock_paper_scissors/against-house/)
 - [Confidential Medical Records](./share_medical_records/)
 - [MPC generated random coinflip](./coinflip/)
+- [Blackjack](./blackjack/)
