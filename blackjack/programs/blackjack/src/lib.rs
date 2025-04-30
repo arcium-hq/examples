@@ -520,7 +520,7 @@ pub mod blackjack {
         blackjack_game.dealer_hand = dealer_hand;
         blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.dealer_hand_size = dealer_hand_size;
-        blackjack_game.game_state = GameState::Resolved;
+        blackjack_game.game_state = GameState::Resolving;
 
         emit!(DealerPlayEvent {
             dealer_hand: dealer_client_hand,
