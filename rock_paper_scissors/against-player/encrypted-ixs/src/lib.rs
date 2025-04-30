@@ -27,7 +27,7 @@ mod circuits {
 
     #[instruction]
     pub fn player_move(
-        player_move_ctxt: Enc<Client, PlayerMove>,
+        player_move_ctxt: Enc<Shared, PlayerMove>,
         game_ctxt: Enc<Mxe, GameMoves>,
     ) -> Enc<Mxe, GameMoves> {
         let player_move = player_move_ctxt.to_arcis();
