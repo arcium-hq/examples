@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/arcium-sdk@0.1.45":
-  version "0.1.45"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/arcium-sdk/0.1.45/7c6a820272023c4e0aad36f0974cb8e4923751c3#7c6a820272023c4e0aad36f0974cb8e4923751c3"
-  integrity sha512-ixgWsrYE5Ba8/udswVXKgcVGy6Dzp8ORRZmnj5KGEoj6QVXRwyoQd4OngZMAhCVeT5bzrezMw6gqd+sAQ+zQyA==
+"@arcium-hq/client@0.1.46":
+  version "0.1.46"
+  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.1.46.tgz#4f13beec5291e09ed959e2dd4c8d034e9c4c1485"
+  integrity sha512-NwVu6dbjYu1xYmqFON/ntpDJg3QyafZlWPCcc/DA3LGptAkQtqUBOtWacb3vEAS6umH2uNXiDeN5JfC9iFcgkA==
   dependencies:
     "@coral-xyz/anchor" "0.31"
     "@noble/curves" "^1.8.1"
@@ -13,11 +13,9 @@
     "@solana/web3.js" "^1.95.4"
 
 "@babel/runtime@^7.25.0":
-  version "7.27.0"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.27.0.tgz#fbee7cf97c709518ecc1f590984481d5460d4762"
-  integrity sha512-VtPOkrdPHZsKc/clNqyi9WUA8TINkZ4cGk63UUE3u4pmB2k+ZMQRDuIOagv8UVd6j7k0T3+RRIb7beKTebNbcw==
-  dependencies:
-    regenerator-runtime "^0.14.0"
+  version "7.27.1"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.27.1.tgz#9fce313d12c9a77507f264de74626e87fd0dc541"
+  integrity sha512-1x3D2xEk2fRo3PAhwQwu5UubzgiVWSXTBfWpVd2Mx2AzRqJuDJCsgaDVZ7HB5iGzDW1Hl1sWN2mFyKjmR9uAog==
 
 "@coral-xyz/anchor-errors@^0.31.1":
   version "0.31.1"
@@ -862,11 +860,6 @@ readdirp@~3.6.0:
   integrity sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==
   dependencies:
     picomatch "^2.2.1"
-
-regenerator-runtime@^0.14.0:
-  version "0.14.1"
-  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.14.1.tgz#356ade10263f685dda125100cd862c1db895327f"
-  integrity sha512-dYnhHh0nJoMfnkZs6GmmhFknAGRrLznOu5nc9ML+EJxGvrx6H7teuevqVqCuPcPK//3eDrrjQhehXVx9cnkGdw==
 
 require-directory@^2.1.1:
   version "2.1.1"

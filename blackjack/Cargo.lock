@@ -458,6 +458,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blackjack"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "arcium-anchor",
+ "arcium-client",
+ "arcium-macros",
+]
+
+[[package]]
 name = "blake3"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -593,9 +603,9 @@ dependencies = [
 
 [[package]]
 name = "bytemuck_derive"
-version = "1.8.1"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fa76293b4f7bb636ab88fd78228235b5248b4d05cc589aed610f954af5d7c7a"
+checksum = "7ecc273b49b3205b83d648f0690daa588925572cc5063745bfe547fe7ec8e1a1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1429,17 +1439,6 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
-
-[[package]]
-name = "rock_paper_scissors_against_rng"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "arcium-anchor",
- "arcium-client",
- "arcium-macros",
- "bytemuck_derive",
-]
 
 [[package]]
 name = "rustc-hash"
