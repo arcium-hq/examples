@@ -19,9 +19,9 @@ idl-build = ["anchor-lang/idl-build"]
 [dependencies]
 anchor-lang = "0.31.1"
 
-arcium-client = { default-features = false, version = "0.1.45", registry = "arcium" }
-arcium-macros = { version = "0.1.45", registry = "arcium" }
-arcium-anchor = { version = "0.1.45", registry = "arcium" }
+arcium-client = { default-features = false, version = "0.1.46" }
+arcium-macros = { version = "0.1.46" }
+arcium-anchor = { version = "0.1.46" }
 
 # Bytemuck hotfix https://github.com/Lokathor/bytemuck/issues/306
 bytemuck_derive = ">=1.8.1, <1.9.0"
