@@ -9,3 +9,5 @@ Examples built using the Arcium tooling
 - [Confidential Medical Records](./share_medical_records/)
 - [MPC generated random coinflip](./coinflip/)
 - [Blackjack](./blackjack/)
+
+Check out our [Developer Docs](https://docs.arcium.com/developers) to get started building with Arcium! Reach out to us on [Discord](https://discord.com/invite/arcium) for support. 
