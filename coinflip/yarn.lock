@@ -4,7 +4,7 @@
 
 "@arcium-hq/client@0.1.46":
   version "0.1.46"
-  resolved "https://npm.pkg.github.com/download/@arcium-hq/client/0.1.46/4f13beec5291e09ed959e2dd4c8d034e9c4c1485#4f13beec5291e09ed959e2dd4c8d034e9c4c1485"
+  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.1.46.tgz#4f13beec5291e09ed959e2dd4c8d034e9c4c1485"
   integrity sha512-NwVu6dbjYu1xYmqFON/ntpDJg3QyafZlWPCcc/DA3LGptAkQtqUBOtWacb3vEAS6umH2uNXiDeN5JfC9iFcgkA==
   dependencies:
     "@coral-xyz/anchor" "0.31"
