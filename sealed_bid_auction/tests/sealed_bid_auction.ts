@@ -18,7 +18,7 @@ import {
   getCompDefAcc,
   getExecutingPoolAcc,
   x25519,
-} from "@arcium-hq/arcium-sdk";
+} from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";

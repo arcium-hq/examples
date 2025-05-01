@@ -1,14 +1,14 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_execpool_pda,
+    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
     derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
     ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
+    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
 };
 use arcium_client::idl::arcium::{
     accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, ExecutingPool, Mempool,
-        PersistentMXEAccount, StakingPoolAccount,
+        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
+        StakingPoolAccount,
     },
     program::Arcium,
     types::Argument,
@@ -38,6 +38,7 @@ pub mod sealed_bid_auction {
 
     pub fn setup_vickrey_auction(
         ctx: Context<SetupVickreyAuction>,
+        computation_offset: u64,
         encryption_pubkey: [u8; 32],
         auction_nonce: u128,
     ) -> Result<()> {
@@ -50,7 +51,7 @@ pub mod sealed_bid_auction {
             Argument::ArcisPubkey(encryption_pubkey),
             Argument::PlaintextU128(auction_nonce),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
 
         Ok(())
     }
@@ -88,6 +89,7 @@ pub mod sealed_bid_auction {
 
     pub fn vickrey_bid(
         ctx: Context<VickreyAuctionBid>,
+        computation_offset: u64,
         bid: [u8; 32],
         bidder_pubkey_one: [u8; 32],
         bidder_pubkey_two: [u8; 32],
@@ -104,7 +106,7 @@ pub mod sealed_bid_auction {
             Argument::EncryptedU128(bidder_pubkey_one),
             Argument::EncryptedU128(bidder_pubkey_two),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
         Ok(())
     }
 
@@ -132,12 +134,15 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    pub fn vickrey_reveal(ctx: Context<VickreyAuctionReveal>) -> Result<()> {
+    pub fn vickrey_reveal(
+        ctx: Context<VickreyAuctionReveal>,
+        computation_offset: u64,
+    ) -> Result<()> {
         let args = vec![
             Argument::ArcisPubkey(ctx.accounts.auction_account.encryption_pubkey),
             Argument::PlaintextU128(ctx.accounts.auction_account.nonce),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
 
         Ok(())
     }
@@ -163,6 +168,7 @@ pub mod sealed_bid_auction {
 
 #[queue_computation_accounts("setup_vickrey_auction", payer)]
 #[derive(Accounts)]
+#[instruction(computation_offset: u64)]
 pub struct SetupVickreyAuction<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -174,12 +180,20 @@ pub struct SetupVickreyAuction<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_SETUP_VICKREY_AUCTION)
     )]
@@ -246,6 +260,7 @@ pub struct InitSetupVickreyAuctionCompDef<'info> {
 
 #[queue_computation_accounts("vickrey_bid", payer)]
 #[derive(Accounts)]
+#[instruction(computation_offset: u64)]
 pub struct VickreyAuctionBid<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -257,12 +272,20 @@ pub struct VickreyAuctionBid<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_VICKREY_AUCTION_BID)
     )]
@@ -320,6 +343,7 @@ pub struct InitVickreyAuctionBidCompDef<'info> {
 
 #[queue_computation_accounts("vickrey_reveal", payer)]
 #[derive(Accounts)]
+#[instruction(computation_offset: u64)]
 pub struct VickreyAuctionReveal<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -331,12 +355,20 @@ pub struct VickreyAuctionReveal<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program.
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program.
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_VICKREY_AUCTION_REVEAL)
     )]
