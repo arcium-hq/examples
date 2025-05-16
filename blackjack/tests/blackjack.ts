@@ -12,13 +12,13 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
   x25519,
-  getComputationAcc,
+  getComputationAccAddress,
   getArciumAccountBaseSeed,
+  getMXEAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -188,15 +188,15 @@ describe("Blackjack", () => {
         new anchor.BN(deserializeLE(dealerClientNonce).toString())
       )
       .accountsPartial({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           computationOffsetInit
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(
             getCompDefAccOffset("shuffle_and_deal_cards")
@@ -241,8 +241,7 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
-        playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -289,15 +288,15 @@ describe("Blackjack", () => {
             new anchor.BN(gameId.toString())
           )
           .accountsPartial({
-            computationAccount: getComputationAcc(
+            computationAccount: getComputationAccAddress(
               program.programId,
               playerHitComputationOffset
             ),
             clusterAccount: arciumEnv.arciumClusterPubkey,
-            mxeAccount: getMXEAccAcc(program.programId),
-            mempoolAccount: getMempoolAcc(program.programId),
-            executingPool: getExecutingPoolAcc(program.programId),
-            compDefAccount: getCompDefAcc(
+            mxeAccount: getMXEAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(program.programId),
+            executingPool: getExecutingPoolAccAddress(program.programId),
+            compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
             ),
@@ -376,15 +375,15 @@ describe("Blackjack", () => {
             new anchor.BN(gameId.toString())
           )
           .accountsPartial({
-            computationAccount: getComputationAcc(
+            computationAccount: getComputationAccAddress(
               program.programId,
               playerStandComputationOffset
             ),
             clusterAccount: arciumEnv.arciumClusterPubkey,
-            mxeAccount: getMXEAccAcc(program.programId),
-            mempoolAccount: getMempoolAcc(program.programId),
-            executingPool: getExecutingPoolAcc(program.programId),
-            compDefAccount: getCompDefAcc(
+            mxeAccount: getMXEAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(program.programId),
+            executingPool: getExecutingPoolAccAddress(program.programId),
+            compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
             ),
@@ -440,15 +439,15 @@ describe("Blackjack", () => {
           new anchor.BN(deserializeLE(dealerPlayNonce).toString())
         )
         .accountsPartial({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             dealerPlayComputationOffset
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
           ),
@@ -507,15 +506,15 @@ describe("Blackjack", () => {
       const resolveSig = await program.methods
         .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
         .accountsPartial({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             resolveComputationOffset
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
           ),
@@ -547,8 +546,7 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${
-          Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -584,7 +582,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
@@ -645,7 +643,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
@@ -706,7 +704,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
@@ -767,7 +765,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
@@ -828,7 +826,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
@@ -889,7 +887,7 @@ describe("Blackjack", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .rpc({ commitment: "confirmed" });
 
