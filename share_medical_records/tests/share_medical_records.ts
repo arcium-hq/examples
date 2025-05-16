@@ -13,12 +13,12 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
   x25519,
-  getComputationAcc,
+  getComputationAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -131,15 +131,15 @@ describe("ShareMedicalRecords", () => {
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           computationOffset
         ),
         clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("share_patient_data")).readUInt32LE()
         ),
@@ -222,7 +222,7 @@ describe("ShareMedicalRecords", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
