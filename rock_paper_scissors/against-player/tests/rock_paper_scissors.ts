@@ -13,12 +13,12 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
   x25519,
-  getComputationAcc,
+  getComputationAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -124,15 +124,15 @@ describe("RockPaperScissors", () => {
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           initComputationOffset
         ),
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
@@ -189,14 +189,14 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         payer: playerA.publicKey,
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           playerAMoveComputationOffset
         ),
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
@@ -259,15 +259,15 @@ describe("RockPaperScissors", () => {
         new anchor.BN(deserializeLE(playerBNonce).toString())
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           playerBMoveComputationOffset
         ),
         payer: playerB.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
@@ -303,15 +303,15 @@ describe("RockPaperScissors", () => {
     const compareTx = await program.methods
       .compareMoves(compareComputationOffset)
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           compareComputationOffset
         ),
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
@@ -373,15 +373,15 @@ describe("RockPaperScissors", () => {
         nonceValue2
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           initComputationOffset2
         ),
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
@@ -440,15 +440,15 @@ describe("RockPaperScissors", () => {
           new anchor.BN(deserializeLE(unauthorizedNonce).toString())
         )
         .accounts({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             unauthorizedMoveComputationOffset
           ),
           payer: unauthorizedPlayer.publicKey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
@@ -518,15 +518,15 @@ describe("RockPaperScissors", () => {
           new anchor.BN(deserializeLE(scenarioNonce).toString())
         )
         .accounts({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             initComputationOffset3
           ),
           payer: owner.publicKey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
           ),
@@ -565,15 +565,15 @@ describe("RockPaperScissors", () => {
           new anchor.BN(deserializeLE(playerAMoveNonce).toString())
         )
         .accounts({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             playerAMoveComputationOffset
           ),
           payer: playerA.publicKey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
@@ -619,15 +619,15 @@ describe("RockPaperScissors", () => {
           new anchor.BN(deserializeLE(playerBMoveNonce).toString())
         )
         .accounts({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             playerBMoveComputationOffset
           ),
           payer: playerB.publicKey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
@@ -663,15 +663,15 @@ describe("RockPaperScissors", () => {
       const compareTx = await program.methods
         .compareMoves(compareComputationOffset)
         .accounts({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             compareComputationOffset
           ),
           payer: owner.publicKey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
           ),
@@ -737,15 +737,15 @@ describe("RockPaperScissors", () => {
         new anchor.BN(deserializeLE(nonce3).toString())
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           initComputationOffset4
         ),
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
@@ -789,15 +789,15 @@ describe("RockPaperScissors", () => {
         new anchor.BN(deserializeLE(playerANonce3).toString())
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           playerAMoveComputationOffset3
         ),
         payer: playerA.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
@@ -842,15 +842,15 @@ describe("RockPaperScissors", () => {
         new anchor.BN(deserializeLE(playerBNonce3).toString())
       )
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           playerBMoveComputationOffset3
         ),
         payer: playerB.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
@@ -883,15 +883,15 @@ describe("RockPaperScissors", () => {
     const compareTx3 = await program.methods
       .compareMoves(compareComputationOffset3)
       .accounts({
-        computationAccount: getComputationAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
           compareComputationOffset3
         ),
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
@@ -952,7 +952,7 @@ async function initInitGameCompDef(
     .accounts({
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
-      mxeAccount: getMXEAccAcc(program.programId),
+      mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
     .rpc({
@@ -1010,7 +1010,7 @@ async function initPlayerMoveCompDef(
     .accounts({
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
-      mxeAccount: getMXEAccAcc(program.programId),
+      mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
     .rpc({
@@ -1068,7 +1068,7 @@ async function initCompareMovesCompDef(
     .accounts({
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
-      mxeAccount: getMXEAccAcc(program.programId),
+      mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
     .rpc({
