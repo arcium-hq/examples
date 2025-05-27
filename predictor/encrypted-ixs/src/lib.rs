@@ -14,7 +14,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn predict_probability(predictor_ctxt: Enc<Client, Predictor>) -> Enc<Client, f64> {
+    pub fn predict_probability(predictor_ctxt: Enc<Shared, Predictor>) -> Enc<Shared, f64> {
         let predictor = predictor_ctxt.to_arcis();
         let model =
             LogisticRegression::new(&[predictor.coef_1, predictor.coef_2], predictor.intercept);

@@ -36,6 +36,7 @@ pub mod predictor {
 
     pub fn predict_probability(
         ctx: Context<PredictProbability>,
+        computation_offset: u64,
         coef_1: [u8; 32],
         coef_2: [u8; 32],
         intercept: [u8; 32],
@@ -53,7 +54,7 @@ pub mod predictor {
             Argument::EncryptedU8(input_1),
             Argument::EncryptedU8(input_2),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
         Ok(())
     }
 
@@ -88,12 +89,20 @@ pub struct PredictProbability<'info> {
         mut,
         address = derive_mempool_pda!()
     )]
-    pub mempool_account: Account<'info, Mempool>,
+    /// CHECK: mempool_account, checked by the arcium program
+    pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
         address = derive_execpool_pda!()
     )]
-    pub executing_pool: Account<'info, ExecutingPool>,
+    /// CHECK: executing_pool, checked by the arcium program
+    pub executing_pool: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        address = derive_comp_pda!(computation_offset)
+    )]
+    /// CHECK: computation_account, checked by the arcium program.
+    pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PREDICT_PROBABILITY)
     )]
