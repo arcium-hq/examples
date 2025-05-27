@@ -5,9 +5,9 @@ runs:
   steps:
     - run: echo "RUST_VERSION=1.85.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ANCHOR_VERSION=0.31.0" >> $GITHUB_ENV
+    - run: echo "ANCHOR_VERSION=0.31.1" >> $GITHUB_ENV
       shell: bash
-    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.1.42" >> $GITHUB_ENV
+    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.1.47" >> $GITHUB_ENV
       shell: bash
     - run: echo "SOLANA_CLI_VERSION=2.1.6" >> $GITHUB_ENV
       shell: bash
@@ -17,7 +17,7 @@ runs:
       shell: bash
     - run: echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ARCUP_VERSION=0.1.42" >> $GITHUB_ENV
+    - run: echo "ARCUP_VERSION=0.1.47" >> $GITHUB_ENV
       shell: bash
 
     # Setup Rust with specific version

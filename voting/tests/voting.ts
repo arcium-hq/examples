@@ -13,12 +13,13 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
   x25519,
-} from "@arcium-hq/arcium-sdk";
+  getComputationAccAddress,
+} from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
@@ -44,7 +45,7 @@ describe("Voting", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("can vote on polls!", async () => {
     const POLL_IDS = [420, 421, 422];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
@@ -82,18 +83,25 @@ describe("Voting", () => {
     for (const POLL_ID of POLL_IDS) {
       const pollNonce = randomBytes(16);
 
+      const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       const pollSig = await program.methods
         .createNewPoll(
+          pollComputationOffset,
           POLL_ID,
           `Poll ${POLL_ID}: $SOL to 500?`,
           new anchor.BN(deserializeLE(pollNonce).toString())
         )
         .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            pollComputationOffset
+          ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
@@ -104,7 +112,7 @@ describe("Voting", () => {
 
       const finalizePollSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        pollSig,
+        pollComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -125,19 +133,26 @@ describe("Voting", () => {
 
       console.log(`Voting for poll ${POLL_ID}`);
 
+      const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       const queueVoteSig = await program.methods
         .vote(
+          voteComputationOffset,
           POLL_ID,
           Array.from(ciphertext[0]),
           Array.from(publicKey),
           new anchor.BN(deserializeLE(nonce).toString())
         )
         .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            voteComputationOffset
+          ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
           ),
@@ -148,7 +163,7 @@ describe("Voting", () => {
 
       const finalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        queueVoteSig,
+        voteComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -168,14 +183,20 @@ describe("Voting", () => {
 
       const revealEventPromise = awaitEvent("revealResultEvent");
 
+      const revealComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
       const revealQueueSig = await program.methods
-        .revealResult(POLL_ID)
+        .revealResult(revealComputationOffset, POLL_ID)
         .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            revealComputationOffset
+          ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
           ),
@@ -185,7 +206,7 @@ describe("Voting", () => {
 
       const revealFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
-        revealQueueSig,
+        revealComputationOffset,
         program.programId,
         "confirmed"
       );
@@ -228,7 +249,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
@@ -286,7 +307,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
@@ -347,7 +368,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
