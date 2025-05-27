@@ -13,13 +13,13 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
   x25519,
-  getComputationAcc,
-} from "@arcium-hq/arcium-sdk";
+  getComputationAccAddress,
+} from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
@@ -93,15 +93,15 @@ describe("Voting", () => {
           new anchor.BN(deserializeLE(pollNonce).toString())
         )
         .accountsPartial({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             pollComputationOffset
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
@@ -144,15 +144,15 @@ describe("Voting", () => {
           new anchor.BN(deserializeLE(nonce).toString())
         )
         .accountsPartial({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             voteComputationOffset
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
           ),
@@ -188,15 +188,15 @@ describe("Voting", () => {
       const revealQueueSig = await program.methods
         .revealResult(revealComputationOffset, POLL_ID)
         .accountsPartial({
-          computationAccount: getComputationAcc(
+          computationAccount: getComputationAccAddress(
             program.programId,
             revealComputationOffset
           ),
           clusterAccount: arciumEnv.arciumClusterPubkey,
-          mxeAccount: getMXEAccAcc(program.programId),
-          mempoolAccount: getMempoolAcc(program.programId),
-          executingPool: getExecutingPoolAcc(program.programId),
-          compDefAccount: getCompDefAcc(
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
           ),
@@ -249,7 +249,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
@@ -307,7 +307,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
@@ -368,7 +368,7 @@ describe("Voting", () => {
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({

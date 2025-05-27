@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
-    "@arcium-hq/arcium-sdk": "0.1.45"
+    "@arcium-hq/client": "0.1.47"
   },
   "devDependencies": {
     "chai": "^4.3.4",

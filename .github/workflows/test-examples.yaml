@@ -34,9 +34,6 @@ jobs:
       - uses: ./.github/actions/setup-solana/
       - uses: ./.github/actions/setup-anchor/
       - uses: ./.github/actions/setup-arcium/
-        with:
-          ARCUP_USER: testnet_user_20842437
-          ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
 
       - name: Load cached cargo registry
         uses: actions/cache/restore@v4
