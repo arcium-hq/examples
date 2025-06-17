@@ -1,16 +1,13 @@
 # Structure of this project
 
-**In order to build this project, cargo will require access to the arcium registry where the arcium dependencies are published to.
-This is done by editing the generated `.cargo/credentials.toml` file to the root of the project with the provided token.**
-
 This project is structured pretty similarly to how a regular Solana Anchor project is structured. The main difference lies in there being two places to write code here:
 
-- The `programs` dir like normal
+- The `programs` dir like usual Anchor programs
 - The `encrypted-ixs` dir for confidential computing instructions
 
 When working with plaintext data, we can edit it inside our program as normal. When working with confidential data though, state transitions take place off-chain using the Arcium network as a co-processor. For this, we then always need two instructions in our program: one that gets called to initialize a confidential computation, and one that gets called when the computation is done and supplies the resulting data. Additionally, since the types and operations in a Solana program and in a confidential computing environment are a bit different, we define the operations themselves in the `encrypted-ixs` dir using our Rust-based framework called Arcis. To link all of this together, we provide a few macros that take care of ensuring the correct accounts and data are passed for the specific initialization and callback functions:
 
-```
+```rust
 // encrypted-ixs/add_together.rs
 
 use arcis_imports::*;
@@ -25,7 +22,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn add_together(input_ctxt: Enc<Client, InputValues>) -> Enc<Client, u16> {
+    pub fn add_together(input_ctxt: Enc<Shared, InputValues>) -> Enc<Shared, u16> {
         let input = input_ctxt.to_arcis();
         let sum = input.v1 as u16 + input.v2 as u16;
         input_ctxt.owner.from_arcis(sum)
@@ -36,7 +33,7 @@ mod circuits {
 
 declare_id!("<some ID>");
 
-#[program]
+#[arcium_program]
 pub mod my_program {
     use super::*;
 
@@ -47,6 +44,7 @@ pub mod my_program {
 
     pub fn add_together(
         ctx: Context<AddTogether>,
+        computation_offset: u64,
         ciphertext_0: [u8; 32],
         ciphertext_1: [u8; 32],
         pub_key: [u8; 32],
@@ -58,28 +56,32 @@ pub mod my_program {
             Argument::EncryptedU8(ciphertext_0),
             Argument::EncryptedU8(ciphertext_1),
         ];
-        queue_computation(ctx.accounts, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
         Ok(())
     }
 
     #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(ctx: Context<Callback>, output: ComputationOutputs) -> Result<()> {
-       let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-           bytes
-       } else {
-           return Err(ErrorCode::AbortedComputation.into());
-       };
+    pub fn add_together_callback(
+        ctx: Context<AddTogetherCallback>,
+        output: ComputationOutputs,
+    ) -> Result<()> {
+        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
+            bytes
+        } else {
+            return Err(ErrorCode::AbortedComputation.into());
+        };
 
-       emit!(SumEvent {
-           sum: bytes[48..80].try_into().unwrap(),
-           nonce: bytes[32..48].try_into().unwrap(),
-       });
-       Ok(())
+        emit!(SumEvent {
+            sum: bytes[48..80].try_into().unwrap(),
+            nonce: bytes[32..48].try_into().unwrap(),
+        });
+        Ok(())
     }
 }
 
 #[queue_computation_accounts("add_together", payer)]
 #[derive(Accounts)]
+#[instruction(computation_offset: u64)]
 pub struct AddTogether<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -102,5 +104,4 @@ pub struct InitAddTogetherCompDef<'info> {
     pub payer: Signer<'info>,
     // ... other required accounts
 }
-
 ```

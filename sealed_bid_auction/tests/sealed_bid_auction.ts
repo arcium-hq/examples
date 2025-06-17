@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { SealedBidAuction } from "../target/types/sealed_bid_auction";
 import { randomBytes } from "crypto";
 import {
@@ -13,10 +13,11 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
-  getMXEAccAcc,
-  getMempoolAcc,
-  getCompDefAcc,
-  getExecutingPoolAcc,
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getCompDefAccAddress,
+  getExecutingPoolAccAddress,
+  getComputationAccAddress,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -31,7 +32,9 @@ describe("SealedBidAuction", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -48,15 +51,11 @@ describe("SealedBidAuction", () => {
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    console.log("Initializing vickrey auction bid computation definition");
-    const initVickreyAuctionBidSig = await initVickreyAuctionBidCompDef(
-      program,
-      owner,
-      false
-    );
+    console.log("Initializing add together computation definition");
+    const initATSig = await initAddTogetherCompDef(program, owner, false, false);
     console.log(
-      "Vickrey auction bid computation definition initialized with signature",
-      initVickreyAuctionBidSig
+      "Add together computation definition initialized with signature",
+      initATSig
     );
 
     const privateKey = x25519.utils.randomPrivateKey();
@@ -68,95 +67,96 @@ describe("SealedBidAuction", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const bid = randomBytes(32);
-    const bidderKp = Keypair.generate();
-    const bidderPubkey = bidderKp.publicKey;
+    const val1 = BigInt(1);
+    const val2 = BigInt(2);
+    const plaintext = [val1, val2];
+
     const nonce = randomBytes(16);
+    const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const ciphertext = cipher.encrypt(
-      [bid, ...encodeOwner(bidderPubkey)],
-      nonce
-    );
-
-    const bidEventPromise = awaitEvent("bidEvent");
+    const sumEventPromise = awaitEvent("sumEvent");
+    const computationOffset = new anchor.BN(randomBytes(8), "hex");
 
     const queueSig = await program.methods
-      .vickreyBid(
+      .addTogether(
+        computationOffset,
         Array.from(ciphertext[0]),
         Array.from(ciphertext[1]),
-        Array.from(ciphertext[2]),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(nonce).toString())
       )
       .accountsPartial({
-        clusterAccount: arciumEnv.arciumClusterPubkey,
-        mxeAccount: getMXEAccAcc(program.programId),
-        mempoolAccount: getMempoolAcc(program.programId),
-        executingPool: getExecutingPoolAcc(program.programId),
-        compDefAccount: getCompDefAcc(
+        computationAccount: getComputationAccAddress(
           program.programId,
-          Buffer.from(getCompDefAccOffset("vickrey_auction_bid")).readUInt32LE()
+          computationOffset
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("add_together")).readUInt32LE()
         ),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      queueSig,
+      computationOffset,
       program.programId,
       "confirmed"
     );
     console.log("Finalize sig is ", finalizeSig);
 
-    const bidEvent = await bidEventPromise;
-    console.log("Bid event is ", bidEvent);
+    const sumEvent = await sumEventPromise;
+    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0];
+    expect(decrypted).to.equal(val1 + val2);
   });
 
-  async function initVickreyAuctionBidCompDef(
+  async function initAddTogetherCompDef(
     program: Program<SealedBidAuction>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
     );
-    const offset = getCompDefAccOffset("vickrey_auction_bid");
+    const offset = getCompDefAccOffset("add_together");
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
       getArciumProgAddress()
     )[0];
 
-    console.log("Comp def pda is ", compDefPDA.toBase58());
+    console.log("Comp def pda is ", compDefPDA);
 
     const sig = await program.methods
-      .initVickreyAuctionBidCompDef()
+      .initAddTogetherCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAcc(program.programId),
+        mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
       .rpc({
         commitment: "confirmed",
       });
-    console.log(
-      "Init vickrey auction bid computation definition transaction",
-      sig
-    );
+    console.log("Init add together computation definition transaction", sig);
 
     if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/vickrey_auction_bid.arcis");
+      const rawCircuit = fs.readFileSync("build/add_together.arcis");
 
       await uploadCircuit(
         provider as anchor.AnchorProvider,
-        "vickrey_auction_bid",
+        "add_together",
         program.programId,
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
@@ -179,20 +179,5 @@ function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
   return anchor.web3.Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(file.toString()))
-  );
-}
-
-function encodeOwner(owner: anchor.web3.PublicKey): [bigint, bigint] {
-  const ownerBytes = owner.toBytes();
-  return [
-    bytesToBigIntLE(ownerBytes.slice(0, 16)),
-    bytesToBigIntLE(ownerBytes.slice(16, 32)),
-  ];
-}
-
-function bytesToBigIntLE(bytes: Uint8Array): bigint {
-  return bytes.reduce(
-    (acc: bigint, byte) => (acc << BigInt(8)) + BigInt(byte),
-    BigInt(0)
   );
 }
