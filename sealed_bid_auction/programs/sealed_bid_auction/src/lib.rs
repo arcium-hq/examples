@@ -1,7 +1,10 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-const COMP_DEF_OFFSET_ADD_TOGETHER: u32 = comp_def_offset("add_together");
+const COMP_DEF_OFFSET_SETUP_VICKREY_AUCTION: u32 = comp_def_offset("setup_vickrey_auction");
+const COMP_DEF_OFFSET_VICKREY_AUCTION_PLACE_BID: u32 = comp_def_offset("vickrey_auction_place_bid");
+const COMP_DEF_OFFSET_VICKREY_AUCTION_REVEAL_RESULT: u32 =
+    comp_def_offset("vickrey_auction_reveal_result");
 
 declare_id!("5H6iGeeL3jiLs9NSkHd8EXMC1HECBX7dV8TfwzNm6sQV");
 
@@ -9,32 +12,25 @@ declare_id!("5H6iGeeL3jiLs9NSkHd8EXMC1HECBX7dV8TfwzNm6sQV");
 pub mod sealed_bid_auction {
     use super::*;
 
-    pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
+    pub fn init_setup_vickrey_auction_comp_def(
+        ctx: Context<InitSetupVickreyAuctionCompDef>,
+    ) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
-    pub fn add_together(
-        ctx: Context<AddTogether>,
+    pub fn setup_vickrey_auction(
+        ctx: Context<SetupVickreyAuction>,
         computation_offset: u64,
-        ciphertext_0: [u8; 32],
-        ciphertext_1: [u8; 32],
-        pub_key: [u8; 32],
-        nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(ciphertext_0),
-            Argument::EncryptedU8(ciphertext_1),
-        ];
+        let args = vec![];
         queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "add_together")]
-    pub fn add_together_callback(
-        ctx: Context<AddTogetherCallback>,
+    #[arcium_callback(encrypted_ix = "setup_vickrey_auction")]
+    pub fn setup_vickrey_auction_callback(
+        ctx: Context<SetupVickreyAuctionCallback>,
         output: ComputationOutputs,
     ) -> Result<()> {
         let bytes = if let ComputationOutputs::Bytes(bytes) = output {
@@ -43,18 +39,17 @@ pub mod sealed_bid_auction {
             return Err(ErrorCode::AbortedComputation.into());
         };
 
-        emit!(SumEvent {
-            sum: bytes[48..80].try_into().unwrap(),
-            nonce: bytes[32..48].try_into().unwrap(),
+        emit!(VickreyAuctionSetupEvent {
+            timestamp: Clock::get()?.unix_timestamp,
         });
         Ok(())
     }
 }
 
-#[queue_computation_accounts("add_together", payer)]
+#[queue_computation_accounts("setup_vickrey_auction", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64)]
-pub struct AddTogether<'info> {
+pub struct SetupVickreyAuction<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -80,7 +75,7 @@ pub struct AddTogether<'info> {
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_SETUP_VICKREY_AUCTION)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
@@ -101,14 +96,14 @@ pub struct AddTogether<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("add_together", payer)]
+#[callback_accounts("setup_vickrey_auction", payer)]
 #[derive(Accounts)]
-pub struct AddTogetherCallback<'info> {
+pub struct SetupVickreyAuctionCallback<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
-        address = derive_comp_def_pda!(COMP_DEF_OFFSET_ADD_TOGETHER)
+        address = derive_comp_def_pda!(COMP_DEF_OFFSET_SETUP_VICKREY_AUCTION)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
@@ -116,9 +111,9 @@ pub struct AddTogetherCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("add_together", payer)]
+#[init_computation_definition_accounts("setup_vickrey_auction", payer)]
 #[derive(Accounts)]
-pub struct InitAddTogetherCompDef<'info> {
+pub struct InitSetupVickreyAuctionCompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
@@ -135,9 +130,8 @@ pub struct InitAddTogetherCompDef<'info> {
 }
 
 #[event]
-pub struct SumEvent {
-    pub sum: [u8; 32],
-    pub nonce: [u8; 16],
+pub struct VickreyAuctionSetupEvent {
+    pub timestamp: i64,
 }
 
 #[error_code]

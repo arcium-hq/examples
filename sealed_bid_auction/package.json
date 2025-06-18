@@ -5,7 +5,7 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },
   "dependencies": {
-    "@arcium-hq/client": "0.1.47",
+    "@arcium-hq/client": "file:/Users/arihantbansal/Developer/arcium/arcium-tooling/ts/packages/client",
     "@coral-xyz/anchor": "^0.31.1"
   },
   "devDependencies": {
