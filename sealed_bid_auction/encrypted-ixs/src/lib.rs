@@ -36,8 +36,8 @@ mod circuits {
 
     #[instruction]
     pub fn vickrey_auction_place_bid(
-        auction_ctxt: Enc<Mxe, VickreyAuction>,
         bid_ctxt: Enc<Shared, Bid>,
+        auction_ctxt: Enc<Mxe, VickreyAuction>,
     ) -> Enc<Mxe, VickreyAuction> {
         let mut auction = auction_ctxt.to_arcis();
         let bid = bid_ctxt.to_arcis();
