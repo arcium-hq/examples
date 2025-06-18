@@ -66,6 +66,7 @@ mod circuits {
     ) -> (SerializedSolanaPublicKey, u128) {
         let auction = auction_ctxt.to_arcis();
 
+        // Highest bidder wins the auction and pays the second highest bid
         (
             auction.highest_bidder_pubkey_serialized.reveal(),
             auction.second_highest_bid.reveal(),
