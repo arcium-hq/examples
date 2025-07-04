@@ -272,6 +272,7 @@ version = "0.1.47"
 dependencies = [
  "aes",
  "arcis-diagnostics",
+ "arcis-interface",
  "arcis-internal-expr-macro",
  "bincode",
  "ed25519-dalek",
@@ -371,6 +372,7 @@ name = "arcium-macros"
 version = "0.1.47"
 dependencies = [
  "arcis-interface",
+ "convert_case",
  "proc-macro2",
  "quote",
  "sha2 0.10.9",
@@ -711,6 +713,15 @@ name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
+
+[[package]]
+name = "convert_case"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "cpufeatures"

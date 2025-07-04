@@ -23,6 +23,7 @@ pub mod sealed_bid_auction {
     pub fn setup_vickrey_auction(
         ctx: Context<SetupVickreyAuction>,
         computation_offset: u64,
+        auction_id: u64,
     ) -> Result<()> {
         let args = vec![];
 
@@ -47,26 +48,16 @@ pub mod sealed_bid_auction {
     #[arcium_callback(encrypted_ix = "setup_vickrey_auction")]
     pub fn setup_vickrey_auction_callback(
         ctx: Context<SetupVickreyAuctionCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<SetupVickreyAuctionOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(SetupVickreyAuctionOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-
-        let vickrey_auction_data: [[u8; 32]; 6] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
         let auction = &mut ctx.accounts.vickrey_auction_account;
-        auction.nonce = nonce;
-        auction.vickrey_auction_data = vickrey_auction_data;
+        auction.nonce = o.nonce.to_le_bytes();
+        auction.vickrey_auction_data = o.ciphertexts;
         auction.status = 1;
 
         emit!(VickreyAuctionSetupEvent {
@@ -85,6 +76,7 @@ pub mod sealed_bid_auction {
     pub fn vickrey_auction_place_bid(
         ctx: Context<VickreyAuctionPlaceBid>,
         computation_offset: u64,
+        auction_id: u64,
         bid_value: [u8; 32],
         bid_pubkey_hi: [u8; 32],
         bid_pubkey_lo: [u8; 32],
@@ -126,28 +118,18 @@ pub mod sealed_bid_auction {
     #[arcium_callback(encrypted_ix = "vickrey_auction_place_bid")]
     pub fn vickrey_auction_place_bid_callback(
         ctx: Context<VickreyAuctionPlaceBidCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<VickreyAuctionPlaceBidOutput>,
     ) -> Result<()> {
         require_eq!(ctx.accounts.vickrey_auction_account.status, 1);
 
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(VickreyAuctionPlaceBidOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-
-        let vickrey_auction_data: [[u8; 32]; 6] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
         let auction = &mut ctx.accounts.vickrey_auction_account;
-        auction.nonce = nonce;
-        auction.vickrey_auction_data = vickrey_auction_data;
+        auction.nonce = o.nonce.to_le_bytes();
+        auction.vickrey_auction_data = o.ciphertexts;
 
         emit!(VickreyAuctionPlaceBidEvent {
             timestamp: Clock::get()?.unix_timestamp,
@@ -200,28 +182,30 @@ pub mod sealed_bid_auction {
     #[arcium_callback(encrypted_ix = "vickrey_auction_reveal_result")]
     pub fn vickrey_auction_reveal_result_callback(
         ctx: Context<VickreyAuctionRevealResultCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<VickreyAuctionRevealResultOutput>,
     ) -> Result<()> {
-        require_eq!(ctx.accounts.vickrey_auction_account.status, 2);
-
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let (winning_pubkey, bid) = match output {
+            ComputationOutputs::Success(VickreyAuctionRevealResultOutput {
+                field_0:
+                    VickreyAuctionRevealResultTupleStruct0 {
+                        field_0: winning_pubkey,
+                        field_1: bid,
+                    },
+            }) => (winning_pubkey, bid),
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let pubkey_hi: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let pubkey_lo: [u8; 16] = bytes[16..32].try_into().unwrap();
-
-        let bid: u128 = u128::from_le_bytes(bytes[32..48].try_into().unwrap());
+        require_eq!(ctx.accounts.vickrey_auction_account.status, 2);
+        // let pubkey_hi: [u8; 16] = bytes[0..16].try_into().unwrap();
+        // let pubkey_lo: [u8; 16] = bytes[16..32].try_into().unwrap();
 
         let auction = &mut ctx.accounts.vickrey_auction_account;
         auction.status = 3;
 
         emit!(VickreyAuctionRevealResultEvent {
             timestamp: Clock::get()?.unix_timestamp,
-            pubkey_hi,
-            pubkey_lo,
+            pubkey_hi: winning_pubkey[0..16],
+            pubkey_lo: winning_pubkey[16..32],
             bid,
         });
 
@@ -231,7 +215,7 @@ pub mod sealed_bid_auction {
 
 #[queue_computation_accounts("setup_vickrey_auction", payer)]
 #[derive(Accounts)]
-#[instruction(computation_offset: u64)]
+#[instruction(computation_offset: u64, auction_id: u64)]
 pub struct SetupVickreyAuction<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -281,7 +265,7 @@ pub struct SetupVickreyAuction<'info> {
         init,
         payer = payer,
         space = 8 + VickreyAuctionAccount::INIT_SPACE,
-        seeds = [b"vickrey_auction_account", payer.key().as_ref()],
+        seeds = [b"vickrey_auction_account", auction_id.to_le_bytes().as_ref()],
         bump
     )]
     pub vickrey_auction_account: Account<'info, VickreyAuctionAccount>,
