@@ -1,23 +1,5 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::Argument,
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_FLIP: u32 = comp_def_offset("flip");
 
@@ -49,16 +31,16 @@ pub mod coinflip {
     }
 
     #[arcium_callback(encrypted_ix = "flip")]
-    pub fn flip_callback(ctx: Context<FlipCallback>, output: ComputationOutputs) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+    pub fn flip_callback(
+        ctx: Context<FlipCallback>,
+        output: ComputationOutputs<FlipOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(FlipOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        emit!(FlipEvent {
-            result: bytes[0] == 1,
-        });
+        emit!(FlipEvent { result: o });
 
         Ok(())
     }
@@ -73,7 +55,7 @@ pub struct Flip<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -138,7 +120,7 @@ pub struct InitFlipCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.

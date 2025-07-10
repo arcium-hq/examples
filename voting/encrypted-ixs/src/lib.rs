@@ -21,10 +21,10 @@ mod circuits {
 
     #[instruction]
     pub fn vote(
-        vote: Enc<Shared, UserVote>,
+        vote_ctxt: Enc<Shared, UserVote>,
         vote_stats_ctxt: Enc<Mxe, VoteStats>,
     ) -> Enc<Mxe, VoteStats> {
-        let user_vote = vote.to_arcis();
+        let user_vote = vote_ctxt.to_arcis();
         let mut vote_stats = vote_stats_ctxt.to_arcis();
 
         if user_vote.vote {

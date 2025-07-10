@@ -6,7 +6,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
-    "@arcium-hq/client": "0.1.47"
+    "@arcium-hq/client": "file:/Users/arihantbansal/Developer/arcium/arcium-tooling/ts/packages/client"
   },
   "devDependencies": {
     "chai": "^4.3.4",

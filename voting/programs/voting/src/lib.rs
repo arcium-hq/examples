@@ -1,23 +1,6 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::{Argument, CallbackAccount},
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
@@ -69,25 +52,15 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<InitVoteStatsOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-
-        let vote_stats: [[u8; 32]; 2] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        ctx.accounts.poll_acc.vote_state = vote_stats;
-        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
+        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+        ctx.accounts.poll_acc.nonce = o.nonce;
 
         Ok(())
     }
@@ -132,23 +105,17 @@ pub mod voting {
     }
 
     #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(ctx: Context<VoteCallback>, output: ComputationOutputs) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+    pub fn vote_callback(
+        ctx: Context<VoteCallback>,
+        output: ComputationOutputs<VoteOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let vote_stats: [[u8; 32]; 2] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        ctx.accounts.poll_acc.vote_state = vote_stats;
-        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
+        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+        ctx.accounts.poll_acc.nonce = o.nonce;
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -194,16 +161,14 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealVotingResultCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<RevealResultOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(RevealResultOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let result = bytes[0] != 0;
-        emit!(RevealResultEvent { output: result });
+        emit!(RevealResultEvent { output: o });
 
         Ok(())
     }
@@ -218,7 +183,7 @@ pub struct CreateNewPoll<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -294,7 +259,7 @@ pub struct InitVoteStatsCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -312,7 +277,7 @@ pub struct Vote<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -390,7 +355,7 @@ pub struct InitVoteCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -408,7 +373,7 @@ pub struct RevealVotingResult<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -478,7 +443,7 @@ pub struct InitRevealResultCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.

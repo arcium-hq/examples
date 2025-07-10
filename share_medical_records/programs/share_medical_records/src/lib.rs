@@ -1,24 +1,5 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::Argument,
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
-
+use arcium_anchor::prelude::*;
 const COMP_DEF_OFFSET_SHARE_PATIENT_DATA: u32 = comp_def_offset("share_patient_data");
 
 declare_id!("4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4");
@@ -82,31 +63,22 @@ pub mod share_medical_records {
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<SharePatientDataOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(SharePatientDataOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let bytes = bytes.iter().skip(32).cloned().collect::<Vec<_>>();
-
         emit!(ReceivedPatientDataEvent {
-            nonce: bytes[0..16].try_into().unwrap(),
-            patient_id: bytes[16..48].try_into().unwrap(),
-            age: bytes[48..80].try_into().unwrap(),
-            gender: bytes[80..112].try_into().unwrap(),
-            blood_type: bytes[112..144].try_into().unwrap(),
-            weight: bytes[144..176].try_into().unwrap(),
-            height: bytes[176..208].try_into().unwrap(),
-            allergies: [
-                bytes[208..240].try_into().unwrap(),
-                bytes[240..272].try_into().unwrap(),
-                bytes[272..304].try_into().unwrap(),
-                bytes[304..336].try_into().unwrap(),
-                bytes[336..368].try_into().unwrap(),
-            ],
+            nonce: o.nonce.to_le_bytes(),
+            patient_id: o.ciphertexts[0],
+            age: o.ciphertexts[1],
+            gender: o.ciphertexts[2],
+            blood_type: o.ciphertexts[3],
+            weight: o.ciphertexts[4],
+            height: o.ciphertexts[5],
+            allergies: o.ciphertexts[6..11].try_into().unwrap(),
         });
         Ok(())
     }
@@ -136,7 +108,7 @@ pub struct SharePatientData<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -202,7 +174,7 @@ pub struct InitSharePatientDataCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.

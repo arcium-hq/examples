@@ -199,7 +199,7 @@ mod circuits {
     pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis().to_array();
         let value = calculate_hand_value(&player_hand, player_hand_size);
-        value > 21
+        (value > 21).reveal()
     }
 
     // Returns true if the player has busted, if not, returns the new card
