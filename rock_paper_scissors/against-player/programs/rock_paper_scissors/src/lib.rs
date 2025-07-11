@@ -1,23 +1,6 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::{Argument, CallbackAccount},
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
@@ -67,23 +50,16 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "init_game")]
     pub fn init_game_callback(
         ctx: Context<InitGameCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<InitGameOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(InitGameOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let nonce = u128::from_le_bytes(nonce_bytes);
+        let nonce = o.nonce;
 
-        let moves: [[u8; 32]; 2] = bytes[16..80]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let moves: [[u8; 32]; 2] = o.ciphertexts;
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
@@ -135,23 +111,16 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "player_move")]
     pub fn player_move_callback(
         ctx: Context<PlayerMoveCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<PlayerMoveOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(PlayerMoveOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let nonce = u128::from_le_bytes(nonce_bytes);
+        let nonce = o.nonce;
 
-        let moves: [[u8; 32]; 2] = bytes[16..80]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let moves: [[u8; 32]; 2] = o.ciphertexts;
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
@@ -177,15 +146,13 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<CompareMovesOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let result = match output {
+            ComputationOutputs::Success(CompareMovesOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let result = bytes[0];
         let result_str = match result {
             0 => "Tie",
             1 => "Player A Wins",
@@ -210,7 +177,7 @@ pub struct InitGame<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -284,7 +251,7 @@ pub struct InitInitGameCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -302,7 +269,7 @@ pub struct PlayerMove<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -371,7 +338,7 @@ pub struct InitPlayerMoveCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -389,7 +356,7 @@ pub struct CompareMoves<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -456,7 +423,7 @@ pub struct InitCompareMovesCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.

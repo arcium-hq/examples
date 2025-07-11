@@ -315,6 +315,14 @@ dependencies = [
 [[package]]
 name = "arcis-interface"
 version = "0.1.47"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "arcis-interface"
+version = "0.1.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "193baa2640b65814cb95000fdfde66b38f11a3f6c0bb851820cfd6cfd2f97a9f"
 dependencies = [
@@ -342,7 +350,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3347d850029ecc596c91e0bb78ec9bb1dd3956824110ceb522a5bf542580d42b"
 dependencies = [
  "arcis",
- "arcis-interface",
+ "arcis-interface 0.1.47 (registry+https://github.com/rust-lang/crates.io-index)",
  "cargo_metadata",
  "ff-arcium-fork",
  "indexmap",
@@ -364,20 +372,17 @@ dependencies = [
 [[package]]
 name = "arcium-anchor"
 version = "0.1.47"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "304c4fe64128d68b447d7dae6512635ba0c7462ee96e02e0ab2fe2f1829c161f"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
  "arcium-client",
+ "arcium-macros",
  "sha2-const-stable",
 ]
 
 [[package]]
 name = "arcium-client"
 version = "0.1.47"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c392b2d324c8c0f63ee10884d0f2050e10ab41721fc4a177f9cbae3b0ca4431"
 dependencies = [
  "anchor-lang",
  "bytemuck",
@@ -386,10 +391,9 @@ dependencies = [
 [[package]]
 name = "arcium-macros"
 version = "0.1.47"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38f1f4798c279c385f81e74edb0aa46bf4d102101f3e69a1d21fc28c22f0c143"
 dependencies = [
- "arcis-interface",
+ "arcis-interface 0.1.47",
+ "convert_case",
  "proc-macro2",
  "quote",
  "sha2 0.10.9",
@@ -730,6 +734,15 @@ name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
+
+[[package]]
+name = "convert_case"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+dependencies = [
+ "unicode-segmentation",
+]
 
 [[package]]
 name = "cpufeatures"
@@ -1502,7 +1515,6 @@ dependencies = [
  "arcium-anchor",
  "arcium-client",
  "arcium-macros",
- "bytemuck_derive",
 ]
 
 [[package]]

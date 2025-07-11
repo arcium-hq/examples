@@ -19,6 +19,7 @@ import {
   getComputationAccAddress,
   getArciumAccountBaseSeed,
   getMXEAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -116,6 +117,18 @@ describe("Blackjack", () => {
   it("Should play a full blackjack game with state awareness", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
+    // sleep 1 second to ensure MXE keys are set before fetching
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const mxePublicKey = await getMXEPublicKey(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log(
+      "MXE x25519 pubkey is",
+      mxePublicKey ? mxePublicKey : "missing"
+    );
+
     console.log("Owner address:", owner.publicKey.toBase58());
 
     // --- Initialize Computation Definitions ---
@@ -146,10 +159,6 @@ describe("Blackjack", () => {
     // --- Setup Game Cryptography ---
     const privateKey = x25519.utils.randomPrivateKey();
     const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
     const clientNonce = randomBytes(16);
