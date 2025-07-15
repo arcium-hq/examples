@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
 import { PrisonersDilemma } from "../target/types/prisoners_dilemma";
 import { randomBytes } from "crypto";
 import {
@@ -17,8 +17,8 @@ import {
   getMempoolAccAddress,
   getCompDefAccAddress,
   getExecutingPoolAccAddress,
-  getComputationAccAddress,
   x25519,
+  getComputationAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -32,9 +32,7 @@ describe("PrisonersDilemma", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(
-    eventName: E
-  ): Promise<Event[E]> => {
+  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -48,136 +46,1057 @@ describe("PrisonersDilemma", () => {
 
   const arciumEnv = getArciumEnv();
 
-  it("Is initialized!", async () => {
+  it("Tests for prisoner dilemma", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+    const playerA = Keypair.generate();
+    const playerB = Keypair.generate();
+    const unauthorizedPlayer = Keypair.generate();
 
-    console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false, false);
+    // Step 1: Initialize computation definitions
+    console.log("Initializing init_game computation definition");
+    const initGameSig = await initInitGameCompDef(program, owner, false);
     console.log(
-      "Add together computation definition initialized with signature",
-      initATSig
+      "Init game computation definition initialized with signature",
+      initGameSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
-    const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
+    console.log("Initializing player_move computation definition");
+    const playerMoveSig = await initPlayerMoveCompDef(program, owner, false);
+    console.log(
+      "Player move computation definition initialized with signature",
+      playerMoveSig
+    );
+
+    console.log("Initializing compare_moves computation definition");
+    const compareMovesSig = await initCompareMovesCompDef(
+      program,
+      owner,
+      false
+    );
+    console.log(
+      "Compare moves computation definition initialized with signature",
+      compareMovesSig
+    );
+
+    // Step 2: Play a complete game with two players
+    console.log("\n--- Playing a complete game with two players ---");
+
+    // Generate encryption keys for Player A
+    const playerAPrivateKey = x25519.utils.randomPrivateKey();
+    const playerAPublicKey = x25519.getPublicKey(playerAPrivateKey);
+    const playerAMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
       253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
     ]);
-    const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
-    const cipher = new RescueCipher(sharedSecret);
+    const playerASharedSecret = x25519.getSharedSecret(
+      playerAPrivateKey,
+      playerAMxePublicKey
+    );
+    const playerACipher = new RescueCipher(playerASharedSecret);
 
-    const val1 = BigInt(1);
-    const val2 = BigInt(2);
-    const plaintext = [val1, val2];
+    // Generate encryption keys for Player B
+    const playerBPrivateKey = x25519.utils.randomPrivateKey();
+    const playerBPublicKey = x25519.getPublicKey(playerBPrivateKey);
+    const playerBMxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const playerBSharedSecret = x25519.getSharedSecret(
+      playerBPrivateKey,
+      playerBMxePublicKey
+    );
+    const playerBCipher = new RescueCipher(playerBSharedSecret);
 
+    // Initialize a new game
+    const gameId = 1;
     const nonce = randomBytes(16);
-    const ciphertext = cipher.encrypt(plaintext, nonce);
 
-    const sumEventPromise = awaitEvent("sumEvent");
-    const computationOffset = new anchor.BN(randomBytes(8), "hex");
+    const initComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
-    const queueSig = await program.methods
-      .addTogether(
-        computationOffset,
-        Array.from(ciphertext[0]),
-        Array.from(ciphertext[1]),
-        Array.from(publicKey),
+    console.log("Initializing a new game");
+    const initGameTx = await program.methods
+      .initGame(
+        initComputationOffset,
+        new anchor.BN(gameId),
+        playerA.publicKey,
+        playerB.publicKey,
         new anchor.BN(deserializeLE(nonce).toString())
       )
-      .accountsPartial({
+      .accounts({
         computationAccount: getComputationAccAddress(
           program.programId,
-          computationOffset
+          initComputationOffset
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(program.programId),
         executingPool: getExecutingPoolAccAddress(program.programId),
         compDefAccount: getCompDefAccAddress(
           program.programId,
-          Buffer.from(getCompDefAccOffset("add_together")).readUInt32LE()
+          Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
-    console.log("Queue sig is ", queueSig);
+      .signers([owner])
+      .rpc({ commitment: "confirmed" });
 
-    const finalizeSig = await awaitComputationFinalization(
+    console.log("Game initialized with signature:", initGameTx);
+
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
-      computationOffset,
+      initComputationOffset,
       program.programId,
       "confirmed"
     );
-    console.log("Finalize sig is ", finalizeSig);
+    console.log("Init game finalize signature:", initGameFinalizeSig);
 
-    const sumEvent = await sumEventPromise;
-    const decrypted = cipher.decrypt([sumEvent.sum], sumEvent.nonce)[0];
-    expect(decrypted).to.equal(val1 + val2);
-  });
-
-  async function initAddTogetherCompDef(
-    program: Program<PrisonersDilemma>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
-  ): Promise<string> {
-    const baseSeedCompDefAcc = getArciumAccountBaseSeed(
-      "ComputationDefinitionAccount"
+    // Airdrop funds to Player A
+    console.log("Airdropping funds to Player A");
+    const airdropPlayerATx = await provider.connection.requestAirdrop(
+      playerA.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
     );
-    const offset = getCompDefAccOffset("add_together");
+    await provider.connection.confirmTransaction({
+      signature: airdropPlayerATx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
+    console.log("Funds airdropped to Player A");
 
-    const compDefPDA = PublicKey.findProgramAddressSync(
-      [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
-    )[0];
+    // Player A makes a move (split)
+    const playerAMove = 0; // split
+    const playerAId = 0;
+    const playerANonce = randomBytes(16);
+    const playerACiphertext = playerACipher.encrypt(
+      [BigInt(playerAId), BigInt(playerAMove)],
+      playerANonce
+    );
 
-    console.log("Comp def pda is ", compDefPDA);
+    const playerAMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
-    const sig = await program.methods
-      .initAddTogetherCompDef()
+    console.log("Player A making a move (split)");
+    const playerAMoveTx = await program.methods
+      .playerMove(
+        playerAMoveComputationOffset,
+        Array.from(playerACiphertext[0]),
+        Array.from(playerACiphertext[1]),
+        Array.from(playerAPublicKey),
+        new anchor.BN(deserializeLE(playerANonce).toString())
+      )
       .accounts({
-        compDefAccount: compDefPDA,
+        payer: playerA.publicKey,
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          playerAMoveComputationOffset
+        ),
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
+          program.programId
+        )[0],
+      })
+      .signers([playerA])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player A move signature:", playerAMoveTx);
+
+    // Wait for player A move computation finalization
+    const playerAMoveFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerAMoveComputationOffset,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
+
+    // Airdrop funds to Player B
+    console.log("Airdropping funds to Player B");
+    const airdropPlayerBTx = await provider.connection.requestAirdrop(
+      playerB.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await provider.connection.confirmTransaction({
+      signature: airdropPlayerBTx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
+    console.log("Funds airdropped to Player B");
+
+    // Player B makes a move (Steal)
+    const playerBMove = 1; // Steal
+    const playerBId = 1;
+    const playerBNonce = randomBytes(16);
+    const playerBCiphertext = playerBCipher.encrypt(
+      [BigInt(playerBId), BigInt(playerBMove)],
+      playerBNonce
+    );
+
+    const playerBMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Player B making a move (Steal)");
+    const playerBMoveTx = await program.methods
+      .playerMove(
+        playerBMoveComputationOffset,
+        Array.from(playerBCiphertext[0]),
+        Array.from(playerBCiphertext[1]),
+        Array.from(playerBPublicKey),
+        new anchor.BN(deserializeLE(playerBNonce).toString())
+      )
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          playerBMoveComputationOffset
+        ),
+        payer: playerB.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
+          program.programId
+        )[0],
+      })
+      .signers([playerB])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player B move signature:", playerBMoveTx);
+
+    // Wait for player B move computation finalization
+    const playerBMoveFinalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerBMoveComputationOffset,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
+
+    // Compare moves to determine the winner
+    const gameEventPromise = awaitEvent("compareMovesEvent");
+
+    const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Comparing moves");
+    const compareTx = await program.methods
+      .compareMoves(compareComputationOffset)
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          compareComputationOffset
+        ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [
+            Buffer.from("rps_game"),
+            new anchor.BN(gameId).toArrayLike(Buffer, "le", 8),
+          ],
+          program.programId
+        )[0],
+      })
+      .rpc({ commitment: "confirmed" });
+
+    const finalizeSig = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      compareComputationOffset,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize signature:", finalizeSig);
+
+    const gameEvent = await gameEventPromise;
+    console.log(`Game result: ${gameEvent.result}`);
+
+    // Verify the result
+    expect(gameEvent.result).to.equal("Player B Steals");
+
+    // Step 3: Test unauthorized player trying to make a move
+    console.log("\n--- Testing unauthorized player ---");
+
+    // Generate new encryption keys for this test
+    const unauthorizedPrivateKey = x25519.utils.randomPrivateKey();
+    const unauthorizedPublicKey = x25519.getPublicKey(unauthorizedPrivateKey);
+    const unauthorizedMxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const unauthorizedSharedSecret = x25519.getSharedSecret(
+      unauthorizedPrivateKey,
+      unauthorizedMxePublicKey
+    );
+    const unauthorizedCipher = new RescueCipher(unauthorizedSharedSecret);
+
+    // Initialize a new game
+    const gameId2 = new anchor.BN(Date.now());
+    const nonce2 = randomBytes(16);
+    const nonceValue2 = new anchor.BN(deserializeLE(nonce2).toString());
+
+    const initComputationOffset2 = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Initializing a new game");
+    const initGameTx2 = await program.methods
+      .initGame(
+        initComputationOffset2,
+        gameId2,
+        playerA.publicKey,
+        playerB.publicKey,
+        nonceValue2
+      )
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          initComputationOffset2
+        ),
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
-    console.log("Init add together computation definition transaction", sig);
+      .rpc({ commitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/add_together.arcis");
+    console.log("Game initialized with signature:", initGameTx2);
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "add_together",
-        program.programId,
-        rawCircuit,
-        true
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig2 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      initComputationOffset2,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Init game finalize signature:", initGameFinalizeSig2);
+
+    // Airdrop funds to unauthorized player
+    console.log("Airdropping funds to unauthorized player");
+    const airdropUnauthorizedTx = await provider.connection.requestAirdrop(
+      unauthorizedPlayer.publicKey,
+      2 * anchor.web3.LAMPORTS_PER_SOL
+    );
+    await provider.connection.confirmTransaction({
+      signature: airdropUnauthorizedTx,
+      blockhash: (await provider.connection.getLatestBlockhash()).blockhash,
+      lastValidBlockHeight: (
+        await provider.connection.getLatestBlockhash()
+      ).lastValidBlockHeight,
+    });
+    console.log("Funds airdropped to unauthorized player");
+
+    // Unauthorized player tries to make a move
+    const unauthorizedMove = 1; // Paper
+    const unauthorizedNonce = randomBytes(16);
+    const unauthorizedCiphertext = unauthorizedCipher.encrypt(
+      [BigInt(0), BigInt(unauthorizedMove)],
+      unauthorizedNonce
+    );
+
+    console.log("Unauthorized player attempting to make a move");
+    try {
+      const unauthorizedMoveComputationOffset = new anchor.BN(
+        randomBytes(8),
+        "hex"
       );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
 
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+      await program.methods
+        .playerMove(
+          unauthorizedMoveComputationOffset,
+          Array.from(unauthorizedCiphertext[0]),
+          Array.from(unauthorizedCiphertext[1]),
+          Array.from(unauthorizedPublicKey),
+          new anchor.BN(deserializeLE(unauthorizedNonce).toString())
+        )
+        .accounts({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            unauthorizedMoveComputationOffset
+          ),
+          payer: unauthorizedPlayer.publicKey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
+            program.programId
+          )[0],
+        })
+        .signers([unauthorizedPlayer])
+        .rpc({ commitment: "confirmed" });
 
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
+      // If we get here, the test should fail because unauthorized player should not be able to make a move
+      expect.fail("Unauthorized player was able to make a move");
+    } catch (error) {
+      console.log("Expected error caught:", error.message);
+      // Test passes if we catch an error
+      expect(error).to.be.an("error");
     }
-    return sig;
-  }
+
+    // Step 4: Test multiple game scenarios
+    console.log("\n--- Testing multiple game scenarios ---");
+
+    // Generate encryption keys for multiple game scenarios
+    const scenarioPrivateKey = x25519.utils.randomPrivateKey();
+    const scenarioPublicKey = x25519.getPublicKey(scenarioPrivateKey);
+    const scenarioMxePublicKey = new Uint8Array([
+      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
+      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
+    ]);
+    const scenarioSharedSecret = x25519.getSharedSecret(
+      scenarioPrivateKey,
+      scenarioMxePublicKey
+    );
+    const scenarioCipher = new RescueCipher(scenarioSharedSecret);
+
+    // Play multiple games
+    const games = [
+      { playerA: 0, playerB: 0 }, // Both Players Split
+      { playerA: 1, playerB: 0 }, // Player A Steals
+      { playerA: 0, playerB: 1 }, // Player B Steals
+      { playerA: 1, playerB: 1 }, // Both Players Steal
+    ];
+
+    for (const game of games) {
+      console.log(
+        `\n--- Testing game scenario: PlayerA ${game.playerA} vs playerB ${game.playerB} ---`
+      );
+
+      // Initialize a new game for this scenario
+      const scenarioGameId = new anchor.BN(
+        Date.now() + Math.floor(Math.random() * 1000)
+      );
+      const scenarioNonce = randomBytes(16);
+
+      const initComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
+      console.log("Initializing a new game");
+      const initGameTx = await program.methods
+        .initGame(
+          initComputationOffset3,
+          scenarioGameId,
+          playerA.publicKey,
+          playerB.publicKey,
+          new anchor.BN(deserializeLE(scenarioNonce).toString())
+        )
+        .accounts({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            initComputationOffset3
+          ),
+          payer: owner.publicKey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+        })
+        .signers([owner])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Game initialized with signature:", initGameTx);
+
+      // Wait for initGame computation finalization
+      const initGameFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        initComputationOffset3,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Init game finalize signature:", initGameFinalizeSig);
+
+      // Player A makes a move
+      const playerAMoveNonce = randomBytes(16);
+      const playerAMoveCiphertext = playerACipher.encrypt(
+        [BigInt(0), BigInt(game.playerA)],
+        playerAMoveNonce
+      );
+
+      const playerAMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+      console.log("Player A making a move");
+      const playerAMoveTx = await program.methods
+        .playerMove(
+          playerAMoveComputationOffset,
+          Array.from(playerAMoveCiphertext[0]),
+          Array.from(playerAMoveCiphertext[1]),
+          Array.from(playerAPublicKey),
+          new anchor.BN(deserializeLE(playerAMoveNonce).toString())
+        )
+        .accounts({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            playerAMoveComputationOffset
+          ),
+          payer: playerA.publicKey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("rps_game"),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
+            ],
+            program.programId
+          )[0],
+        })
+        .signers([playerA])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Player A move signature:", playerAMoveTx);
+
+      // Wait for player A move computation finalization
+      const playerAMoveFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        playerAMoveComputationOffset,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
+
+      // Player B makes a move
+      const playerBMoveNonce = randomBytes(16);
+      const playerBMoveCiphertext = playerBCipher.encrypt(
+        [BigInt(1), BigInt(game.playerB)],
+        playerBMoveNonce
+      );
+
+      const playerBMoveComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+      console.log("Player B making a move");
+      const playerBMoveTx = await program.methods
+        .playerMove(
+          playerBMoveComputationOffset,
+          Array.from(playerBMoveCiphertext[0]),
+          Array.from(playerBMoveCiphertext[1]),
+          Array.from(playerBPublicKey),
+          new anchor.BN(deserializeLE(playerBMoveNonce).toString())
+        )
+        .accounts({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            playerBMoveComputationOffset
+          ),
+          payer: playerB.publicKey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("rps_game"),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
+            ],
+            program.programId
+          )[0],
+        })
+        .signers([playerB])
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Player B move signature:", playerBMoveTx);
+
+      // Wait for player B move computation finalization
+      const playerBMoveFinalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        playerBMoveComputationOffset,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
+
+      // Compare moves to determine the winner
+      const gameEventPromise = awaitEvent("compareMovesEvent");
+
+      const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+      console.log("Comparing moves");
+      const compareTx = await program.methods
+        .compareMoves(compareComputationOffset)
+        .accounts({
+          computationAccount: getComputationAccAddress(
+            program.programId,
+            compareComputationOffset
+          ),
+          payer: owner.publicKey,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(program.programId),
+          executingPool: getExecutingPoolAccAddress(program.programId),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
+          ),
+          clusterAccount: arciumEnv.arciumClusterPubkey,
+          rpsGame: PublicKey.findProgramAddressSync(
+            [
+              Buffer.from("rps_game"),
+              scenarioGameId.toArrayLike(Buffer, "le", 8),
+            ],
+            program.programId
+          )[0],
+        })
+        .rpc({ commitment: "confirmed" });
+
+      console.log("Compare moves signature:", compareTx);
+
+      const finalizeSig = await awaitComputationFinalization(
+        provider as anchor.AnchorProvider,
+        compareComputationOffset,
+        program.programId,
+        "confirmed"
+      );
+      console.log("Finalize signature:", finalizeSig);
+
+      const gameEvent = await gameEventPromise;
+      console.log(`Game result: ${gameEvent.result}`);
+
+      // Verify the result based on the expected outcome
+      let expectedResult: string;
+      if (game.playerA === 0 && game.playerB === 0) {
+        expectedResult = "Both Players Split";
+      } else if (game.playerA === 1 && game.playerB === 0) {
+        expectedResult = "Player A Steals";
+      } else if (game.playerA === 0 && game.playerB === 1) {
+        expectedResult = "Player B Steals";
+      } else if (game.playerA === 1 && game.playerB === 1) {
+        expectedResult = "Both Players Steal";
+      } else {
+        expectedResult = "Invalid Move";
+      }
+
+      expect(gameEvent.result).to.equal(expectedResult);
+    }
+
+    // Step 5: Test invalid move scenario
+    console.log("\n--- Testing invalid move scenario ---");
+
+    // Initialize a new game for this scenario
+    const gameId3 = new anchor.BN(
+      Date.now() + Math.floor(Math.random() * 1000)
+    );
+    const nonce3 = randomBytes(16);
+
+    const initComputationOffset4 = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Initializing a new game for invalid move test");
+    const initGameTx3 = await program.methods
+      .initGame(
+        initComputationOffset4,
+        gameId3,
+        playerA.publicKey,
+        playerB.publicKey,
+        new anchor.BN(deserializeLE(nonce3).toString())
+      )
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          initComputationOffset4
+        ),
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+      })
+      .signers([owner])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Game initialized for invalid move test:", initGameTx3);
+
+    // Wait for initGame computation finalization
+    const initGameFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      initComputationOffset4,
+      program.programId,
+      "confirmed"
+    );
+    console.log(
+      "Init game finalize signature for invalid move test:",
+      initGameFinalizeSig3
+    );
+
+    // Player A splits
+    const playerAValidMove = 0;
+    const playerAId3 = 0;
+    const playerANonce3 = randomBytes(16);
+    const playerACiphertext3 = playerACipher.encrypt(
+      [BigInt(playerAId3), BigInt(playerAValidMove)],
+      playerANonce3
+    );
+
+    const playerAMoveComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Player A making a valid move (0)");
+    const playerAMoveTx3 = await program.methods
+      .playerMove(
+        playerAMoveComputationOffset3,
+        Array.from(playerACiphertext3[0]),
+        Array.from(playerACiphertext3[1]),
+        Array.from(playerAPublicKey),
+        new anchor.BN(deserializeLE(playerANonce3).toString())
+      )
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          playerAMoveComputationOffset3
+        ),
+        payer: playerA.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .signers([playerA])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player A valid move signature:", playerAMoveTx3);
+
+    // Wait for player A move computation finalization
+    const playerAMoveFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerAMoveComputationOffset3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player A move finalize signature:", playerAMoveFinalizeSig3);
+
+    // Player B makes an invalid move (4)
+    const playerBInvalidMove = 4;
+    const playerBId3 = 1;
+    const playerBNonce3 = randomBytes(16);
+    const playerBCiphertext3 = playerBCipher.encrypt(
+      [BigInt(playerBId3), BigInt(playerBInvalidMove)],
+      playerBNonce3
+    );
+
+    const playerBMoveComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Player B making an invalid move (4)");
+    const playerBMoveTx3 = await program.methods
+      .playerMove(
+        playerBMoveComputationOffset3,
+        Array.from(playerBCiphertext3[0]),
+        Array.from(playerBCiphertext3[1]),
+        Array.from(playerBPublicKey),
+        new anchor.BN(deserializeLE(playerBNonce3).toString())
+      )
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          playerBMoveComputationOffset3
+        ),
+        payer: playerB.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .signers([playerB])
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Player B invalid move signature:", playerBMoveTx3);
+
+    // Wait for player B move computation finalization
+    const playerBMoveFinalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      playerBMoveComputationOffset3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Player B move finalize signature:", playerBMoveFinalizeSig3);
+
+    // Compare moves
+    const gameEventPromise3 = awaitEvent("compareMovesEvent");
+
+    const compareComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
+
+    console.log("Comparing moves for invalid move test");
+    const compareTx3 = await program.methods
+      .compareMoves(compareComputationOffset3)
+      .accounts({
+        computationAccount: getComputationAccAddress(
+          program.programId,
+          compareComputationOffset3
+        ),
+        payer: owner.publicKey,
+        mxeAccount: getMXEAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(program.programId),
+        executingPool: getExecutingPoolAccAddress(program.programId),
+        compDefAccount: getCompDefAccAddress(
+          program.programId,
+          Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
+        ),
+        clusterAccount: arciumEnv.arciumClusterPubkey,
+        rpsGame: PublicKey.findProgramAddressSync(
+          [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
+          program.programId
+        )[0],
+      })
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Compare moves signature for invalid move test:", compareTx3);
+
+    const finalizeSig3 = await awaitComputationFinalization(
+      provider as anchor.AnchorProvider,
+      compareComputationOffset3,
+      program.programId,
+      "confirmed"
+    );
+    console.log("Finalize signature for invalid move test:", finalizeSig3);
+
+    const gameEvent3 = await gameEventPromise3;
+    console.log(`Game result for invalid move test: ${gameEvent3.result}`);
+
+    // Verify the result is "Invalid Move"
+    expect(gameEvent3.result).to.equal("Invalid Move");
+  });
 });
 
+// Helper function to read keypair from JSON file
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
   return anchor.web3.Keypair.fromSecretKey(
     new Uint8Array(JSON.parse(file.toString()))
   );
+}
+
+// Separate functions for each computation definition type
+async function initInitGameCompDef(
+  program: Program<PrisonersDilemma>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("init_game");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  console.log(`Comp def PDA for init_game:`, compDefPDA.toBase58());
+
+  const sig = await program.methods
+    .initInitGameCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+
+  console.log(`Init init_game computation definition transaction`, sig);
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync(`build/init_game.arcis`);
+    await uploadCircuit(
+      program.provider as anchor.AnchorProvider,
+      "init_game",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      program.provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+    await program.provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
+}
+
+async function initPlayerMoveCompDef(
+  program: Program<PrisonersDilemma>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("player_move");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  console.log(`Comp def PDA for player_move:`, compDefPDA.toBase58());
+
+  const sig = await program.methods
+    .initPlayerMoveCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+
+  console.log(`Init player_move computation definition transaction`, sig);
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync(`build/player_move.arcis`);
+    await uploadCircuit(
+      program.provider as anchor.AnchorProvider,
+      "player_move",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      program.provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+    await program.provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
+}
+
+async function initCompareMovesCompDef(
+  program: Program<PrisonersDilemma>,
+  owner: anchor.web3.Keypair,
+  uploadRawCircuit: boolean
+): Promise<string> {
+  const baseSeedCompDefAcc = getArciumAccountBaseSeed(
+    "ComputationDefinitionAccount"
+  );
+  const offset = getCompDefAccOffset("compare_moves");
+
+  const compDefPDA = PublicKey.findProgramAddressSync(
+    [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
+    getArciumProgAddress()
+  )[0];
+
+  console.log(`Comp def PDA for compare_moves:`, compDefPDA.toBase58());
+
+  const sig = await program.methods
+    .initCompareMovesCompDef()
+    .accounts({
+      compDefAccount: compDefPDA,
+      payer: owner.publicKey,
+      mxeAccount: getMXEAccAddress(program.programId),
+    })
+    .signers([owner])
+    .rpc({
+      commitment: "confirmed",
+    });
+
+  console.log(`Init compare_moves computation definition transaction`, sig);
+
+  if (uploadRawCircuit) {
+    const rawCircuit = fs.readFileSync(`build/compare_moves.arcis`);
+    await uploadCircuit(
+      program.provider as anchor.AnchorProvider,
+      "compare_moves",
+      program.programId,
+      rawCircuit,
+      true
+    );
+  } else {
+    const finalizeTx = await buildFinalizeCompDefTx(
+      program.provider as anchor.AnchorProvider,
+      Buffer.from(offset).readUInt32LE(),
+      program.programId
+    );
+
+    const latestBlockhash =
+      await program.provider.connection.getLatestBlockhash();
+    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
+    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
+
+    finalizeTx.sign(owner);
+    await program.provider.sendAndConfirm(finalizeTx);
+  }
+  return sig;
 }
