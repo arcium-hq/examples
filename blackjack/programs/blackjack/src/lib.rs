@@ -15,6 +15,8 @@ declare_id!("A7sNeBnrQAFxmj6BVmoYC6PYnebURaar7xhKuaEyRh4j");
 pub mod blackjack {
     use super::*;
 
+    /// Initializes the computation definition for shuffling and dealing cards.
+    /// This sets up the MPC environment for the initial deck shuffle and card dealing operation.
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
@@ -22,6 +24,17 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Creates a new blackjack game session and initiates the deck shuffle.
+    ///
+    /// This function sets up a new game account with initial state and triggers the MPC computation
+    /// to shuffle a standard 52-card deck and deal the opening hands (2 cards each to player and dealer).
+    /// The actual shuffling and dealing happens confidentially within the Arcium network.
+    ///
+    /// # Arguments
+    /// * `game_id` - Unique identifier for this game session
+    /// * `mxe_nonce` - Cryptographic nonce for MXE operations  
+    /// * `client_pubkey` - Player's encryption public key for receiving encrypted cards
+    /// * `client_nonce` - Player's cryptographic nonce for encryption operations
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
         computation_offset: u64,
@@ -32,7 +45,7 @@ pub mod blackjack {
         client_nonce: u128,
         client_again_nonce: u128,
     ) -> Result<()> {
-        // Initialize the blackjack game account
+        // Initialize the blackjack game account with default values
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.bump = ctx.bumps.blackjack_game;
         blackjack_game.game_id = game_id;
@@ -47,7 +60,7 @@ pub mod blackjack {
         blackjack_game.player_hand_size = 0;
         blackjack_game.dealer_hand_size = 0;
 
-        // Queue the shuffle and deal cards computation
+        // Queue the shuffle and deal cards computation with the necessary encryption parameters
         let args = vec![
             Argument::PlaintextU128(mxe_nonce),
             Argument::PlaintextU128(mxe_again_nonce),
@@ -70,6 +83,11 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Handles the result of the shuffle and deal cards MPC computation.
+    ///
+    /// This callback processes the shuffled deck and dealt cards from the MPC computation.
+    /// It updates the game state with the new deck, initial hands, and sets the game to PlayerTurn.
+    /// The player receives their encrypted hand while the dealer gets one face-up card visible to the player.
     #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards")]
     pub fn shuffle_and_deal_cards_callback(
         ctx: Context<ShuffleAndDealCardsCallback>,
@@ -88,23 +106,23 @@ pub mod blackjack {
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Update the blackjack game account
+        // Update the game account with the shuffled deck and dealt hands
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = o.0.ciphertexts;
         blackjack_game.deck_nonce = o.0.nonce.to_le_bytes();
         blackjack_game.dealer_nonce = o.1.nonce.to_le_bytes();
         blackjack_game.client_nonce = o.2.nonce.to_le_bytes();
         blackjack_game.player_enc_pubkey = o.2.encryption_key;
-        blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
+        blackjack_game.game_state = GameState::PlayerTurn;
 
+        // Verify the encryption key matches what was provided during initialization
         require!(
             o.2.encryption_key == blackjack_game.player_enc_pubkey,
             ErrorCode::InvalidDealerClientPubkey
         );
 
-        // Initialize player hand with first two cards
+        // Set initial hands: player gets 2 cards encrypted, dealer gets 2 cards (1 face up for player visibility)
         blackjack_game.player_hand = o.2.ciphertexts[0];
-        // Initialize dealer hand with face up card and face down card
         blackjack_game.dealer_hand = o.1.ciphertexts[0];
         blackjack_game.player_hand_size = 2;
         blackjack_game.dealer_hand_size = 2;
@@ -123,6 +141,11 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Allows the player to request an additional card (hit).
+    ///
+    /// This triggers an MPC computation that draws the next card from the shuffled deck
+    /// and adds it to the player's hand. The computation also checks if the player busts (exceeds 21)
+    /// and returns this information while keeping the actual card values encrypted.
     pub fn player_hit(
         ctx: Context<PlayerHit>,
         computation_offset: u64,
@@ -1083,25 +1106,45 @@ pub struct InitResolveGameCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Represents a single blackjack game session.
+///
+/// This account stores all the game state including encrypted hands, deck information,
+/// and game progress. The deck is stored as three 32-byte encrypted chunks that together
+/// represent all 52 cards in shuffled order. Hands are stored encrypted and only
+/// decryptable by their respective owners (player) or the MPC network (dealer).
 #[account]
 #[derive(InitSpace)]
 pub struct BlackjackGame {
+    /// Encrypted deck split into 3 chunks for storage efficiency
     pub deck: [[u8; 32]; 3],
+    /// Player's encrypted hand (only player can decrypt)
     pub player_hand: [u8; 32],
+    /// Dealer's encrypted hand (handled by MPC)
     pub dealer_hand: [u8; 32],
+    /// Cryptographic nonce for deck encryption
     pub deck_nonce: [u8; 16],
+    /// Cryptographic nonce for player's hand encryption  
     pub client_nonce: [u8; 16],
+    /// Cryptographic nonce for dealer's hand encryption
     pub dealer_nonce: [u8; 16],
+    /// Unique identifier for this game session
     pub game_id: u64,
+    /// Solana public key of the player
     pub player_pubkey: Pubkey,
+    /// Player's encryption public key for MPC operations
     pub player_enc_pubkey: [u8; 32],
+    /// PDA bump seed
     pub bump: u8,
-    pub game_state: GameState, // 0 = initial, 1 = player turn, 2 = dealer turn, 3 = resolved
-    pub player_hand_size: u8,  // Number of cards in player's hand
-    pub dealer_hand_size: u8,  // Number of cards in dealer's hand
-    pub player_has_stood: bool, // Whether player has stood
-    pub game_result: u8,       // Result of the game (0-4)
-                               // pub player_bet: u64, // Player's current bet
+    /// Current state of the game (initial, player turn, dealer turn, etc.)
+    pub game_state: GameState,
+    /// Number of cards currently in player's hand
+    pub player_hand_size: u8,
+    /// Number of cards currently in dealer's hand
+    pub dealer_hand_size: u8,
+    /// Whether the player has chosen to stand
+    pub player_has_stood: bool,
+    /// Final result of the game once resolved
+    pub game_result: u8,
 }
 
 #[repr(u8)]

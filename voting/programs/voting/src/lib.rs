@@ -17,6 +17,16 @@ pub mod voting {
         Ok(())
     }
 
+    /// Creates a new confidential poll with the given question.
+    ///
+    /// This initializes a poll account and sets up the encrypted vote counters using MPC.
+    /// The vote tallies are stored in encrypted form and can only be revealed by the poll authority.
+    /// All individual votes remain completely confidential throughout the voting process.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for this poll
+    /// * `question` - The poll question voters will respond to
+    /// * `nonce` - Cryptographic nonce for initializing encrypted vote counters
     pub fn create_new_poll(
         ctx: Context<CreateNewPoll>,
         computation_offset: u64,
@@ -26,6 +36,7 @@ pub mod voting {
     ) -> Result<()> {
         msg!("Creating a new poll");
 
+        // Initialize the poll account with the provided parameters
         ctx.accounts.poll_acc.question = question;
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
@@ -35,6 +46,7 @@ pub mod voting {
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        // Initialize encrypted vote counters (yes/no) through MPC
         queue_computation(
             ctx.accounts,
             computation_offset,
@@ -70,6 +82,16 @@ pub mod voting {
         Ok(())
     }
 
+    /// Submits an encrypted vote to the poll.
+    ///
+    /// This function allows a voter to cast their vote (yes/no) in encrypted form.
+    /// The vote is added to the running tally through MPC computation, ensuring
+    /// that individual votes remain confidential while updating the overall count.
+    ///
+    /// # Arguments
+    /// * `vote` - Encrypted vote (true for yes, false for no)
+    /// * `vote_encryption_pubkey` - Voter's public key for encryption
+    /// * `vote_nonce` - Cryptographic nonce for the vote encryption
     pub fn vote(
         ctx: Context<Vote>,
         computation_offset: u64,
@@ -85,9 +107,9 @@ pub mod voting {
             Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator) and 1 (bump)
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
+                32 * 2, // 2 vote counters (yes/no), each stored as 32-byte ciphertext
             ),
         ];
 
@@ -132,6 +154,14 @@ pub mod voting {
         Ok(())
     }
 
+    /// Reveals the final result of the poll.
+    ///
+    /// Only the poll authority can call this function to decrypt and reveal the vote tallies.
+    /// The MPC computation compares the yes and no vote counts and returns whether
+    /// the majority voted yes (true) or no (false).
+    ///
+    /// # Arguments
+    /// * `id` - The poll ID to reveal results for
     pub fn reveal_result(
         ctx: Context<RevealVotingResult>,
         computation_offset: u64,
@@ -148,9 +178,9 @@ pub mod voting {
             Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator) and 1 (bump)
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
+                32 * 2, // 2 encrypted vote counters (yes/no), 32 bytes each
             ),
         ];
 
@@ -452,15 +482,21 @@ pub struct InitRevealResultCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Represents a confidential poll with encrypted vote tallies.
 #[account]
 #[derive(InitSpace)]
 pub struct PollAccount {
+    /// PDA bump seed
     pub bump: u8,
-    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    /// Encrypted vote counters: [yes_count, no_count] as 32-byte ciphertexts
     pub vote_state: [[u8; 32]; 2],
+    /// Unique identifier for this poll
     pub id: u32,
+    /// Public key of the poll creator (only they can reveal results)
     pub authority: Pubkey,
+    /// Cryptographic nonce for the encrypted vote counters
     pub nonce: u128,
+    /// The poll question (max 50 characters)
     #[max_len(50)]
     pub question: String,
 }

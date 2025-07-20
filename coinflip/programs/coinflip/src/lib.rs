@@ -9,11 +9,23 @@ declare_id!("EiFoAJkimEAju8gcjR53yQmfoXDGrwY7F53Nv5BUKkXe");
 pub mod coinflip {
     use super::*;
 
+    /// Initializes the computation definition for the coin flip operation.
+    /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, None, None)?;
         Ok(())
     }
 
+    /// Initiates a coin flip game with the player's encrypted choice.
+    ///
+    /// The player submits their choice (heads or tails) in encrypted form along with their
+    /// public key and nonce. The MPC computation will generate a cryptographically secure
+    /// random boolean and compare it with the player's choice to determine if they won.
+    ///
+    /// # Arguments
+    /// * `user_choice` - Player's encrypted choice (true for heads, false for tails)
+    /// * `pub_key` - Player's public key for encryption operations
+    /// * `nonce` - Cryptographic nonce for the encryption
     pub fn flip(
         ctx: Context<Flip>,
         computation_offset: u64,
@@ -30,6 +42,11 @@ pub mod coinflip {
         Ok(())
     }
 
+    /// Handles the result of the coin flip MPC computation.
+    ///
+    /// This callback receives the result of comparing the player's choice with the
+    /// randomly generated coin flip. The result is a boolean indicating whether
+    /// the player won (true) or lost (false).
     #[arcium_callback(encrypted_ix = "flip")]
     pub fn flip_callback(
         ctx: Context<FlipCallback>,
@@ -129,8 +146,10 @@ pub struct InitFlipCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Event emitted when a coin flip game completes.
 #[event]
 pub struct FlipEvent {
+    /// Whether the player won the coin flip (true = won, false = lost)
     pub result: bool,
 }
 

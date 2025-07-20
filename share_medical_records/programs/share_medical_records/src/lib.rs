@@ -8,6 +8,20 @@ declare_id!("4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4");
 pub mod share_medical_records {
     use super::*;
 
+    /// Stores encrypted patient medical data on-chain.
+    ///
+    /// This function stores patient medical information in encrypted form. All data fields
+    /// are provided as encrypted 32-byte arrays that can only be decrypted by authorized parties.
+    /// The data remains confidential while being stored on the public Solana blockchain.
+    ///
+    /// # Arguments
+    /// * `patient_id` - Encrypted unique identifier for the patient
+    /// * `age` - Encrypted patient age
+    /// * `gender` - Encrypted patient gender information
+    /// * `blood_type` - Encrypted blood type information
+    /// * `weight` - Encrypted patient weight
+    /// * `height` - Encrypted patient height
+    /// * `allergies` - Array of encrypted allergy information (up to 5 entries)
     pub fn store_patient_data(
         ctx: Context<StorePatientData>,
         patient_id: [u8; 32],
@@ -37,6 +51,18 @@ pub mod share_medical_records {
         Ok(())
     }
 
+    /// Initiates confidential sharing of patient data with a specified receiver.
+    ///
+    /// This function triggers an MPC computation that re-encrypts the patient's medical data
+    /// for a specific receiver. The receiver will be able to decrypt the data using their
+    /// private key, while the data remains encrypted for everyone else. The original
+    /// stored data is not modified and remains encrypted for the original owner.
+    ///
+    /// # Arguments
+    /// * `receiver` - Public key of the authorized recipient
+    /// * `receiver_nonce` - Cryptographic nonce for the receiver's encryption
+    /// * `sender_pub_key` - Sender's public key for the operation
+    /// * `nonce` - Cryptographic nonce for the sender's encryption
     pub fn share_patient_data(
         ctx: Context<SharePatientData>,
         computation_offset: u64,
@@ -60,6 +86,11 @@ pub mod share_medical_records {
         Ok(())
     }
 
+    /// Handles the result of the patient data sharing MPC computation.
+    ///
+    /// This callback processes the re-encrypted patient data that has been prepared for
+    /// the specified receiver. It emits an event containing all the medical data fields
+    /// encrypted specifically for the receiver's public key.
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
@@ -78,7 +109,9 @@ pub mod share_medical_records {
             blood_type: o.ciphertexts[3],
             weight: o.ciphertexts[4],
             height: o.ciphertexts[5],
-            allergies: o.ciphertexts[6..11].try_into().unwrap(),
+            allergies: o.ciphertexts[6..11]
+                .try_into()
+                .map_err(|_| ErrorCode::InvalidAllergyData)?,
         });
         Ok(())
     }
@@ -195,15 +228,23 @@ pub struct ReceivedPatientDataEvent {
     pub allergies: [[u8; 32]; 5],
 }
 
+/// Stores encrypted patient medical information.
 #[account]
 #[derive(InitSpace)]
 pub struct PatientData {
+    /// Encrypted unique patient identifier
     pub patient_id: [u8; 32],
+    /// Encrypted patient age
     pub age: [u8; 32],
+    /// Encrypted gender information
     pub gender: [u8; 32],
+    /// Encrypted blood type
     pub blood_type: [u8; 32],
+    /// Encrypted weight measurement
     pub weight: [u8; 32],
+    /// Encrypted height measurement
     pub height: [u8; 32],
+    /// Array of encrypted allergy information (up to 5 allergies)
     pub allergies: [[u8; 32]; 5],
 }
 
@@ -211,4 +252,6 @@ pub struct PatientData {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Invalid allergy data format")]
+    InvalidAllergyData,
 }
