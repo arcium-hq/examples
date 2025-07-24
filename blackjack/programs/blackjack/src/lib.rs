@@ -597,9 +597,9 @@ pub struct InitializeBlackjackGame<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -690,9 +690,9 @@ pub struct PlayerHit<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -781,9 +781,9 @@ pub struct PlayerDoubleDown<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -872,9 +872,9 @@ pub struct PlayerStand<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -963,9 +963,9 @@ pub struct DealerPlay<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -1054,9 +1054,9 @@ pub struct ResolveGame<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]

@@ -243,9 +243,9 @@ pub struct CreateNewPoll<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -337,9 +337,9 @@ pub struct Vote<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -433,9 +433,9 @@ pub struct RevealVotingResult<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
