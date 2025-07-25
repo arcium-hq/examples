@@ -6,8 +6,7 @@ mod circuits {
 
     /// Represents the player's choice in the coin flip game.
     pub struct UserChoice {
-        /// The player's choice: true for heads, false for tails
-        pub choice: bool,
+        pub choice: bool, // Player's choice: true for heads, false for tails
     }
 
     /// Performs a confidential coin flip and compares it with the player's choice.

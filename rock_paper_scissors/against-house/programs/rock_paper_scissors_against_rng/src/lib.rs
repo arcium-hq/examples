@@ -10,7 +10,7 @@ pub mod rock_paper_scissors_against_rng {
     use super::*;
 
     pub fn init_play_rps_comp_def(ctx: Context<InitPlayRpsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -144,4 +144,6 @@ pub struct PlayRpsEvent {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

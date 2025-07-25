@@ -13,7 +13,7 @@ pub mod rock_paper_scissors {
     use super::*;
 
     pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -69,7 +69,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -130,7 +130,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -453,4 +453,6 @@ pub enum ErrorCode {
     AbortedComputation,
     #[msg("Not authorized")]
     NotAuthorized,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

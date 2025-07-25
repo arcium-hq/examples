@@ -3,7 +3,7 @@
 
 
 "@arcium-hq/client@file:../../../arcium-tooling/ts/packages/client":
-  version "0.1.47"
+  version "0.2.0"
   dependencies:
     "@coral-xyz/anchor" "0.31"
     "@noble/curves" "^1.8.1"

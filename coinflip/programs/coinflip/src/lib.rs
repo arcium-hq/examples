@@ -12,7 +12,7 @@ pub mod coinflip {
     /// Initializes the computation definition for the coin flip operation.
     /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -157,4 +157,6 @@ pub struct FlipEvent {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("The cluster is not set")]
+    ClusterNotSet,
 }

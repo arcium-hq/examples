@@ -20,27 +20,27 @@ mod circuits {
         mxe.from_arcis(game_moves)
     }
 
-    pub struct PlayerMove {
+    pub struct PlayersMove {
         player: u8,
         player_move: u8,
     }
 
     #[instruction]
     pub fn player_move(
-        player_move_ctxt: Enc<Shared, PlayerMove>,
+        players_move_ctxt: Enc<Shared, PlayersMove>,
         game_ctxt: Enc<Mxe, GameMoves>,
     ) -> Enc<Mxe, GameMoves> {
-        let player_move = player_move_ctxt.to_arcis();
+        let players_move = players_move_ctxt.to_arcis();
         let mut game_moves = game_ctxt.to_arcis();
 
         // Check which player is moving, if the player hasn't played their move yet, and the move is valid
-        if player_move.player == 0 && game_moves.player_a_move == 3 && player_move.player_move < 3 {
-            game_moves.player_a_move = player_move.player_move;
-        } else if player_move.player == 1
+        if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3 {
+            game_moves.player_a_move = players_move.player_move;
+        } else if players_move.player == 1
             && game_moves.player_b_move == 3
-            && player_move.player_move < 3
+            && players_move.player_move < 3
         {
-            game_moves.player_b_move = player_move.player_move;
+            game_moves.player_b_move = players_move.player_move;
         }
 
         game_ctxt.owner.from_arcis(game_moves)

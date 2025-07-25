@@ -47,7 +47,7 @@ pub mod share_medical_records {
     pub fn init_share_patient_data_comp_def(
         ctx: Context<InitSharePatientDataCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -254,4 +254,6 @@ pub enum ErrorCode {
     AbortedComputation,
     #[msg("Invalid allergy data format")]
     InvalidAllergyData,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

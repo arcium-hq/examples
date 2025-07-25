@@ -20,7 +20,7 @@ pub mod blackjack {
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -137,7 +137,7 @@ pub mod blackjack {
     }
 
     pub fn init_player_hit_comp_def(ctx: Context<InitPlayerHitCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -229,7 +229,7 @@ pub mod blackjack {
     pub fn init_player_double_down_comp_def(
         ctx: Context<InitPlayerDoubleDownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -312,7 +312,7 @@ pub mod blackjack {
     }
 
     pub fn init_player_stand_comp_def(ctx: Context<InitPlayerStandCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -382,7 +382,7 @@ pub mod blackjack {
     }
 
     pub fn init_dealer_play_comp_def(ctx: Context<InitDealerPlayCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -469,7 +469,7 @@ pub mod blackjack {
     }
 
     pub fn init_resolve_game_comp_def(ctx: Context<InitResolveGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -1209,4 +1209,6 @@ pub enum ErrorCode {
     InvalidMove,
     #[msg("Invalid dealer client pubkey")]
     InvalidDealerClientPubkey,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

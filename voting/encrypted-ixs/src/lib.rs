@@ -6,15 +6,12 @@ mod circuits {
 
     /// Tracks the encrypted vote tallies for a poll.
     pub struct VoteStats {
-        /// Number of "yes" votes
         yes: u64,
-        /// Number of "no" votes  
         no: u64,
     }
 
     /// Represents a single encrypted vote.
     pub struct UserVote {
-        /// The vote: true for yes, false for no
         vote: bool,
     }
 

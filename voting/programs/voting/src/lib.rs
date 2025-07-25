@@ -13,7 +13,7 @@ pub mod voting {
     use super::*;
 
     pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -78,7 +78,7 @@ pub mod voting {
     }
 
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -150,7 +150,7 @@ pub mod voting {
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -507,6 +507,8 @@ pub enum ErrorCode {
     InvalidAuthority,
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }
 
 #[event]
