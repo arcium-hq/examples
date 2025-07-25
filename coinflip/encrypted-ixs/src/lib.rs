@@ -27,9 +27,9 @@ mod circuits {
         let input = input_ctxt.to_arcis();
 
         // Generate a cryptographically secure random boolean (the coin flip)
-        let flip = ArcisRNG::bool();
+        let toss = ArcisRNG::bool();
 
         // Compare player's choice with the coin flip result and reveal only the outcome
-        (input.choice == flip).reveal()
+        (input.choice == toss).reveal()
     }
 }
