@@ -31,15 +31,15 @@ For detailed setup instructions, check out our [Developer Documentation](https:/
 
 **[Medical Records Sharing](./share_medical_records/)** - Privacy-preserving healthcare data sharing between authorized parties. Shows how sensitive personal information can be shared selectively while maintaining confidentiality.
 
-## How Arcium Works
+## Architecture
 
-All examples follow the same architectural pattern:
+These examples demonstrate building confidential applications using Arcium's MPC network. Each follows a similar pattern:
 
-1. **Solana Programs** handle public state management and user interactions
-2. **Encrypted Instructions** define confidential computations that run on Arcium's MPC network  
-3. **Callback Functions** process results from MPC computations back on-chain
+1. **Solana Program** - Manages on-chain state and orchestrates MPC operations
+2. **MPC Instructions** - Define computations over encrypted data executed by Arcium nodes
+3. **Client SDK** - Handles encryption/decryption and interaction with both Solana and Arcium
 
-The MPC network ensures that sensitive data remains encrypted during computation, with only the necessary results revealed publicly.
+For detailed documentation on Arcium's architecture and APIs, see [docs.arcium.com/developers](https://docs.arcium.com/developers).
 
 ## Support
 
