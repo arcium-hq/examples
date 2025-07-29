@@ -1,23 +1,6 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::{Argument, CallbackAccount},
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
@@ -30,10 +13,20 @@ pub mod voting {
     use super::*;
 
     pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
+    /// Creates a new confidential poll with the given question.
+    ///
+    /// This initializes a poll account and sets up the encrypted vote counters using MPC.
+    /// The vote tallies are stored in encrypted form and can only be revealed by the poll authority.
+    /// All individual votes remain completely confidential throughout the voting process.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for this poll
+    /// * `question` - The poll question voters will respond to
+    /// * `nonce` - Cryptographic nonce for initializing encrypted vote counters
     pub fn create_new_poll(
         ctx: Context<CreateNewPoll>,
         computation_offset: u64,
@@ -43,6 +36,7 @@ pub mod voting {
     ) -> Result<()> {
         msg!("Creating a new poll");
 
+        // Initialize the poll account with the provided parameters
         ctx.accounts.poll_acc.question = question;
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
@@ -52,6 +46,7 @@ pub mod voting {
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        // Initialize encrypted vote counters (yes/no) through MPC
         queue_computation(
             ctx.accounts,
             computation_offset,
@@ -69,34 +64,34 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<InitVoteStatsOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-
-        let vote_stats: [[u8; 32]; 2] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        ctx.accounts.poll_acc.vote_state = vote_stats;
-        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
+        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+        ctx.accounts.poll_acc.nonce = o.nonce;
 
         Ok(())
     }
 
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
+    /// Submits an encrypted vote to the poll.
+    ///
+    /// This function allows a voter to cast their vote (yes/no) in encrypted form.
+    /// The vote is added to the running tally through MPC computation, ensuring
+    /// that individual votes remain confidential while updating the overall count.
+    ///
+    /// # Arguments
+    /// * `vote` - Encrypted vote (true for yes, false for no)
+    /// * `vote_encryption_pubkey` - Voter's public key for encryption
+    /// * `vote_nonce` - Cryptographic nonce for the vote encryption
     pub fn vote(
         ctx: Context<Vote>,
         computation_offset: u64,
@@ -112,9 +107,9 @@ pub mod voting {
             Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator) and 1 (bump)
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
+                32 * 2, // 2 vote counters (yes/no), each stored as 32-byte ciphertext
             ),
         ];
 
@@ -132,23 +127,17 @@ pub mod voting {
     }
 
     #[arcium_callback(encrypted_ix = "vote")]
-    pub fn vote_callback(ctx: Context<VoteCallback>, output: ComputationOutputs) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+    pub fn vote_callback(
+        ctx: Context<VoteCallback>,
+        output: ComputationOutputs<VoteOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let vote_stats_nonce: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let vote_stats: [[u8; 32]; 2] = bytes[16..]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        ctx.accounts.poll_acc.vote_state = vote_stats;
-        ctx.accounts.poll_acc.nonce = u128::from_le_bytes(vote_stats_nonce);
+        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+        ctx.accounts.poll_acc.nonce = o.nonce;
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -161,10 +150,18 @@ pub mod voting {
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
+    /// Reveals the final result of the poll.
+    ///
+    /// Only the poll authority can call this function to decrypt and reveal the vote tallies.
+    /// The MPC computation compares the yes and no vote counts and returns whether
+    /// the majority voted yes (true) or no (false).
+    ///
+    /// # Arguments
+    /// * `id` - The poll ID to reveal results for
     pub fn reveal_result(
         ctx: Context<RevealVotingResult>,
         computation_offset: u64,
@@ -181,9 +178,9 @@ pub mod voting {
             Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
             Argument::Account(
                 ctx.accounts.poll_acc.key(),
-                // Offset of 8 (discriminator) and 1 (bump)
+                // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
-                32 * 2, // 2 counts, each saved as a ciphertext (so 32 bytes each)
+                32 * 2, // 2 encrypted vote counters (yes/no), 32 bytes each
             ),
         ];
 
@@ -194,16 +191,14 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealVotingResultCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<RevealResultOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(RevealResultOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let result = bytes[0] != 0;
-        emit!(RevealResultEvent { output: result });
+        emit!(RevealResultEvent { output: o });
 
         Ok(())
     }
@@ -218,7 +213,7 @@ pub struct CreateNewPoll<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -248,9 +243,9 @@ pub struct CreateNewPoll<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -294,7 +289,7 @@ pub struct InitVoteStatsCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -312,7 +307,7 @@ pub struct Vote<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -342,9 +337,9 @@ pub struct Vote<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -390,7 +385,7 @@ pub struct InitVoteCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -408,7 +403,7 @@ pub struct RevealVotingResult<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -438,9 +433,9 @@ pub struct RevealVotingResult<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -478,7 +473,7 @@ pub struct InitRevealResultCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -487,15 +482,21 @@ pub struct InitRevealResultCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Represents a confidential poll with encrypted vote tallies.
 #[account]
 #[derive(InitSpace)]
 pub struct PollAccount {
+    /// PDA bump seed
     pub bump: u8,
-    // 2 counts, each saved as a ciphertext (so 32 bytes each)
+    /// Encrypted vote counters: [yes_count, no_count] as 32-byte ciphertexts
     pub vote_state: [[u8; 32]; 2],
+    /// Unique identifier for this poll
     pub id: u32,
+    /// Public key of the poll creator (only they can reveal results)
     pub authority: Pubkey,
+    /// Cryptographic nonce for the encrypted vote counters
     pub nonce: u128,
+    /// The poll question (max 50 characters)
     #[max_len(50)]
     pub question: String,
 }
@@ -506,6 +507,8 @@ pub enum ErrorCode {
     InvalidAuthority,
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }
 
 #[event]

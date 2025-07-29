@@ -4,13 +4,16 @@ use arcis_imports::*;
 mod circuits {
     use arcis_imports::*;
 
+    /// Standard 52-card deck represented as indices 0-51
     const INITIAL_DECK: [u8; 52] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
         48, 49, 50, 51,
     ];
 
-    // 1 << (i * 6) for i in 0..21
+    /// Powers of 64 used for encoding cards into u128 values.
+    /// Each card takes 6 bits (values 0-63), so we can pack multiple cards efficiently.
+    /// This array contains 64^i for i in 0..21, allowing us to encode up to 21 cards per u128.
     const POWS_OF_SIXTY_FOUR: [u128; 21] = [
         1,
         64,
@@ -35,6 +38,12 @@ mod circuits {
         1329227995784915872903807060280344576,
     ];
 
+    /// Represents a full 52-card deck encoded into three u128 values for efficiency.
+    ///
+    /// Each card is represented by 6 bits (0-63 range), allowing us to pack:
+    /// - Cards 0-20 in card_one (21 cards × 6 bits = 126 bits < 128 bits)
+    /// - Cards 21-41 in card_two (21 cards × 6 bits = 126 bits < 128 bits)  
+    /// - Cards 42-51 in card_three (10 cards × 6 bits = 60 bits < 128 bits)
     pub struct Deck {
         pub card_one: u128,
         pub card_two: u128,
@@ -42,6 +51,8 @@ mod circuits {
     }
 
     impl Deck {
+        /// Converts a 52-card array into the packed Deck representation.
+        /// Uses base-64 encoding where each card index is treated as a digit in base 64.
         pub fn from_array(array: [u8; 52]) -> Deck {
             let mut card_one = 0;
             for i in 0..21 {
@@ -65,6 +76,8 @@ mod circuits {
             }
         }
 
+        /// Converts the packed Deck representation back to a 52-card array.
+        /// Reverses the base-64 encoding by extracting 6 bits at a time.
         fn to_array(&self) -> [u8; 52] {
             let mut card_one = self.card_one;
             let mut card_two = self.card_two;
@@ -199,7 +212,7 @@ mod circuits {
     pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis().to_array();
         let value = calculate_hand_value(&player_hand, player_hand_size);
-        value > 21
+        (value > 21).reveal()
     }
 
     // Returns true if the player has busted, if not, returns the new card
@@ -268,33 +281,45 @@ mod circuits {
         )
     }
 
-    // Helper function to calculate the value of a hand
-    // Takes a fixed array of 11 cards and a hand_length parameter
+    /// Calculates the blackjack value of a hand according to standard rules.
+    ///
+    /// Card values: Ace = 1 or 11 (whichever is better), Face cards = 10, Others = face value.
+    /// Aces are initially valued at 11, but automatically reduced to 1 if the hand would bust.
+    ///
+    /// # Arguments
+    /// * `hand` - Array of up to 11 cards (more than enough for blackjack)
+    /// * `hand_length` - Number of actual cards in the hand
+    ///
+    /// # Returns
+    /// The total value of the hand (1-21, or >21 if busted)
     fn calculate_hand_value(hand: &[u8; 11], hand_length: u8) -> u8 {
         let mut value = 0;
         let mut has_ace = false;
 
-        // Process each card with a fixed-length for loop
+        // Process each card in the hand
         for i in 0..11 {
             let rank = if i < hand_length as usize {
-                (hand[i] % 13)
+                (hand[i] % 13) // Card rank (0=Ace, 1-9=pip cards, 10-12=face cards)
             } else {
                 0
             };
 
             if i < hand_length as usize {
                 if rank == 0 {
+                    // Ace: start with value of 11
                     value += 11;
                     has_ace = true;
                 } else if rank > 10 {
+                    // Face cards (Jack, Queen, King): value of 10
                     value += 10;
                 } else {
+                    // Pip cards (2-10): face value (rank 1-9 becomes value 1-9)
                     value += rank;
                 }
             }
         }
 
-        // Adjust for aces if needed
+        // Convert Ace from 11 to 1 if hand would bust with 11
         if value > 21 && has_ace {
             value -= 10;
         }
@@ -302,7 +327,18 @@ mod circuits {
         value
     }
 
-    // Function to resolve the game and determine the winner
+    /// Determines the final winner of the blackjack game.
+    ///
+    /// Compares the final hand values according to blackjack rules and returns
+    /// a numeric result indicating the outcome. Both hands are evaluated for busts
+    /// and compared for the winner.
+    ///
+    /// # Returns
+    /// * 0 = Player busts (dealer wins)
+    /// * 1 = Dealer busts (player wins)
+    /// * 2 = Player wins (higher value, no bust)
+    /// * 3 = Dealer wins (higher value, no bust)
+    /// * 4 = Push/tie (same value, no bust)
     #[instruction]
     pub fn resolve_game(
         player_hand: Enc<Shared, Hand>,
@@ -313,26 +349,21 @@ mod circuits {
         let player_hand = player_hand.to_arcis().to_array();
         let dealer_hand = dealer_hand.to_arcis().to_array();
 
-        // Calculate hand values
+        // Calculate final hand values
         let player_value = calculate_hand_value(&player_hand, player_hand_length);
         let dealer_value = calculate_hand_value(&dealer_hand, dealer_hand_length);
 
-        // Determine the winner
-        // 0 = player busts (dealer wins)
-        // 1 = dealer busts (player wins)
-        // 2 = player wins
-        // 3 = dealer wins
-        // 4 = push (tie)
+        // Apply blackjack rules to determine winner
         let result = if player_value > 21 {
-            0 // Player busts
+            0 // Player busts - dealer wins automatically
         } else if dealer_value > 21 {
-            1 // Dealer busts
+            1 // Dealer busts - player wins automatically
         } else if player_value > dealer_value {
-            2 // Player wins
+            2 // Player has higher value without busting
         } else if dealer_value > player_value {
-            3 // Dealer wins
+            3 // Dealer has higher value without busting
         } else {
-            4 // Push (tie)
+            4 // Equal values - push (tie)
         };
 
         result.reveal()

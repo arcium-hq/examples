@@ -1,23 +1,5 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::Argument,
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_FLIP: u32 = comp_def_offset("flip");
 
@@ -27,11 +9,23 @@ declare_id!("EiFoAJkimEAju8gcjR53yQmfoXDGrwY7F53Nv5BUKkXe");
 pub mod coinflip {
     use super::*;
 
+    /// Initializes the computation definition for the coin flip operation.
+    /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
+    /// Initiates a coin flip game with the player's encrypted choice.
+    ///
+    /// The player submits their choice (heads or tails) in encrypted form along with their
+    /// public key and nonce. The MPC computation will generate a cryptographically secure
+    /// random boolean and compare it with the player's choice to determine if they won.
+    ///
+    /// # Arguments
+    /// * `user_choice` - Player's encrypted choice (true for heads, false for tails)
+    /// * `pub_key` - Player's public key for encryption operations
+    /// * `nonce` - Cryptographic nonce for the encryption
     pub fn flip(
         ctx: Context<Flip>,
         computation_offset: u64,
@@ -48,17 +42,22 @@ pub mod coinflip {
         Ok(())
     }
 
+    /// Handles the result of the coin flip MPC computation.
+    ///
+    /// This callback receives the result of comparing the player's choice with the
+    /// randomly generated coin flip. The result is a boolean indicating whether
+    /// the player won (true) or lost (false).
     #[arcium_callback(encrypted_ix = "flip")]
-    pub fn flip_callback(ctx: Context<FlipCallback>, output: ComputationOutputs) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+    pub fn flip_callback(
+        ctx: Context<FlipCallback>,
+        output: ComputationOutputs<FlipOutput>,
+    ) -> Result<()> {
+        let o = match output {
+            ComputationOutputs::Success(FlipOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        emit!(FlipEvent {
-            result: bytes[0] == 1,
-        });
+        emit!(FlipEvent { result: o });
 
         Ok(())
     }
@@ -73,7 +72,7 @@ pub struct Flip<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -103,9 +102,9 @@ pub struct Flip<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -138,7 +137,7 @@ pub struct InitFlipCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -147,8 +146,10 @@ pub struct InitFlipCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
+/// Event emitted when a coin flip game completes.
 #[event]
 pub struct FlipEvent {
+    /// Whether the player won the coin flip (true = won, false = lost)
     pub result: bool,
 }
 
@@ -156,4 +157,6 @@ pub struct FlipEvent {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("The cluster is not set")]
+    ClusterNotSet,
 }

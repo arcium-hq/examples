@@ -19,6 +19,7 @@ import {
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -53,6 +54,18 @@ describe("RockPaperScissors", () => {
     const playerB = Keypair.generate();
     const unauthorizedPlayer = Keypair.generate();
 
+    // sleep 1 second to ensure MXE keys are set before fetching
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const mxePublicKey = await getMXEPublicKey(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log(
+      "MXE x25519 pubkey is",
+      mxePublicKey ? mxePublicKey : "missing"
+    );
+
     // Step 1: Initialize computation definitions
     console.log("Initializing init_game computation definition");
     const initGameSig = await initInitGameCompDef(program, owner, false);
@@ -85,26 +98,18 @@ describe("RockPaperScissors", () => {
     // Generate encryption keys for Player A
     const playerAPrivateKey = x25519.utils.randomPrivateKey();
     const playerAPublicKey = x25519.getPublicKey(playerAPrivateKey);
-    const playerAMxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const playerASharedSecret = x25519.getSharedSecret(
       playerAPrivateKey,
-      playerAMxePublicKey
+      mxePublicKey
     );
     const playerACipher = new RescueCipher(playerASharedSecret);
 
     // Generate encryption keys for Player B
     const playerBPrivateKey = x25519.utils.randomPrivateKey();
     const playerBPublicKey = x25519.getPublicKey(playerBPrivateKey);
-    const playerBMxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const playerBSharedSecret = x25519.getSharedSecret(
       playerBPrivateKey,
-      playerBMxePublicKey
+      mxePublicKey
     );
     const playerBCipher = new RescueCipher(playerBSharedSecret);
 
