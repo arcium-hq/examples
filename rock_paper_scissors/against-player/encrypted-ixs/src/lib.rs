@@ -34,7 +34,8 @@ mod circuits {
         let mut game_moves = game_ctxt.to_arcis();
 
         // Check which player is moving, if the player hasn't played their move yet, and the move is valid
-        if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3 {
+        if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3
+        {
             game_moves.player_a_move = players_move.player_move;
         } else if players_move.player == 1
             && game_moves.player_b_move == 3
