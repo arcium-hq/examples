@@ -88,6 +88,8 @@ function decompressHand(
 }
 
 describe("Blackjack", () => {
+  const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Blackjack as Program<Blackjack>;
