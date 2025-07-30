@@ -45,22 +45,22 @@ pub mod blackjack {
         client_nonce: u128,
         client_again_nonce: u128,
     ) -> Result<()> {
-        // Initialize the blackjack game account with default values
+        // Initialize the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.bump = ctx.bumps.blackjack_game;
         blackjack_game.game_id = game_id;
         blackjack_game.player_pubkey = ctx.accounts.payer.key();
         blackjack_game.player_hand = [0; 32];
         blackjack_game.dealer_hand = [0; 32];
-        blackjack_game.deck_nonce = [0; 16];
-        blackjack_game.client_nonce = [0; 16];
-        blackjack_game.dealer_nonce = [0; 16];
+        blackjack_game.deck_nonce = 0;
+        blackjack_game.client_nonce = 0;
+        blackjack_game.dealer_nonce = 0;
         blackjack_game.player_enc_pubkey = client_pubkey;
         blackjack_game.game_state = GameState::Initial;
         blackjack_game.player_hand_size = 0;
         blackjack_game.dealer_hand_size = 0;
 
-        // Queue the shuffle and deal cards computation with the necessary encryption parameters
+        // Queue the shuffle and deal cards computation
         let args = vec![
             Argument::PlaintextU128(mxe_nonce),
             Argument::PlaintextU128(mxe_again_nonce),
@@ -97,45 +97,65 @@ pub mod blackjack {
             ComputationOutputs::Success(ShuffleAndDealCardsOutput {
                 field_0:
                     ShuffleAndDealCardsTupleStruct0 {
-                        field_0,
-                        field_1,
-                        field_2,
-                        field_3,
+                        field_0: deck,
+                        field_1: dealer_hand,
+                        field_2: player_hand,
+                        field_3: dealer_face_up_card,
                     },
-            }) => (field_0, field_1, field_2, field_3),
+            }) => (deck, dealer_hand, player_hand, dealer_face_up_card),
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Update the game account with the shuffled deck and dealt hands
-        let blackjack_game = &mut ctx.accounts.blackjack_game;
-        blackjack_game.deck = o.0.ciphertexts;
-        blackjack_game.deck_nonce = o.0.nonce.to_le_bytes();
-        blackjack_game.dealer_nonce = o.1.nonce.to_le_bytes();
-        blackjack_game.client_nonce = o.2.nonce.to_le_bytes();
-        blackjack_game.player_enc_pubkey = o.2.encryption_key;
-        blackjack_game.game_state = GameState::PlayerTurn;
+        let deck_nonce = o.0.nonce;
 
-        // Verify the encryption key matches what was provided during initialization
+        let deck: [[u8; 32]; 3] = o.0.ciphertexts;
+
+        let dealer_nonce = o.1.nonce;
+
+        let dealer_hand: [u8; 32] = o.1.ciphertexts[0];
+
+        let client_pubkey: [u8; 32] = o.2.encryption_key;
+
+        let client_nonce = o.2.nonce;
+
+        let player_hand: [u8; 32] = o.2.ciphertexts[0];
+
+        let dealer_client_pubkey: [u8; 32] = o.3.encryption_key;
+
+        let dealer_client_nonce = o.3.nonce;
+
+        let dealer_face_up_card: [u8; 32] = o.3.ciphertexts[0];
+
+        // Update the blackjack game account
+        let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.deck = deck;
+        blackjack_game.deck_nonce = deck_nonce;
+        blackjack_game.client_nonce = client_nonce;
+        blackjack_game.dealer_nonce = dealer_nonce;
+        blackjack_game.player_enc_pubkey = client_pubkey;
+        blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
+
         require!(
-            o.2.encryption_key == blackjack_game.player_enc_pubkey,
+            dealer_client_pubkey == blackjack_game.player_enc_pubkey,
             ErrorCode::InvalidDealerClientPubkey
         );
 
-        // Set initial hands: player gets 2 cards encrypted, dealer gets 2 cards (1 face up for player visibility)
-        blackjack_game.player_hand = o.2.ciphertexts[0];
-        blackjack_game.dealer_hand = o.1.ciphertexts[0];
+        // Initialize player hand with first two cards
+        blackjack_game.player_hand = player_hand;
+        // Initialize dealer hand with face up card and face down card
+        blackjack_game.dealer_hand = dealer_hand;
         blackjack_game.player_hand_size = 2;
         blackjack_game.dealer_hand_size = 2;
 
         emit!(CardsShuffledAndDealtEvent {
-            client_nonce: o.2.nonce.to_le_bytes(),
-            dealer_client_nonce: o.3.nonce.to_le_bytes(),
-            player_hand: o.2.ciphertexts[0],
-            dealer_face_up_card: o.3.ciphertexts[0],
+            client_nonce,
+            dealer_client_nonce,
+            player_hand,
+            dealer_face_up_card,
+            game_id: blackjack_game.game_id,
         });
         Ok(())
     }
-
     pub fn init_player_hit_comp_def(ctx: Context<InitPlayerHitCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
@@ -162,13 +182,11 @@ pub mod blackjack {
 
         let args = vec![
             // Deck
-            Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.client_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
@@ -196,12 +214,16 @@ pub mod blackjack {
     ) -> Result<()> {
         let o = match output {
             ComputationOutputs::Success(PlayerHitOutput {
-                field_0: PlayerHitTupleStruct0 { field_0, field_1 },
-            }) => (field_0, field_1),
+                field_0:
+                    PlayerHitTupleStruct0 {
+                        field_0: player_hand,
+                        field_1: is_bust,
+                    },
+            }) => (player_hand, is_bust),
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let client_nonce: [u8; 16] = o.0.nonce.to_le_bytes();
+        let client_nonce = o.0.nonce;
 
         let player_hand: [u8; 32] = o.0.ciphertexts[0];
 
@@ -213,12 +235,16 @@ pub mod blackjack {
 
         if is_bust {
             blackjack_game.game_state = GameState::DealerTurn;
-            emit!(PlayerBustEvent { client_nonce });
+            emit!(PlayerBustEvent {
+                client_nonce,
+                game_id: blackjack_game.game_id,
+            });
         } else {
             blackjack_game.game_state = GameState::PlayerTurn;
             emit!(PlayerHitEvent {
                 player_hand,
-                client_nonce
+                client_nonce,
+                game_id: blackjack_game.game_id,
             });
             blackjack_game.player_hand_size += 1;
         }
@@ -249,13 +275,11 @@ pub mod blackjack {
 
         let args = vec![
             // Deck
-            Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.client_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
@@ -277,19 +301,26 @@ pub mod blackjack {
     }
 
     #[arcium_callback(encrypted_ix = "player_double_down")]
+    #[arcium_callback(encrypted_ix = "player_double_down")]
     pub fn player_double_down_callback(
         ctx: Context<PlayerDoubleDownCallback>,
         output: ComputationOutputs<PlayerDoubleDownOutput>,
     ) -> Result<()> {
         let o = match output {
             ComputationOutputs::Success(PlayerDoubleDownOutput {
-                field_0: PlayerDoubleDownTupleStruct0 { field_0, field_1 },
-            }) => (field_0, field_1),
+                field_0:
+                    PlayerDoubleDownTupleStruct0 {
+                        field_0: player_hand,
+                        field_1: is_bust,
+                    },
+            }) => (player_hand, is_bust),
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let client_nonce: [u8; 16] = o.0.nonce.to_le_bytes();
+        let client_nonce = o.0.nonce;
+
         let player_hand: [u8; 32] = o.0.ciphertexts[0];
+
         let is_bust: bool = o.1;
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
@@ -299,12 +330,16 @@ pub mod blackjack {
 
         if is_bust {
             blackjack_game.game_state = GameState::DealerTurn;
-            emit!(PlayerBustEvent { client_nonce });
+            emit!(PlayerBustEvent {
+                client_nonce,
+                game_id: blackjack_game.game_id,
+            });
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerDoubleDownEvent {
                 player_hand,
-                client_nonce
+                client_nonce,
+                game_id: blackjack_game.game_id,
             });
         }
 
@@ -333,9 +368,7 @@ pub mod blackjack {
         let args = vec![
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.client_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
@@ -371,11 +404,15 @@ pub mod blackjack {
             // This should never happen
             blackjack_game.game_state = GameState::PlayerTurn;
             emit!(PlayerBustEvent {
-                client_nonce: blackjack_game.client_nonce
+                client_nonce: blackjack_game.client_nonce,
+                game_id: blackjack_game.game_id,
             });
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
-            emit!(PlayerStandEvent { is_bust });
+            emit!(PlayerStandEvent {
+                is_bust,
+                game_id: blackjack_game.game_id
+            });
         }
 
         Ok(())
@@ -399,12 +436,10 @@ pub mod blackjack {
 
         let args = vec![
             // Deck
-            Argument::PlaintextU128(u128::from_le_bytes(ctx.accounts.blackjack_game.deck_nonce)),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
             // Dealer hand
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.dealer_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.dealer_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
             // Client nonce
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
@@ -437,21 +472,19 @@ pub mod blackjack {
             ComputationOutputs::Success(DealerPlayOutput {
                 field_0:
                     DealerPlayTupleStruct0 {
-                        field_0,
-                        field_1,
-                        field_2,
+                        field_0: dealer_hand,
+                        field_1: dealer_client_hand,
+                        field_2: dealer_hand_size,
                     },
-            }) => (field_0, field_1, field_2),
+            }) => (dealer_hand, dealer_client_hand, dealer_hand_size),
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let dealer_nonce: [u8; 16] = o.0.nonce.to_le_bytes();
-        let dealer_hand: [u8; 32] = o.0.ciphertexts[0];
-
-        let client_nonce: [u8; 16] = o.1.nonce.to_le_bytes();
-        let dealer_client_hand: [u8; 32] = o.1.ciphertexts[0];
-
-        let dealer_hand_size: u8 = o.2;
+        let dealer_nonce = o.0.nonce;
+        let dealer_hand = o.0.ciphertexts[0];
+        let dealer_client_hand = o.1.ciphertexts[0];
+        let dealer_hand_size = o.2;
+        let client_nonce = o.1.nonce;
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.dealer_hand = dealer_hand;
@@ -463,6 +496,7 @@ pub mod blackjack {
             dealer_hand: dealer_client_hand,
             dealer_hand_size,
             client_nonce,
+            game_id: ctx.accounts.blackjack_game.game_id,
         });
 
         Ok(())
@@ -486,14 +520,10 @@ pub mod blackjack {
         let args = vec![
             // Player hand
             Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.client_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
             // Dealer hand
-            Argument::PlaintextU128(u128::from_le_bytes(
-                ctx.accounts.blackjack_game.dealer_nonce,
-            )),
+            Argument::PlaintextU128(ctx.accounts.blackjack_game.dealer_nonce),
             Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
             // Player hand size
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
@@ -528,26 +558,31 @@ pub mod blackjack {
             // Player busts (dealer wins)
             emit!(ResultEvent {
                 winner: "Dealer".to_string(),
+                game_id: ctx.accounts.blackjack_game.game_id,
             });
         } else if result == 1 {
             // Dealer busts (player wins)
             emit!(ResultEvent {
                 winner: "Player".to_string(),
+                game_id: ctx.accounts.blackjack_game.game_id,
             });
         } else if result == 2 {
             // Player wins
             emit!(ResultEvent {
                 winner: "Player".to_string(),
+                game_id: ctx.accounts.blackjack_game.game_id,
             });
         } else if result == 3 {
             // Dealer wins
             emit!(ResultEvent {
                 winner: "Dealer".to_string(),
+                game_id: ctx.accounts.blackjack_game.game_id,
             });
         } else {
             // Push (tie)
             emit!(ResultEvent {
                 winner: "Tie".to_string(),
+                game_id: ctx.accounts.blackjack_game.game_id,
             });
         }
 
@@ -1122,11 +1157,11 @@ pub struct BlackjackGame {
     /// Dealer's encrypted hand (handled by MPC)
     pub dealer_hand: [u8; 32],
     /// Cryptographic nonce for deck encryption
-    pub deck_nonce: [u8; 16],
+    pub deck_nonce: u128,
     /// Cryptographic nonce for player's hand encryption  
-    pub client_nonce: [u8; 16],
+    pub client_nonce: u128,
     /// Cryptographic nonce for dealer's hand encryption
-    pub dealer_nonce: [u8; 16],
+    pub dealer_nonce: u128,
     /// Unique identifier for this game session
     pub game_id: u64,
     /// Solana public key of the player
@@ -1161,42 +1196,49 @@ pub enum GameState {
 pub struct CardsShuffledAndDealtEvent {
     pub player_hand: [u8; 32],
     pub dealer_face_up_card: [u8; 32],
-    pub client_nonce: [u8; 16],
-    pub dealer_client_nonce: [u8; 16],
+    pub client_nonce: u128,
+    pub dealer_client_nonce: u128,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct PlayerHitEvent {
     pub player_hand: [u8; 32],
-    pub client_nonce: [u8; 16],
+    pub client_nonce: u128,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct PlayerDoubleDownEvent {
     pub player_hand: [u8; 32],
-    pub client_nonce: [u8; 16],
+    pub client_nonce: u128,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct PlayerStandEvent {
     pub is_bust: bool,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct PlayerBustEvent {
-    pub client_nonce: [u8; 16],
+    pub client_nonce: u128,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct DealerPlayEvent {
     pub dealer_hand: [u8; 32],
     pub dealer_hand_size: u8,
-    pub client_nonce: [u8; 16],
+    pub client_nonce: u128,
+    pub game_id: u64,
 }
 
 #[event]
 pub struct ResultEvent {
     pub winner: String,
+    pub game_id: u64,
 }
 
 #[error_code]

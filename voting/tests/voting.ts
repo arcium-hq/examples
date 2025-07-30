@@ -50,8 +50,6 @@ describe("Voting", () => {
     const POLL_IDS = [420, 421, 422];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    // sleep 1 second to ensure MXE keys are set before fetching
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId

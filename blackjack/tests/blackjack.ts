@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Blackjack } from "../target/types/blackjack";
+import * as IDL from "../target/idl/blackjack.json";
 import { randomBytes } from "crypto";
 import {
   awaitComputationFinalization,
@@ -12,13 +13,14 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
+  getMXEAccAddress,
   getMempoolAccAddress,
   getCompDefAccAddress,
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
   getArciumAccountBaseSeed,
-  getMXEAccAddress,
+  getClusterAccAddress,
   getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -72,9 +74,9 @@ function decompressHand(
   const numCardSlots = 11; // Max possible slots in u128 encoding
 
   for (let i = 0; i < numCardSlots; i++) {
-    const card = currentHandValue % 64n; // Get the last 6 bits
+    const card = currentHandValue % BigInt(64); // Get the last 6 bits
     cards.push(Number(card));
-    currentHandValue >>= 6n; // Shift right by 6 bits
+    currentHandValue >>= BigInt(6); // Shift right by 6 bits
   }
 
   // Return only the actual cards based on handSize, reversing because they were pushed LSB first
@@ -86,6 +88,8 @@ function decompressHand(
 }
 
 describe("Blackjack", () => {
+  const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Blackjack as Program<Blackjack>;
@@ -99,7 +103,7 @@ describe("Blackjack", () => {
     let listenerId: number;
     let timeoutId: NodeJS.Timeout;
     const event = await new Promise<Event[E]>((res, rej) => {
-      listenerId = program.addEventListener(eventName, (event) => {
+      listenerId = program.addEventListener(eventName as any, (event) => {
         if (timeoutId) clearTimeout(timeoutId);
         res(event);
       });
@@ -115,38 +119,27 @@ describe("Blackjack", () => {
   const arciumEnv = getArciumEnv();
 
   it("Should play a full blackjack game with state awareness", async () => {
-    const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
-
-    // sleep 1 second to ensure MXE keys are set before fetching
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const mxePublicKey = await getMXEPublicKeyWithRetry(
-      provider as anchor.AnchorProvider,
-      program.programId
-    );
-
-    console.log("MXE x25519 pubkey is", mxePublicKey);
-
     console.log("Owner address:", owner.publicKey.toBase58());
 
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
     await Promise.all([
-      initShuffleAndDealCardsCompDef(program, owner, false).then((sig) =>
+      initShuffleAndDealCardsCompDef(program as any, owner, false).then((sig) =>
         console.log("Shuffle/Deal CompDef Init Sig:", sig)
       ),
-      initPlayerHitCompDef(program, owner, false).then((sig) =>
+      initPlayerHitCompDef(program as any, owner, false).then((sig) =>
         console.log("Player Hit CompDef Init Sig:", sig)
       ),
-      initPlayerStandCompDef(program, owner, false).then((sig) =>
+      initPlayerStandCompDef(program as any, owner, false).then((sig) =>
         console.log("Player Stand CompDef Init Sig:", sig)
       ),
-      initPlayerDoubleDownCompDef(program, owner, false).then((sig) =>
+      initPlayerDoubleDownCompDef(program as any, owner, false).then((sig) =>
         console.log("Player DoubleDown CompDef Init Sig:", sig)
       ),
-      initDealerPlayCompDef(program, owner, false).then((sig) =>
+      initDealerPlayCompDef(program as any, owner, false).then((sig) =>
         console.log("Dealer Play CompDef Init Sig:", sig)
       ),
-      initResolveGameCompDef(program, owner, false).then((sig) =>
+      initResolveGameCompDef(program as any, owner, false).then((sig) =>
         console.log("Resolve Game CompDef Init Sig:", sig)
       ),
     ]);
@@ -154,8 +147,14 @@ describe("Blackjack", () => {
     await new Promise((res) => setTimeout(res, 2000));
 
     // --- Setup Game Cryptography ---
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
     const clientNonce = randomBytes(16);
@@ -233,9 +232,12 @@ describe("Blackjack", () => {
     expect(gameState.gameState).to.deep.equal({ playerTurn: {} });
 
     // Decrypt initial hands
-    let currentClientNonce = new Uint8Array(
-      cardsShuffledAndDealtEvent.clientNonce
+    // Convert anchor.BN to Uint8Array (16 bytes for u128) - manual conversion
+    let currentClientNonce = Uint8Array.from(
+      cardsShuffledAndDealtEvent.clientNonce.toArray("le", 16)
     );
+
+    console.log("Current client nonce:", currentClientNonce);
     let compressedPlayerHand = cipher.decrypt(
       [cardsShuffledAndDealtEvent.playerHand],
       currentClientNonce
@@ -252,14 +254,15 @@ describe("Blackjack", () => {
       })`
     );
 
-    let currentDealerClientNonce = new Uint8Array(
-      cardsShuffledAndDealtEvent.dealerClientNonce
+    let currentDealerClientNonce = Uint8Array.from(
+      cardsShuffledAndDealtEvent.dealerClientNonce.toArray("le", 16)
     );
+    console.log("Current dealer client nonce:", currentDealerClientNonce);
     let dealerFaceUpCardEncrypted = cipher.decrypt(
       [cardsShuffledAndDealtEvent.dealerFaceUpCard],
       currentDealerClientNonce
     );
-    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % 64n);
+    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % BigInt(64));
     console.log(`Dealer Face Up Card Index: ${dealerFaceUpCard}`);
 
     // --- Player's Turn Loop ---
@@ -338,7 +341,9 @@ describe("Blackjack", () => {
 
           if ("playerHand" in playerHitEvent) {
             console.log("Received PlayerHitEvent.");
-            currentClientNonce = new Uint8Array(playerHitEvent.clientNonce);
+            currentClientNonce = Uint8Array.from(
+              playerHitEvent.clientNonce.toArray("le", 16)
+            );
             compressedPlayerHand = cipher.decrypt(
               [playerHitEvent.playerHand],
               currentClientNonce
@@ -479,7 +484,9 @@ describe("Blackjack", () => {
       const dealerPlayEvent = await dealerPlayEventPromise;
       console.log("Received DealerPlayEvent.");
 
-      const finalDealerNonce = new Uint8Array(dealerPlayEvent.clientNonce);
+      const finalDealerNonce = Uint8Array.from(
+        dealerPlayEvent.clientNonce.toArray("le", 16)
+      );
       const decryptedDealerHand = cipher.decrypt(
         [dealerPlayEvent.dealerHand],
         finalDealerNonce
