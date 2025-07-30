@@ -54,8 +54,6 @@ describe("RockPaperScissors", () => {
     const playerB = Keypair.generate();
     const unauthorizedPlayer = Keypair.generate();
 
-    // sleep 1 second to ensure MXE keys are set before fetching
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId
