@@ -119,15 +119,12 @@ describe("Blackjack", () => {
 
     // sleep 1 second to ensure MXE keys are set before fetching
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const mxePublicKey = await getMXEPublicKey(
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId
     );
 
-    console.log(
-      "MXE x25519 pubkey is",
-      mxePublicKey ? mxePublicKey : "missing"
-    );
+    console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Owner address:", owner.publicKey.toBase58());
 
@@ -250,7 +247,8 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
+        playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -555,7 +553,8 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${
+          Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -929,6 +928,35 @@ describe("Blackjack", () => {
     return sig;
   }
 });
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 10,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
