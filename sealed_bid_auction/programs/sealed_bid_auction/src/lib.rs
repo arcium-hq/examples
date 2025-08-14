@@ -184,28 +184,30 @@ pub mod sealed_bid_auction {
         ctx: Context<VickreyAuctionRevealResultCallback>,
         output: ComputationOutputs<VickreyAuctionRevealResultOutput>,
     ) -> Result<()> {
-        let (winning_pubkey, bid) = match output {
+        let (winning_pubkey_hi, winning_pubkey_lo, bid) = match output {
             ComputationOutputs::Success(VickreyAuctionRevealResultOutput {
                 field_0:
                     VickreyAuctionRevealResultTupleStruct0 {
-                        field_0: winning_pubkey,
-                        field_1: bid,
+                        field_0:
+                            VickreyAuctionRevealResultOutputStruct01 {
+                                field_0: winning_pubkey_hi,
+                                field_1: winning_pubkey_lo,
+                            },
                     },
-            }) => (winning_pubkey, bid),
+                field_1: bid,
+            }) => (winning_pubkey_hi, winning_pubkey_lo, bid),
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         require_eq!(ctx.accounts.vickrey_auction_account.status, 2);
-        // let pubkey_hi: [u8; 16] = bytes[0..16].try_into().unwrap();
-        // let pubkey_lo: [u8; 16] = bytes[16..32].try_into().unwrap();
 
         let auction = &mut ctx.accounts.vickrey_auction_account;
         auction.status = 3;
 
         emit!(VickreyAuctionRevealResultEvent {
             timestamp: Clock::get()?.unix_timestamp,
-            pubkey_hi: winning_pubkey[0..16],
-            pubkey_lo: winning_pubkey[16..32],
+            pubkey_hi: winning_pubkey_hi,
+            pubkey_lo: winning_pubkey_lo,
             bid,
         });
 
