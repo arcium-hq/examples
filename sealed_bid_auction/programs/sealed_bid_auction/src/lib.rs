@@ -7,7 +7,7 @@ const COMP_DEF_OFFSET_VICKREY_AUCTION_PLACE_BID: u32 = comp_def_offset("vickrey_
 const COMP_DEF_OFFSET_VICKREY_AUCTION_REVEAL_RESULT: u32 =
     comp_def_offset("vickrey_auction_reveal_result");
 
-declare_id!("5H6iGeeL3jiLs9NSkHd8EXMC1HECBX7dV8TfwzNm6sQV");
+declare_id!("CXuMwMG3U2fvpfmPjwzxwqxhHBAM2KkwrMj8t5rrJctd");
 
 #[arcium_program]
 pub mod sealed_bid_auction {
@@ -16,7 +16,7 @@ pub mod sealed_bid_auction {
     pub fn init_setup_vickrey_auction_comp_def(
         ctx: Context<InitSetupVickreyAuctionCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -27,7 +27,7 @@ pub mod sealed_bid_auction {
     ) -> Result<()> {
         let args = vec![];
 
-        let mut auction = &mut ctx.accounts.vickrey_auction_account;
+        let auction = &mut ctx.accounts.vickrey_auction_account;
         auction.auctioneer = ctx.accounts.payer.key();
         auction.bump = ctx.bumps.vickrey_auction_account;
         auction.status = 0;
@@ -69,7 +69,7 @@ pub mod sealed_bid_auction {
     pub fn init_vickrey_auction_place_bid_comp_def(
         ctx: Context<InitVickreyAuctionPlaceBidCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -140,7 +140,7 @@ pub mod sealed_bid_auction {
     pub fn init_vickrey_auction_reveal_result_comp_def(
         ctx: Context<InitVickreyAuctionRevealResultCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, true, 0, None, None)?;
         Ok(())
     }
 
@@ -252,9 +252,9 @@ pub struct SetupVickreyAuction<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS
     )]
@@ -345,9 +345,9 @@ pub struct VickreyAuctionPlaceBid<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS
     )]
@@ -431,9 +431,9 @@ pub struct VickreyAuctionRevealResult<'info> {
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS
     )]
