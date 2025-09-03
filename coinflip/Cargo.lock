@@ -1412,9 +1412,8 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.101"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89ae43fd86e4158d6db51ad8e2b80f313af9cc74f5c0e03ccb87de09998732de"
+version = "1.0.97"
+source = "git+https://github.com/arcium-hq/proc-macro2.git#b52c9661d39f895a6b50ffdfc5bfad9a1a8c2e89"
 dependencies = [
  "unicode-ident",
 ]
