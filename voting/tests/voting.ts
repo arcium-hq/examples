@@ -58,27 +58,37 @@ describe("Voting", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing vote stats computation definition");
-    const initVoteStatsSig = await initVoteStatsCompDef(program, owner, false);
+    const initVoteStatsSig = await initVoteStatsCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Vote stats computation definition initialized with signature",
       initVoteStatsSig
     );
 
     console.log("Initializing voting computation definition");
-    const initVoteSig = await initVoteCompDef(program, owner, false);
+    const initVoteSig = await initVoteCompDef(program, owner, false, false);
     console.log(
       "Vote computation definition initialized with signature",
       initVoteSig
     );
 
     console.log("Initializing reveal result computation definition");
-    const initRRSig = await initRevealResultCompDef(program, owner, false);
+    const initRRSig = await initRevealResultCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Reveal result computation definition initialized with signature",
       initRRSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
@@ -110,7 +120,7 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
         })
-        .rpc();
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       console.log(`Poll ${POLL_ID} created with signature`, pollSig);
 
@@ -162,7 +172,7 @@ describe("Voting", () => {
           ),
           authority: owner.publicKey,
         })
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
       console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
 
       const finalizeSig = await awaitComputationFinalization(
@@ -205,7 +215,7 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
           ),
         })
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
       console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
 
       const revealFinalizeSig = await awaitComputationFinalization(
@@ -231,7 +241,8 @@ describe("Voting", () => {
   async function initVoteStatsCompDef(
     program: Program<Voting>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -271,7 +282,7 @@ describe("Voting", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
