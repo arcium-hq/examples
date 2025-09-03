@@ -651,7 +651,7 @@ pub struct InitializeBlackjackGame<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("shuffle_and_deal_cards", payer)]
+#[callback_accounts("shuffle_and_deal_cards")]
 #[derive(Accounts)]
 pub struct ShuffleAndDealCardsCallback<'info> {
     #[account(mut)]
@@ -742,7 +742,7 @@ pub struct PlayerHit<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_hit", payer)]
+#[callback_accounts("player_hit")]
 #[derive(Accounts)]
 pub struct PlayerHitCallback<'info> {
     #[account(mut)]
@@ -833,7 +833,7 @@ pub struct PlayerDoubleDown<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_double_down", payer)]
+#[callback_accounts("player_double_down")]
 #[derive(Accounts)]
 pub struct PlayerDoubleDownCallback<'info> {
     #[account(mut)]
@@ -924,7 +924,7 @@ pub struct PlayerStand<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_stand", payer)]
+#[callback_accounts("player_stand")]
 #[derive(Accounts)]
 pub struct PlayerStandCallback<'info> {
     #[account(mut)]
@@ -1015,7 +1015,7 @@ pub struct DealerPlay<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("dealer_play", payer)]
+#[callback_accounts("dealer_play")]
 #[derive(Accounts)]
 pub struct DealerPlayCallback<'info> {
     #[account(mut)]
@@ -1106,7 +1106,7 @@ pub struct ResolveGame<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("resolve_game", payer)]
+#[callback_accounts("resolve_game")]
 #[derive(Accounts)]
 pub struct ResolveGameCallback<'info> {
     #[account(mut)]

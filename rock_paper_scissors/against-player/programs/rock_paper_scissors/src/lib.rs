@@ -225,7 +225,7 @@ pub struct InitGame<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("init_game", payer)]
+#[callback_accounts("init_game")]
 #[derive(Accounts)]
 pub struct InitGameCallback<'info> {
     #[account(mut)]
@@ -312,7 +312,7 @@ pub struct PlayerMove<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("player_move", payer)]
+#[callback_accounts("player_move")]
 #[derive(Accounts)]
 pub struct PlayerMoveCallback<'info> {
     #[account(mut)]
@@ -399,7 +399,7 @@ pub struct CompareMoves<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("compare_moves", payer)]
+#[callback_accounts("compare_moves")]
 #[derive(Accounts)]
 pub struct CompareMovesCallback<'info> {
     #[account(mut)]

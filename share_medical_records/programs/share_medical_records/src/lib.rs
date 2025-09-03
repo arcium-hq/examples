@@ -183,7 +183,7 @@ pub struct SharePatientData<'info> {
     pub patient_data: Account<'info, PatientData>,
 }
 
-#[callback_accounts("share_patient_data", payer)]
+#[callback_accounts("share_patient_data")]
 #[derive(Accounts)]
 pub struct SharePatientDataCallback<'info> {
     #[account(mut)]

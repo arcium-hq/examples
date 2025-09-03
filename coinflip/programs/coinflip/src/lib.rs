@@ -33,12 +33,13 @@ pub mod coinflip {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
         let args = vec![
             Argument::ArcisPubkey(pub_key),
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(user_choice),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, None, vec![FlipCallback::callback_ix(&[])])?;
         Ok(())
     }
 
@@ -69,6 +70,15 @@ pub mod coinflip {
 pub struct Flip<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -113,7 +123,7 @@ pub struct Flip<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("flip", payer)]
+#[callback_accounts("flip")]
 #[derive(Accounts)]
 pub struct FlipCallback<'info> {
     #[account(mut)]

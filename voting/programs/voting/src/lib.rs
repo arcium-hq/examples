@@ -262,7 +262,7 @@ pub struct CreateNewPoll<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("init_vote_stats", payer)]
+#[callback_accounts("init_vote_stats")]
 #[derive(Accounts)]
 pub struct InitVoteStatsCallback<'info> {
     #[account(mut)]
@@ -359,7 +359,7 @@ pub struct Vote<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("vote", payer)]
+#[callback_accounts("vote")]
 #[derive(Accounts)]
 pub struct VoteCallback<'info> {
     #[account(mut)]
@@ -449,7 +449,7 @@ pub struct RevealVotingResult<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("reveal_result", payer)]
+#[callback_accounts("reveal_result")]
 #[derive(Accounts)]
 pub struct RevealVotingResultCallback<'info> {
     #[account(mut)]

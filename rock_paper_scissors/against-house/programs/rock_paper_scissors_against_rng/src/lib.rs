@@ -102,7 +102,7 @@ pub struct PlayRps<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("play_rps", payer)]
+#[callback_accounts("play_rps")]
 #[derive(Accounts)]
 pub struct PlayRpsCallback<'info> {
     #[account(mut)]
