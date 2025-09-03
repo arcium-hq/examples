@@ -2,7 +2,6 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Blackjack } from "../target/types/blackjack";
-import * as IDL from "../target/idl/blackjack.json";
 import { randomBytes } from "crypto";
 import {
   awaitComputationFinalization,
@@ -20,7 +19,6 @@ import {
   x25519,
   getComputationAccAddress,
   getArciumAccountBaseSeed,
-  getClusterAccAddress,
   getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";

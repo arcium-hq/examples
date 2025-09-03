@@ -3358,3 +3358,8 @@ dependencies = [
  "quote",
  "syn 2.0.106",
 ]
+
+[[patch.unused]]
+name = "proc-macro2"
+version = "1.0.97"
+source = "git+https://github.com/arcium-hq/proc-macro2.git#b52c9661d39f895a6b50ffdfc5bfad9a1a8c2e89"

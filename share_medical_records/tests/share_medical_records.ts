@@ -64,7 +64,7 @@ describe("ShareMedicalRecords", () => {
       initSPDSig
     );
 
-    const senderPrivateKey = x25519.utils.randomPrivateKey();
+    const senderPrivateKey = x25519.utils.randomSecretKey();
     const senderPublicKey = x25519.getPublicKey(senderPrivateKey);
     const sharedSecret = x25519.getSharedSecret(senderPrivateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
@@ -116,7 +116,7 @@ describe("ShareMedicalRecords", () => {
       .rpc({ commitment: "confirmed" });
     console.log("Store sig is ", storeSig);
 
-    const receiverSecretKey = x25519.utils.randomPrivateKey();
+    const receiverSecretKey = x25519.utils.randomSecretKey();
     const receiverPubKey = x25519.getPublicKey(receiverSecretKey);
     const receiverNonce = randomBytes(16);
 

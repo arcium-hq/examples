@@ -62,7 +62,7 @@ describe("RockPaperScissorsAgainstRng", () => {
       initRpsSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);

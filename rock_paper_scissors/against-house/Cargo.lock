@@ -1402,9 +1402,8 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.101"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89ae43fd86e4158d6db51ad8e2b80f313af9cc74f5c0e03ccb87de09998732de"
+version = "1.0.97"
+source = "git+https://github.com/arcium-hq/proc-macro2.git#b52c9661d39f895a6b50ffdfc5bfad9a1a8c2e89"
 dependencies = [
  "unicode-ident",
 ]
@@ -1573,6 +1572,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 
 [[package]]
+name = "rock_paper_scissors_against_rng"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "arcium-anchor",
+ "arcium-client",
+ "arcium-macros",
+]
+
+[[package]]
 name = "rustc-hash"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1702,16 +1711,6 @@ checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
 dependencies = [
  "digest 0.10.7",
  "keccak",
-]
-
-[[package]]
-name = "share_medical_records"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "arcium-anchor",
- "arcium-client",
- "arcium-macros",
 ]
 
 [[package]]
@@ -3358,8 +3357,3 @@ dependencies = [
  "quote",
  "syn 2.0.106",
 ]
-
-[[patch.unused]]
-name = "proc-macro2"
-version = "1.0.97"
-source = "git+https://github.com/arcium-hq/proc-macro2.git#b52c9661d39f895a6b50ffdfc5bfad9a1a8c2e89"

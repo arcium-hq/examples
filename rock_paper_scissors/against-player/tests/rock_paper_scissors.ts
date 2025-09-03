@@ -91,7 +91,7 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Playing a complete game with two players ---");
 
     // Generate encryption keys for Player A
-    const playerAPrivateKey = x25519.utils.randomPrivateKey();
+    const playerAPrivateKey = x25519.utils.randomSecretKey();
     const playerAPublicKey = x25519.getPublicKey(playerAPrivateKey);
     const playerASharedSecret = x25519.getSharedSecret(
       playerAPrivateKey,
@@ -100,7 +100,7 @@ describe("RockPaperScissors", () => {
     const playerACipher = new RescueCipher(playerASharedSecret);
 
     // Generate encryption keys for Player B
-    const playerBPrivateKey = x25519.utils.randomPrivateKey();
+    const playerBPrivateKey = x25519.utils.randomSecretKey();
     const playerBPublicKey = x25519.getPublicKey(playerBPrivateKey);
     const playerBSharedSecret = x25519.getSharedSecret(
       playerBPrivateKey,
@@ -344,7 +344,7 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Testing unauthorized player ---");
 
     // Generate new encryption keys for this test
-    const unauthorizedPrivateKey = x25519.utils.randomPrivateKey();
+    const unauthorizedPrivateKey = x25519.utils.randomSecretKey();
     const unauthorizedPublicKey = x25519.getPublicKey(unauthorizedPrivateKey);
     const unauthorizedMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
@@ -473,7 +473,7 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Testing multiple game scenarios ---");
 
     // Generate encryption keys for multiple game scenarios
-    const scenarioPrivateKey = x25519.utils.randomPrivateKey();
+    const scenarioPrivateKey = x25519.utils.randomSecretKey();
     const scenarioPublicKey = x25519.getPublicKey(scenarioPrivateKey);
     const scenarioMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-share_medical_records = "4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4"
+share_medical_records = "NEnkfYAYz9epwXkXChP3hz2y1L8wUgf2xkrUKAmfxBD"
 
 [registry]
 url = "https://api.apr.dev"
