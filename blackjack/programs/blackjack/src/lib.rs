@@ -1,9 +1,6 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::instructions::ID as INSTRUCTIONS_SYSVAR_ID};
+use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::{
-    idl::arcium::types::{CallbackAccount, CallbackInstruction},
-    ARCIUM_PROGRAM_ID,
-};
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS: u32 = comp_def_offset("shuffle_and_deal_cards");
 const COMP_DEF_OFFSET_PLAYER_HIT: u32 = comp_def_offset("player_hit");
@@ -80,28 +77,12 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::ShuffleAndDealCardsCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![ShuffleAndDealCardsCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }
@@ -224,28 +205,10 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::PlayerHitCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![PlayerHitCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }
@@ -337,28 +300,10 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::PlayerDoubleDownCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![PlayerDoubleDownCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }
@@ -443,28 +388,10 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::PlayerStandCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![PlayerStandCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }
@@ -539,28 +466,10 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::DealerPlayCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![DealerPlayCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }
@@ -640,28 +549,10 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::ResolveGameCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.blackjack_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![ResolveGameCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.blackjack_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }

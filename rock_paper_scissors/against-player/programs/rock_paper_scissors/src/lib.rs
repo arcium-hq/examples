@@ -1,9 +1,6 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::instructions::ID as INSTRUCTIONS_SYSVAR_ID};
+use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::{
-    idl::arcium::types::{CallbackAccount, CallbackInstruction},
-    ARCIUM_PROGRAM_ID,
-};
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
@@ -43,28 +40,10 @@ pub mod rock_paper_scissors {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::InitGameCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.rps_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![InitGameCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.rps_game.key(),
+                is_writable: true,
+            }])],
         )?;
 
         Ok(())
@@ -126,28 +105,10 @@ pub mod rock_paper_scissors {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::PlayerMoveCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.rps_game.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![PlayerMoveCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.rps_game.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }

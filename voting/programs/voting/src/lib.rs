@@ -1,9 +1,6 @@
-use anchor_lang::{prelude::*, solana_program::sysvar::instructions::ID as INSTRUCTIONS_SYSVAR_ID};
+use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::{
-    idl::arcium::types::{CallbackAccount, CallbackInstruction},
-    ARCIUM_PROGRAM_ID,
-};
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
@@ -57,28 +54,10 @@ pub mod voting {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::InitVoteStatsCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.poll_acc.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![InitVoteStatsCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.poll_acc.key(),
+                is_writable: true,
+            }])],
         )?;
 
         Ok(())
@@ -143,28 +122,10 @@ pub mod voting {
             computation_offset,
             args,
             None,
-            vec![CallbackInstruction {
-                program_id: ID_CONST,
-                discriminator: instruction::VoteCallback::DISCRIMINATOR.to_vec(),
-                accounts: vec![
-                    CallbackAccount {
-                        pubkey: ARCIUM_PROGRAM_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE),
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: INSTRUCTIONS_SYSVAR_ID,
-                        is_writable: false,
-                    },
-                    CallbackAccount {
-                        pubkey: ctx.accounts.poll_acc.key(),
-                        is_writable: true,
-                    },
-                ],
-            }],
+            vec![VoteCallback::callback_ix(&[CallbackAccount {
+                pubkey: ctx.accounts.poll_acc.key(),
+                is_writable: true,
+            }])],
         )?;
         Ok(())
     }
