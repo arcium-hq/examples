@@ -56,13 +56,13 @@ describe("Coinflip", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing flip computation definition");
-    const initFlipSig = await initFlipCompDef(program, owner, false);
+    const initFlipSig = await initFlipCompDef(program, owner, false, false);
     console.log(
       "Flip computation definition initialized with signature",
       initFlipSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
@@ -98,7 +98,7 @@ describe("Coinflip", () => {
           Buffer.from(getCompDefAccOffset("flip")).readUInt32LE()
         ),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -121,7 +121,8 @@ describe("Coinflip", () => {
   async function initFlipCompDef(
     program: Program<Coinflip>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -158,7 +159,7 @@ describe("Coinflip", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),

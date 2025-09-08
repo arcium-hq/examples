@@ -6,7 +6,7 @@ const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("vU5KrZeRZvZ5aBCxAMBweMBRMbnexskHBAPDXBFjSCB");
+declare_id!("5AQRbcaHCrhGb7VvH35HHaSKzsMJQFHGTfpLbdMfA3Mw");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
@@ -33,15 +33,17 @@ pub mod rock_paper_scissors {
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![InitGameCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
 
         Ok(())
@@ -95,15 +97,18 @@ pub mod rock_paper_scissors {
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![PlayerMoveCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -139,7 +144,15 @@ pub mod rock_paper_scissors {
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![CompareMovesCallback::callback_ix(&[])],
+        )?;
         Ok(())
     }
 
@@ -174,6 +187,15 @@ pub mod rock_paper_scissors {
 pub struct InitGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -225,11 +247,9 @@ pub struct InitGame<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("init_game", payer)]
+#[callback_accounts("init_game")]
 #[derive(Accounts)]
 pub struct InitGameCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME)
@@ -266,6 +286,15 @@ pub struct InitInitGameCompDef<'info> {
 pub struct PlayerMove<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -312,11 +341,9 @@ pub struct PlayerMove<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("player_move", payer)]
+#[callback_accounts("player_move")]
 #[derive(Accounts)]
 pub struct PlayerMoveCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE)
@@ -353,6 +380,15 @@ pub struct InitPlayerMoveCompDef<'info> {
 pub struct CompareMoves<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -399,11 +435,9 @@ pub struct CompareMoves<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("compare_moves", payer)]
+#[callback_accounts("compare_moves")]
 #[derive(Accounts)]
 pub struct CompareMovesCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)

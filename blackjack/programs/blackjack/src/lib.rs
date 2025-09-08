@@ -9,7 +9,7 @@ const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
 const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
 const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
-declare_id!("A7sNeBnrQAFxmj6BVmoYC6PYnebURaar7xhKuaEyRh4j");
+declare_id!("DQxanaqqWcTYvVhrKbeoY6q52NrGksWBL6vSbuVipnS7");
 
 #[arcium_program]
 pub mod blackjack {
@@ -70,15 +70,19 @@ pub mod blackjack {
             Argument::PlaintextU128(client_again_nonce),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }],
             None,
+            vec![ShuffleAndDealCardsCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                },
+            ])],
         )?;
         Ok(())
     }
@@ -96,7 +100,7 @@ pub mod blackjack {
         let o = match output {
             ComputationOutputs::Success(ShuffleAndDealCardsOutput {
                 field_0:
-                    ShuffleAndDealCardsTupleStruct0 {
+                    ShuffleAndDealCardsOutputStruct0 {
                         field_0: deck,
                         field_1: dealer_hand,
                         field_2: player_hand,
@@ -194,15 +198,17 @@ pub mod blackjack {
             Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![PlayerHitCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -215,7 +221,7 @@ pub mod blackjack {
         let o = match output {
             ComputationOutputs::Success(PlayerHitOutput {
                 field_0:
-                    PlayerHitTupleStruct0 {
+                    PlayerHitOutputStruct0 {
                         field_0: player_hand,
                         field_1: is_bust,
                     },
@@ -287,20 +293,21 @@ pub mod blackjack {
             Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![PlayerDoubleDownCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "player_double_down")]
     #[arcium_callback(encrypted_ix = "player_double_down")]
     pub fn player_double_down_callback(
         ctx: Context<PlayerDoubleDownCallback>,
@@ -309,7 +316,7 @@ pub mod blackjack {
         let o = match output {
             ComputationOutputs::Success(PlayerDoubleDownOutput {
                 field_0:
-                    PlayerDoubleDownTupleStruct0 {
+                    PlayerDoubleDownOutputStruct0 {
                         field_0: player_hand,
                         field_1: is_bust,
                     },
@@ -374,15 +381,17 @@ pub mod blackjack {
             Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![PlayerStandCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -450,15 +459,17 @@ pub mod blackjack {
             Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![DealerPlayCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -471,7 +482,7 @@ pub mod blackjack {
         let o = match output {
             ComputationOutputs::Success(DealerPlayOutput {
                 field_0:
-                    DealerPlayTupleStruct0 {
+                    DealerPlayOutputStruct0 {
                         field_0: dealer_hand,
                         field_1: dealer_client_hand,
                         field_2: dealer_hand_size,
@@ -531,15 +542,17 @@ pub mod blackjack {
             Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![ResolveGameCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -600,6 +613,15 @@ pub struct InitializeBlackjackGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -651,11 +673,9 @@ pub struct InitializeBlackjackGame<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("shuffle_and_deal_cards", payer)]
+#[callback_accounts("shuffle_and_deal_cards")]
 #[derive(Accounts)]
 pub struct ShuffleAndDealCardsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
@@ -693,6 +713,15 @@ pub struct PlayerHit<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -742,11 +771,9 @@ pub struct PlayerHit<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_hit", payer)]
+#[callback_accounts("player_hit")]
 #[derive(Accounts)]
 pub struct PlayerHitCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT)
@@ -784,6 +811,15 @@ pub struct PlayerDoubleDown<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -833,11 +869,9 @@ pub struct PlayerDoubleDown<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_double_down", payer)]
+#[callback_accounts("player_double_down")]
 #[derive(Accounts)]
 pub struct PlayerDoubleDownCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN)
@@ -875,6 +909,15 @@ pub struct PlayerStand<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -924,11 +967,9 @@ pub struct PlayerStand<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("player_stand", payer)]
+#[callback_accounts("player_stand")]
 #[derive(Accounts)]
 pub struct PlayerStandCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND)
@@ -966,6 +1007,15 @@ pub struct DealerPlay<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -1015,11 +1065,9 @@ pub struct DealerPlay<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("dealer_play", payer)]
+#[callback_accounts("dealer_play")]
 #[derive(Accounts)]
 pub struct DealerPlayCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
@@ -1056,6 +1104,15 @@ pub struct InitDealerPlayCompDef<'info> {
 pub struct ResolveGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -1106,11 +1163,9 @@ pub struct ResolveGame<'info> {
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
 
-#[callback_accounts("resolve_game", payer)]
+#[callback_accounts("resolve_game")]
 #[derive(Accounts)]
 pub struct ResolveGameCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)

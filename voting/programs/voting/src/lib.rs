@@ -6,7 +6,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("7G3err5ACQY8b6Bpi2zpSPydWwEmtPCytzoZ4SVZAVjg");
+declare_id!("J7KTdhMTVhy7vtgyFSXi9SpptdTDmpg93pB53UdfuttF");
 
 #[arcium_program]
 pub mod voting {
@@ -46,16 +46,18 @@ pub mod voting {
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         // Initialize encrypted vote counters (yes/no) through MPC
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![InitVoteStatsCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.poll_acc.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
 
         Ok(())
@@ -113,15 +115,17 @@ pub mod voting {
             ),
         ];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![VoteCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.poll_acc.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
         )?;
         Ok(())
     }
@@ -184,13 +188,21 @@ pub mod voting {
             ),
         ];
 
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![RevealResultCallback::callback_ix(&[])],
+        )?;
         Ok(())
     }
 
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
-        ctx: Context<RevealVotingResultCallback>,
+        ctx: Context<RevealResultCallback>,
         output: ComputationOutputs<RevealResultOutput>,
     ) -> Result<()> {
         let o = match output {
@@ -210,6 +222,15 @@ pub mod voting {
 pub struct CreateNewPoll<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -262,11 +283,9 @@ pub struct CreateNewPoll<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("init_vote_stats", payer)]
+#[callback_accounts("init_vote_stats")]
 #[derive(Accounts)]
 pub struct InitVoteStatsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
@@ -304,6 +323,15 @@ pub struct InitVoteStatsCompDef<'info> {
 pub struct Vote<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -359,11 +387,9 @@ pub struct Vote<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("vote", payer)]
+#[callback_accounts("vote")]
 #[derive(Accounts)]
 pub struct VoteCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
@@ -400,6 +426,15 @@ pub struct InitVoteCompDef<'info> {
 pub struct RevealVotingResult<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -449,11 +484,9 @@ pub struct RevealVotingResult<'info> {
     pub poll_acc: Account<'info, PollAccount>,
 }
 
-#[callback_accounts("reveal_result", payer)]
+#[callback_accounts("reveal_result")]
 #[derive(Accounts)]
-pub struct RevealVotingResultCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
+pub struct RevealResultCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)

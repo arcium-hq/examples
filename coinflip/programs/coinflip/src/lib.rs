@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_FLIP: u32 = comp_def_offset("flip");
 
-declare_id!("EiFoAJkimEAju8gcjR53yQmfoXDGrwY7F53Nv5BUKkXe");
+declare_id!("AyXE8Npj6s3e74XhUoLu8WmnBGPfUcAjzG8oSyYBbnvP");
 
 #[arcium_program]
 pub mod coinflip {
@@ -38,7 +38,17 @@ pub mod coinflip {
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(user_choice),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![FlipCallback::callback_ix(&[])],
+        )?;
+
         Ok(())
     }
 
@@ -69,6 +79,15 @@ pub mod coinflip {
 pub struct Flip<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -113,11 +132,9 @@ pub struct Flip<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("flip", payer)]
+#[callback_accounts("flip")]
 #[derive(Accounts)]
 pub struct FlipCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_FLIP)

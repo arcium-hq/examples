@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_PLAY_RPS: u32 = comp_def_offset("play_rps");
 
-declare_id!("7E58MQuCra9NPmZUcaaFddeht13JvGFU4WxZsgfPErcY");
+declare_id!("GvEcUdVoj6kGH139bD3u29jpuRUyuLCcsZ6rip2CrnPY");
 
 #[arcium_program]
 pub mod rock_paper_scissors_against_rng {
@@ -26,7 +26,16 @@ pub mod rock_paper_scissors_against_rng {
             Argument::PlaintextU128(nonce),
             Argument::EncryptedU8(player_move),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![PlayRpsCallback::callback_ix(&[])],
+        )?;
         Ok(())
     }
 
@@ -58,6 +67,15 @@ pub mod rock_paper_scissors_against_rng {
 pub struct PlayRps<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
+    #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -102,11 +120,9 @@ pub struct PlayRps<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("play_rps", payer)]
+#[callback_accounts("play_rps")]
 #[derive(Accounts)]
 pub struct PlayRpsCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAY_RPS)

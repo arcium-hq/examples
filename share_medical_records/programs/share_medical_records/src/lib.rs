@@ -1,8 +1,9 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+
 const COMP_DEF_OFFSET_SHARE_PATIENT_DATA: u32 = comp_def_offset("share_patient_data");
 
-declare_id!("4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4");
+declare_id!("NEnkfYAYz9epwXkXChP3hz2y1L8wUgf2xkrUKAmfxBD");
 
 #[arcium_program]
 pub mod share_medical_records {
@@ -82,7 +83,16 @@ pub mod share_medical_records {
                 PatientData::INIT_SPACE as u32,
             ),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![SharePatientDataCallback::callback_ix(&[])],
+        )?;
         Ok(())
     }
 
@@ -139,6 +149,15 @@ pub struct SharePatientData<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
     pub mxe_account: Account<'info, MXEAccount>,
@@ -183,11 +202,9 @@ pub struct SharePatientData<'info> {
     pub patient_data: Account<'info, PatientData>,
 }
 
-#[callback_accounts("share_patient_data", payer)]
+#[callback_accounts("share_patient_data")]
 #[derive(Accounts)]
 pub struct SharePatientDataCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHARE_PATIENT_DATA)
