@@ -715,7 +715,7 @@ describe("RockPaperScissors", () => {
         (game.player === 2 && game.house === 1) // Scissors beats Paper
       ) {
         expectedResult = "Player A Wins";
-      } else if (!offchainSource) {
+      } else {
         expectedResult = "Player B Wins";
       }
 
