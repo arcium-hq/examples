@@ -56,7 +56,7 @@ describe("RockPaperScissorsAgainstRng", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing play rps computation definition");
-    const initRpsSig = await initPlayRpsCompDef(program, owner, false);
+    const initRpsSig = await initPlayRpsCompDef(program, owner, false, false);
     console.log(
       "Play rps computation definition initialized with signature",
       initRpsSig
@@ -117,7 +117,8 @@ describe("RockPaperScissorsAgainstRng", () => {
   async function initPlayRpsCompDef(
     program: Program<RockPaperScissorsAgainstRng>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -154,7 +155,7 @@ describe("RockPaperScissorsAgainstRng", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),

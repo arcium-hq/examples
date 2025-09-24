@@ -303,7 +303,8 @@ describe("Voting", () => {
   async function initVoteCompDef(
     program: Program<Voting>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -340,7 +341,7 @@ describe("Voting", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
@@ -361,7 +362,8 @@ describe("Voting", () => {
   async function initRevealResultCompDef(
     program: Program<Voting>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -401,7 +403,7 @@ describe("Voting", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),

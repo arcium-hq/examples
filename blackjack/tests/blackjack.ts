@@ -122,22 +122,22 @@ describe("Blackjack", () => {
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
     await Promise.all([
-      initShuffleAndDealCardsCompDef(program as any, owner, false).then((sig) =>
-        console.log("Shuffle/Deal CompDef Init Sig:", sig)
+      initShuffleAndDealCardsCompDef(program as any, owner, false, false).then(
+        (sig) => console.log("Shuffle/Deal CompDef Init Sig:", sig)
       ),
-      initPlayerHitCompDef(program as any, owner, false).then((sig) =>
+      initPlayerHitCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Player Hit CompDef Init Sig:", sig)
       ),
-      initPlayerStandCompDef(program as any, owner, false).then((sig) =>
+      initPlayerStandCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Player Stand CompDef Init Sig:", sig)
       ),
-      initPlayerDoubleDownCompDef(program as any, owner, false).then((sig) =>
-        console.log("Player DoubleDown CompDef Init Sig:", sig)
+      initPlayerDoubleDownCompDef(program as any, owner, false, false).then(
+        (sig) => console.log("Player DoubleDown CompDef Init Sig:", sig)
       ),
-      initDealerPlayCompDef(program as any, owner, false).then((sig) =>
+      initDealerPlayCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Dealer Play CompDef Init Sig:", sig)
       ),
-      initResolveGameCompDef(program as any, owner, false).then((sig) =>
+      initResolveGameCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Resolve Game CompDef Init Sig:", sig)
       ),
     ]);
@@ -568,7 +568,8 @@ describe("Blackjack", () => {
   async function initShuffleAndDealCardsCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -609,7 +610,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Shuffle/Deal CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -631,7 +632,8 @@ describe("Blackjack", () => {
   async function initPlayerHitCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -670,7 +672,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player Hit CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -692,7 +694,8 @@ describe("Blackjack", () => {
   async function initPlayerStandCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -731,7 +734,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player Stand CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -753,7 +756,8 @@ describe("Blackjack", () => {
   async function initPlayerDoubleDownCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -792,7 +796,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player DoubleDown CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -814,7 +818,8 @@ describe("Blackjack", () => {
   async function initDealerPlayCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -853,7 +858,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Dealer Play CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -875,7 +880,8 @@ describe("Blackjack", () => {
   async function initResolveGameCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -914,7 +920,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Resolve Game CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,

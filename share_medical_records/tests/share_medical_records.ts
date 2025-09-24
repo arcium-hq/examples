@@ -58,7 +58,12 @@ describe("ShareMedicalRecords", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing share patient data computation definition");
-    const initSPDSig = await initSharePatientDataCompDef(program, owner, false);
+    const initSPDSig = await initSharePatientDataCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Share patient data computation definition initialized with signature",
       initSPDSig
@@ -207,7 +212,8 @@ describe("ShareMedicalRecords", () => {
   async function initSharePatientDataCompDef(
     program: Program<ShareMedicalRecords>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -247,7 +253,7 @@ describe("ShareMedicalRecords", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),

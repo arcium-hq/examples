@@ -63,14 +63,19 @@ describe("RockPaperScissors", () => {
 
     // Step 1: Initialize computation definitions
     console.log("Initializing init_game computation definition");
-    const initGameSig = await initInitGameCompDef(program, owner, false);
+    const initGameSig = await initInitGameCompDef(program, owner, false, false);
     console.log(
       "Init game computation definition initialized with signature",
       initGameSig
     );
 
     console.log("Initializing player_move computation definition");
-    const playerMoveSig = await initPlayerMoveCompDef(program, owner, false);
+    const playerMoveSig = await initPlayerMoveCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Player move computation definition initialized with signature",
       playerMoveSig
@@ -80,6 +85,7 @@ describe("RockPaperScissors", () => {
     const compareMovesSig = await initCompareMovesCompDef(
       program,
       owner,
+      false,
       false
     );
     console.log(
@@ -709,7 +715,7 @@ describe("RockPaperScissors", () => {
         (game.player === 2 && game.house === 1) // Scissors beats Paper
       ) {
         expectedResult = "Player A Wins";
-      } else {
+      } else if (!offchainSource) {
         expectedResult = "Player B Wins";
       }
 
@@ -933,7 +939,8 @@ function readKpJson(path: string): anchor.web3.Keypair {
 async function initInitGameCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -970,7 +977,7 @@ async function initInitGameCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
@@ -991,7 +998,8 @@ async function initInitGameCompDef(
 async function initPlayerMoveCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -1028,7 +1036,7 @@ async function initPlayerMoveCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
@@ -1049,7 +1057,8 @@ async function initPlayerMoveCompDef(
 async function initCompareMovesCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -1086,7 +1095,7 @@ async function initCompareMovesCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
