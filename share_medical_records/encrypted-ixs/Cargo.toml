@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis-imports = { version = "0.3.0" }
+arcis-imports = { path = "../../../arcium-tooling/arcis-imports" }

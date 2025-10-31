@@ -12,7 +12,7 @@ pub mod coinflip {
     /// Initializes the computation definition for the coin flip operation.
     /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -47,6 +47,7 @@ pub mod coinflip {
             args,
             None,
             vec![FlipCallback::callback_ix(&[])],
+            1,
         )?;
 
         Ok(())
@@ -116,7 +117,7 @@ pub struct Flip<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(

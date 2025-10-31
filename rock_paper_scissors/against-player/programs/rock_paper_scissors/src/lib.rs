@@ -13,7 +13,7 @@ pub mod rock_paper_scissors {
     use super::*;
 
     pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -44,6 +44,7 @@ pub mod rock_paper_scissors {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
 
         Ok(())
@@ -71,7 +72,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -109,6 +110,7 @@ pub mod rock_paper_scissors {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -135,7 +137,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -152,6 +154,7 @@ pub mod rock_paper_scissors {
             args,
             None,
             vec![CompareMovesCallback::callback_ix(&[])],
+            1,
         )?;
         Ok(())
     }
@@ -224,7 +227,7 @@ pub struct InitGame<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -323,7 +326,7 @@ pub struct PlayerMove<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -417,7 +420,7 @@ pub struct CompareMoves<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(

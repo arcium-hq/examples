@@ -10,7 +10,7 @@ pub mod rock_paper_scissors_against_rng {
     use super::*;
 
     pub fn init_play_rps_comp_def(ctx: Context<InitPlayRpsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -35,6 +35,7 @@ pub mod rock_paper_scissors_against_rng {
             args,
             None,
             vec![PlayRpsCallback::callback_ix(&[])],
+            1,
         )?;
         Ok(())
     }
@@ -104,7 +105,7 @@ pub struct PlayRps<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(

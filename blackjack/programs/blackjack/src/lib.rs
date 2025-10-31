@@ -20,7 +20,7 @@ pub mod blackjack {
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -83,6 +83,7 @@ pub mod blackjack {
                     is_writable: true,
                 },
             ])],
+            1,
         )?;
         Ok(())
     }
@@ -161,7 +162,7 @@ pub mod blackjack {
         Ok(())
     }
     pub fn init_player_hit_comp_def(ctx: Context<InitPlayerHitCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -209,6 +210,7 @@ pub mod blackjack {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -261,7 +263,7 @@ pub mod blackjack {
     pub fn init_player_double_down_comp_def(
         ctx: Context<InitPlayerDoubleDownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -304,6 +306,7 @@ pub mod blackjack {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -354,7 +357,7 @@ pub mod blackjack {
     }
 
     pub fn init_player_stand_comp_def(ctx: Context<InitPlayerStandCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -392,6 +395,7 @@ pub mod blackjack {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -428,7 +432,7 @@ pub mod blackjack {
     }
 
     pub fn init_dealer_play_comp_def(ctx: Context<InitDealerPlayCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -470,6 +474,7 @@ pub mod blackjack {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -514,7 +519,7 @@ pub mod blackjack {
     }
 
     pub fn init_resolve_game_comp_def(ctx: Context<InitResolveGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -553,6 +558,7 @@ pub mod blackjack {
                 pubkey: ctx.accounts.blackjack_game.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -649,7 +655,7 @@ pub struct InitializeBlackjackGame<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -749,7 +755,7 @@ pub struct PlayerHit<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -847,7 +853,7 @@ pub struct PlayerDoubleDown<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -945,7 +951,7 @@ pub struct PlayerStand<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -1043,7 +1049,7 @@ pub struct DealerPlay<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -1141,7 +1147,7 @@ pub struct ResolveGame<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
