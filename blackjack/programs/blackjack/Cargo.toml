@@ -22,9 +22,9 @@ custom-panic = []
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 
-arcium-client = { path = "../../../../arcium-tooling/client", default-features = false }
-arcium-macros = { path = "../../../../arcium-tooling/macros" }
-arcium-anchor = { path = "../../../../arcium-tooling/anchor" }
+arcium-client = { version = "0.4.0", default-features = false }
+arcium-macros = "0.4.0"
+arcium-anchor = "0.4.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
