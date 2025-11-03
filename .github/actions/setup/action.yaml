@@ -3,13 +3,13 @@ description: "Setup"
 runs:
   using: "composite"
   steps:
-    - run: echo "RUST_VERSION=1.88.0" >> $GITHUB_ENV
+    - run: echo "RUST_VERSION=1.89.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ANCHOR_VERSION=0.31.1" >> $GITHUB_ENV
+    - run: echo "ANCHOR_VERSION=0.32.1" >> $GITHUB_ENV
       shell: bash
-    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.3.0" >> $GITHUB_ENV
+    - run: echo "DEFAULT_ARCIUM_PROGRAMS_VERSION=0.4.0" >> $GITHUB_ENV
       shell: bash
-    - run: echo "SOLANA_CLI_VERSION=2.1.6" >> $GITHUB_ENV
+    - run: echo "SOLANA_CLI_VERSION=2.3.0" >> $GITHUB_ENV
       shell: bash
     - run: echo "CARGO_TERM_COLOR=always" >> $GITHUB_ENV
       shell: bash
@@ -17,13 +17,13 @@ runs:
       shell: bash
     - run: echo "CARGO_NET_GIT_FETCH_WITH_CLI=true" >> $GITHUB_ENV
       shell: bash
-    - run: echo "ARCUP_VERSION=0.3.0" >> $GITHUB_ENV
+    - run: echo "ARCUP_VERSION=0.4.0" >> $GITHUB_ENV
       shell: bash
 
     # Setup Rust with specific version
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: 1.88.0
+        toolchain: 1.89.0
         override: true
         components: clippy
 
