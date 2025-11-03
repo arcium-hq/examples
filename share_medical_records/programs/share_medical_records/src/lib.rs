@@ -48,7 +48,7 @@ pub mod share_medical_records {
     pub fn init_share_patient_data_comp_def(
         ctx: Context<InitSharePatientDataCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -92,6 +92,7 @@ pub mod share_medical_records {
             args,
             None,
             vec![SharePatientDataCallback::callback_ix(&[])],
+            1,
         )?;
         Ok(())
     }
@@ -185,7 +186,7 @@ pub struct SharePatientData<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(

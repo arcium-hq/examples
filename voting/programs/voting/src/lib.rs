@@ -13,7 +13,7 @@ pub mod voting {
     use super::*;
 
     pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -58,6 +58,7 @@ pub mod voting {
                 pubkey: ctx.accounts.poll_acc.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
 
         Ok(())
@@ -80,7 +81,7 @@ pub mod voting {
     }
 
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -126,6 +127,7 @@ pub mod voting {
                 pubkey: ctx.accounts.poll_acc.key(),
                 is_writable: true,
             }])],
+            1,
         )?;
         Ok(())
     }
@@ -154,7 +156,7 @@ pub mod voting {
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, 0, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -196,6 +198,7 @@ pub mod voting {
             args,
             None,
             vec![RevealResultCallback::callback_ix(&[])],
+            1,
         )?;
         Ok(())
     }
@@ -259,7 +262,7 @@ pub struct CreateNewPoll<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -360,7 +363,7 @@ pub struct Vote<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
@@ -463,7 +466,7 @@ pub struct RevealVotingResult<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
