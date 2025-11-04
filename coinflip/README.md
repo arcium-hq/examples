@@ -1,41 +1,111 @@
-# Confidential Coin Flip on Solana
+# Coinflip - Trustless Randomness
 
-This project demonstrates building a confidential on-chain Coin Flip game using Arcium. A player chooses Heads or Tails, and the outcome is determined by a random boolean generated securely within Arcium's confidential computation environment.
+Flip a coin online and you have to trust someone. Trust the server not to rig the flip, or trust yourself not to inspect the code and game the system. There's no way to prove it's actually random.
+
+This example shows how to generate random outcomes that no one can predict or manipulate - not the players, not the platform, not even the nodes running the computation.
+
+## Why is randomness hard to trust online?
+
+Digital randomness typically fails in three ways: server operators can influence outcomes, users can manipulate their local environment, or pseudorandom algorithms turn out to be predictable with enough information.
+
+The challenge is generating randomness that no single party can control, predict, or manipulate. Arcium network solves this by distributing random generation across multiple parties who don't trust each other - no single party can influence the outcome, but together they generate randomness no one can predict or bias.
 
 ## How It Works
 
-### The Challenge of On-Chain Randomness
+The coinflip follows this flow:
 
-Generating true, unpredictable randomness on a public blockchain is difficult. On-chain pseudo-random number generators can often be predicted or influenced, making games like Coin Flip potentially unfair if the outcome could be known beforehand.
+1. **Player commitment**: The player's choice (heads/tails) is encrypted and submitted to the network
+2. **Random generation**: Multiple nodes in Arcium network work together to generate a random boolean outcome
+3. **Encrypted comparison**: The system compares the encrypted choice against the encrypted random result
+4. **Result disclosure**: Only the win/loss outcome is revealed, maintaining privacy of intermediate values
 
-### Arcium's Solution
+No single party can view or manipulate the random generation process. The comparison occurs on encrypted values, preventing result manipulation.
 
-Arcium provides confidential computing on Solana, enabling secure random number generation for games:
+## Running the Example
 
-1.  **Confidential Player Choice**: The player submits their choice (Heads or Tails) encrypted.
-2.  **Secure Random Boolean Generation**: The Arcium network generates a random boolean value (representing the coin flip) securely within its confidential computation environment.
-3.  **Confidential Computation**: The Arcium network compares the player's encrypted choice against the securely generated random boolean.
-4.  **Result Calculation**: The result (win or lose) is computed without revealing the player's choice or the random boolean during the process.
-5.  **On-Chain Result**: Only the final outcome (win or lose) is published to the Solana blockchain.
+```bash
+# Install dependencies
+npm install
 
-## Game Flow
+# Build the program
+arcium build
 
-1.  The player initializes a game session on Solana.
-2.  The player submits their encrypted choice (Heads or Tails).
-3.  The Solana program triggers the confidential computation on the Arcium network.
-4.  Within Arcium's secure environment:
-    - A random boolean (the coin flip) is securely generated.
-    - The winner is determined based on the player's choice and the generated boolean.
-5.  The result (win or lose) is sent back to the Solana program.
-6.  The game outcome is recorded on-chain.
+# Run tests
+arcium test
+```
 
-## Security Features
+The test suite demonstrates the complete flow: player choice submission, secure random generation, encrypted comparison, and result verification.
 
-- **Player Choice Privacy**: The player's choice (Heads/Tails) is not revealed on-chain or during computation.
-- **Unpredictable Outcome**: The coin flip result (random boolean) is generated securely within Arcium's trusted environment, preventing prediction or manipulation.
-- **Fair Computation**: The game logic runs securely within Arcium.
-- **Verifiable Outcome**: The final result is recorded transparently on the blockchain.
+## Technical Implementation
 
-## Getting Started
+The player's choice is encrypted as a boolean (technically `Enc<Shared, bool>` in the code), allowing result verification without exposing the choice prematurely. Random generation uses Arcium's cryptographic primitives, where multiple nodes contribute entropy that no single node can predict or control.
 
-Refer to the [Arcium documentation](https://docs.arcium.com) for setup instructions.
+Key properties:
+- **Unpredictability**: No single party can predict the random outcome before generation
+- **Unbiasability**: No single party can influence the random outcome toward a desired result
+- **Integrity**: Arcium's maliciously secure protocol is designed to prevent manipulation even if some nodes act dishonestly
+
+## Implementation Details
+
+### The Trustless Randomness Problem
+
+**Conceptual Challenge**: In traditional online systems, randomness comes from somewhere - a server, an oracle, your browser's `Math.random()`. Each source requires trusting that entity:
+- **Server-generated**: Trust the operator doesn't rig outcomes
+- **VRF Oracles** (Switchboard, Pyth): Trust the oracle is honest (though cryptographically verifiable)
+- **Client-side**: Trust the player doesn't inspect and manipulate
+
+**The Question**: Can we generate randomness where NO single party can predict or bias the outcome?
+
+### The MPC Randomness Solution
+
+Arcium's `ArcisRNG` generates randomness through multi-party computation:
+
+```rust
+pub fn flip(input_ctxt: Enc<Shared, UserChoice>) -> bool {
+    let input = input_ctxt.to_arcis();
+    let toss = ArcisRNG::bool();  // MPC-generated randomness
+    (input.choice == toss).reveal()
+}
+```
+
+**How it works**:
+1. Multiple MPC nodes each generate local random values
+2. Nodes combine their randomness using secure multi-party computation
+3. Final random value is deterministic given all inputs
+4. **No single node can predict the result** before all contribute
+5. **No subset of nodes can bias the outcome** (requires only 1 honest node)
+
+### Comparison with VRF
+
+| Approach | Single Point of Trust? | Verification | Bias Prevention |
+|----------|----------------------|--------------|-----------------|
+| VRF (Switchboard) | Yes (oracle) | Cryptographic proof | Oracle must be honest |
+| ArcisRNG (MPC) | No | Computational guarantee | Only 1 honest node needed |
+
+**VRF**: One party generates randomness, provides cryptographic proof it wasn't cheated
+
+**ArcisRNG**: Multiple parties generate together, impossible to bias if ANY one is honest
+
+### Stateless Design
+
+Unlike Voting or Blackjack, Coinflip has **no game state account**:
+- Receive encrypted player choice → Generate MPC random → Compare → Emit result
+- Each flip is independent
+- No persistent storage needed
+
+When randomness generation itself is the primary feature, stateless design is simplest.
+
+### When to Use ArcisRNG
+
+Use MPC randomness (`ArcisRNG`) when:
+- **No one should control outcome**: Lotteries, random drops, fair matchmaking
+- **Platform can't be trusted**: House games where operator could cheat
+- **Randomness is high-value**: Large prizes or critical game mechanics
+- **Dishonest majority security**: Need to work even if most nodes are malicious
+
+Use VRF (Switchboard) when:
+- Single trusted oracle is acceptable
+- Lower computational cost is priority
+- Off-chain verification is needed
+
+This is powered by Arcium's Cerberus MPC protocol, which prevents any single party from biasing random outcomes through maliciously secure multi-party computation requiring only one honest actor. This is suitable for gaming, lotteries, and any application requiring trustless random outcomes.
