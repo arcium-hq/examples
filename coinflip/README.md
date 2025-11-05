@@ -25,7 +25,7 @@ No single party can view or manipulate the random generation process. The compar
 
 ```bash
 # Install dependencies
-npm install
+yarn install  # or npm install or pnpm install
 
 # Build the program
 arcium build
@@ -49,9 +49,9 @@ Key properties:
 
 ### The Trustless Randomness Problem
 
-**Conceptual Challenge**: In traditional online systems, randomness comes from somewhere - a server, an oracle, your browser's `Math.random()`. Each source requires trusting that entity:
+**Conceptual Challenge**: In traditional online systems, randomness comes from somewhere - a server, a third-party service, your browser's `Math.random()`. Each source requires trusting that entity:
 - **Server-generated**: Trust the operator doesn't rig outcomes
-- **VRF Oracles** (Switchboard, Pyth): Trust the oracle is honest (though cryptographically verifiable)
+- **Third-party service**: Trust the service provider is honest
 - **Client-side**: Trust the player doesn't inspect and manipulate
 
 **The Question**: Can we generate randomness where NO single party can predict or bias the outcome?
@@ -75,17 +75,6 @@ pub fn flip(input_ctxt: Enc<Shared, UserChoice>) -> bool {
 4. **No single node can predict the result** before all contribute
 5. **No subset of nodes can bias the outcome** (requires only 1 honest node)
 
-### Comparison with VRF
-
-| Approach | Single Point of Trust? | Verification | Bias Prevention |
-|----------|----------------------|--------------|-----------------|
-| VRF (Switchboard) | Yes (oracle) | Cryptographic proof | Oracle must be honest |
-| ArcisRNG (MPC) | No | Computational guarantee | Only 1 honest node needed |
-
-**VRF**: One party generates randomness, provides cryptographic proof it wasn't cheated
-
-**ArcisRNG**: Multiple parties generate together, impossible to bias if ANY one is honest
-
 ### Stateless Design
 
 Unlike Voting or Blackjack, Coinflip has **no game state account**:
@@ -95,17 +84,10 @@ Unlike Voting or Blackjack, Coinflip has **no game state account**:
 
 When randomness generation itself is the primary feature, stateless design is simplest.
 
-### When to Use ArcisRNG
+### When to Use This Pattern
 
 Use MPC randomness (`ArcisRNG`) when:
 - **No one should control outcome**: Lotteries, random drops, fair matchmaking
 - **Platform can't be trusted**: House games where operator could cheat
 - **Randomness is high-value**: Large prizes or critical game mechanics
 - **Dishonest majority security**: Need to work even if most nodes are malicious
-
-Use VRF (Switchboard) when:
-- Single trusted oracle is acceptable
-- Lower computational cost is priority
-- Off-chain verification is needed
-
-This is powered by Arcium's Cerberus MPC protocol, which prevents any single party from biasing random outcomes through maliciously secure multi-party computation requiring only one honest actor. This is suitable for gaming, lotteries, and any application requiring trustless random outcomes.
