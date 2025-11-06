@@ -19,6 +19,7 @@ import {
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -47,19 +48,22 @@ describe("RockPaperScissorsAgainstRng", () => {
   it("play rps against rng", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
+
     console.log("Initializing play rps computation definition");
-    const initRpsSig = await initPlayRpsCompDef(program, owner, false);
+    const initRpsSig = await initPlayRpsCompDef(program, owner, false, false);
     console.log(
       "Play rps computation definition initialized with signature",
       initRpsSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
@@ -113,7 +117,8 @@ describe("RockPaperScissorsAgainstRng", () => {
   async function initPlayRpsCompDef(
     program: Program<RockPaperScissorsAgainstRng>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -150,7 +155,7 @@ describe("RockPaperScissorsAgainstRng", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
@@ -168,6 +173,35 @@ describe("RockPaperScissorsAgainstRng", () => {
     return sig;
   }
 });
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 10,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);

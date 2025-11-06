@@ -11,9 +11,14 @@ runs:
       with:
         path: |
           ~/.cargo/bin/anchor
-        key: anchor-cli-${{ runner.os }}-v0003-${{ env.ANCHOR_VERSION }}-${{ env.ANCHOR_COMMIT_HASH }}
+        key: anchor-cli-${{ runner.os }}-v0004-${{ env.ANCHOR_VERSION }}
         save-always: true
-    # if ANCHOR_VERSION is 0, then install the anchor-cli from source
-    - run: if [ $ANCHOR_VERSION -eq 0 ]; then cargo install --git https://github.com/solana-foundation/anchor --rev $ANCHOR_COMMIT_HASH anchor-cli --locked --force; else cargo install --git https://github.com/solana-foundation/anchor --tag "v$ANCHOR_VERSION" anchor-cli --locked; fi
+    - run: |
+        sudo apt-get update
+        sudo apt install build-essential cmake pkg-config libudev-dev
+        cargo install --git https://github.com/solana-foundation/anchor --tag v${{ env.ANCHOR_VERSION }} anchor-cli --locked --force
       shell: bash
       if: steps.cache-anchor-cli.outputs.cache-hit != 'true'
+    - name: Run Anchor CLI
+      run: anchor --version
+      shell: bash

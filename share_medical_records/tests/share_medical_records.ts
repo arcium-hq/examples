@@ -19,6 +19,7 @@ import {
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -49,19 +50,27 @@ describe("ShareMedicalRecords", () => {
   it("can store and share patient data confidentially!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
+
     console.log("Initializing share patient data computation definition");
-    const initSPDSig = await initSharePatientDataCompDef(program, owner, false);
+    const initSPDSig = await initSharePatientDataCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Share patient data computation definition initialized with signature",
       initSPDSig
     );
 
-    const senderPrivateKey = x25519.utils.randomPrivateKey();
+    const senderPrivateKey = x25519.utils.randomSecretKey();
     const senderPublicKey = x25519.getPublicKey(senderPrivateKey);
-    const mxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const sharedSecret = x25519.getSharedSecret(senderPrivateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
@@ -112,7 +121,7 @@ describe("ShareMedicalRecords", () => {
       .rpc({ commitment: "confirmed" });
     console.log("Store sig is ", storeSig);
 
-    const receiverSecretKey = x25519.utils.randomPrivateKey();
+    const receiverSecretKey = x25519.utils.randomSecretKey();
     const receiverPubKey = x25519.getPublicKey(receiverSecretKey);
     const receiverNonce = randomBytes(16);
 
@@ -203,7 +212,8 @@ describe("ShareMedicalRecords", () => {
   async function initSharePatientDataCompDef(
     program: Program<ShareMedicalRecords>,
     owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -243,7 +253,7 @@ describe("ShareMedicalRecords", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       const finalizeTx = await buildFinalizeCompDefTx(
         provider as anchor.AnchorProvider,
         Buffer.from(offset).readUInt32LE(),
@@ -261,6 +271,35 @@ describe("ShareMedicalRecords", () => {
     return sig;
   }
 });
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 10,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);

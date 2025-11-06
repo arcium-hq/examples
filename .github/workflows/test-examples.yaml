@@ -15,7 +15,7 @@ jobs:
     outputs:
       matrix: ${{ steps.find-examples.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Find example directories
         id: find-examples
         run: |
@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup/
       - uses: ./.github/actions/setup-solana/
       - uses: ./.github/actions/setup-anchor/

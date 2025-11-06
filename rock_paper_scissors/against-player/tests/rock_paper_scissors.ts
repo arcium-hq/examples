@@ -19,6 +19,7 @@ import {
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -53,16 +54,28 @@ describe("RockPaperScissors", () => {
     const playerB = Keypair.generate();
     const unauthorizedPlayer = Keypair.generate();
 
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
+
     // Step 1: Initialize computation definitions
     console.log("Initializing init_game computation definition");
-    const initGameSig = await initInitGameCompDef(program, owner, false);
+    const initGameSig = await initInitGameCompDef(program, owner, false, false);
     console.log(
       "Init game computation definition initialized with signature",
       initGameSig
     );
 
     console.log("Initializing player_move computation definition");
-    const playerMoveSig = await initPlayerMoveCompDef(program, owner, false);
+    const playerMoveSig = await initPlayerMoveCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Player move computation definition initialized with signature",
       playerMoveSig
@@ -72,6 +85,7 @@ describe("RockPaperScissors", () => {
     const compareMovesSig = await initCompareMovesCompDef(
       program,
       owner,
+      false,
       false
     );
     console.log(
@@ -83,28 +97,20 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Playing a complete game with two players ---");
 
     // Generate encryption keys for Player A
-    const playerAPrivateKey = x25519.utils.randomPrivateKey();
+    const playerAPrivateKey = x25519.utils.randomSecretKey();
     const playerAPublicKey = x25519.getPublicKey(playerAPrivateKey);
-    const playerAMxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const playerASharedSecret = x25519.getSharedSecret(
       playerAPrivateKey,
-      playerAMxePublicKey
+      mxePublicKey
     );
     const playerACipher = new RescueCipher(playerASharedSecret);
 
     // Generate encryption keys for Player B
-    const playerBPrivateKey = x25519.utils.randomPrivateKey();
+    const playerBPrivateKey = x25519.utils.randomSecretKey();
     const playerBPublicKey = x25519.getPublicKey(playerBPrivateKey);
-    const playerBMxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
     const playerBSharedSecret = x25519.getSharedSecret(
       playerBPrivateKey,
-      playerBMxePublicKey
+      mxePublicKey
     );
     const playerBCipher = new RescueCipher(playerBSharedSecret);
 
@@ -344,7 +350,7 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Testing unauthorized player ---");
 
     // Generate new encryption keys for this test
-    const unauthorizedPrivateKey = x25519.utils.randomPrivateKey();
+    const unauthorizedPrivateKey = x25519.utils.randomSecretKey();
     const unauthorizedPublicKey = x25519.getPublicKey(unauthorizedPrivateKey);
     const unauthorizedMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
@@ -473,7 +479,7 @@ describe("RockPaperScissors", () => {
     console.log("\n--- Testing multiple game scenarios ---");
 
     // Generate encryption keys for multiple game scenarios
-    const scenarioPrivateKey = x25519.utils.randomPrivateKey();
+    const scenarioPrivateKey = x25519.utils.randomSecretKey();
     const scenarioPublicKey = x25519.getPublicKey(scenarioPrivateKey);
     const scenarioMxePublicKey = new Uint8Array([
       34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
@@ -933,7 +939,8 @@ function readKpJson(path: string): anchor.web3.Keypair {
 async function initInitGameCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -970,7 +977,7 @@ async function initInitGameCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
@@ -991,7 +998,8 @@ async function initInitGameCompDef(
 async function initPlayerMoveCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -1028,7 +1036,7 @@ async function initPlayerMoveCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
@@ -1049,7 +1057,8 @@ async function initPlayerMoveCompDef(
 async function initCompareMovesCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair,
-  uploadRawCircuit: boolean
+  uploadRawCircuit: boolean,
+  offchainSource: boolean
 ): Promise<string> {
   const baseSeedCompDefAcc = getArciumAccountBaseSeed(
     "ComputationDefinitionAccount"
@@ -1086,7 +1095,7 @@ async function initCompareMovesCompDef(
       rawCircuit,
       true
     );
-  } else {
+  } else if (!offchainSource) {
     const finalizeTx = await buildFinalizeCompDefTx(
       program.provider as anchor.AnchorProvider,
       Buffer.from(offset).readUInt32LE(),
@@ -1102,4 +1111,33 @@ async function initCompareMovesCompDef(
     await program.provider.sendAndConfirm(finalizeTx);
   }
   return sig;
+}
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 10,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
 }

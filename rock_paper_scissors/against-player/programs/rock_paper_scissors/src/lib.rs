@@ -1,36 +1,19 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::{Argument, CallbackAccount},
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("vU5KrZeRZvZ5aBCxAMBweMBRMbnexskHBAPDXBFjSCB");
+declare_id!("5AQRbcaHCrhGb7VvH35HHaSKzsMJQFHGTfpLbdMfA3Mw");
 
 #[arcium_program]
 pub mod rock_paper_scissors {
     use super::*;
 
     pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -50,15 +33,18 @@ pub mod rock_paper_scissors {
 
         let args = vec![Argument::PlaintextU128(nonce)];
 
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![InitGameCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
+            1,
         )?;
 
         Ok(())
@@ -67,23 +53,16 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "init_game")]
     pub fn init_game_callback(
         ctx: Context<InitGameCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<InitGameOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(InitGameOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let nonce = u128::from_le_bytes(nonce_bytes);
+        let nonce = o.nonce;
 
-        let moves: [[u8; 32]; 2] = bytes[16..80]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let moves: [[u8; 32]; 2] = o.ciphertexts;
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
@@ -93,7 +72,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -119,15 +98,19 @@ pub mod rock_paper_scissors {
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            vec![CallbackAccount {
+            None,
+            vec![PlayerMoveCallback::callback_ix(&[CallbackAccount {
                 pubkey: ctx.accounts.rps_game.key(),
                 is_writable: true,
-            }],
-            None,
+            }])],
+            1,
         )?;
         Ok(())
     }
@@ -135,23 +118,16 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "player_move")]
     pub fn player_move_callback(
         ctx: Context<PlayerMoveCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<PlayerMoveOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(PlayerMoveOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let nonce_bytes: [u8; 16] = bytes[0..16].try_into().unwrap();
-        let nonce = u128::from_le_bytes(nonce_bytes);
+        let nonce = o.nonce;
 
-        let moves: [[u8; 32]; 2] = bytes[16..80]
-            .chunks_exact(32)
-            .map(|c| c.try_into().unwrap())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+        let moves: [[u8; 32]; 2] = o.ciphertexts;
 
         let game = &mut ctx.accounts.rps_game;
         game.moves = moves;
@@ -161,7 +137,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -170,22 +146,29 @@ pub mod rock_paper_scissors {
             Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
             Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![CompareMovesCallback::callback_ix(&[])],
+            1,
+        )?;
         Ok(())
     }
 
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<CompareMovesOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let result = match output {
+            ComputationOutputs::Success(CompareMovesOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let result = bytes[0];
         let result_str = match result {
             0 => "Tie",
             1 => "Player A Wins",
@@ -208,9 +191,18 @@ pub struct InitGame<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -235,14 +227,14 @@ pub struct InitGame<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -258,11 +250,9 @@ pub struct InitGame<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("init_game", payer)]
+#[callback_accounts("init_game")]
 #[derive(Accounts)]
 pub struct InitGameCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME)
@@ -284,7 +274,7 @@ pub struct InitInitGameCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -300,9 +290,18 @@ pub struct PlayerMove<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -327,14 +326,14 @@ pub struct PlayerMove<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -345,11 +344,9 @@ pub struct PlayerMove<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("player_move", payer)]
+#[callback_accounts("player_move")]
 #[derive(Accounts)]
 pub struct PlayerMoveCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE)
@@ -371,7 +368,7 @@ pub struct InitPlayerMoveCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -387,9 +384,18 @@ pub struct CompareMoves<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -414,14 +420,14 @@ pub struct CompareMoves<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -432,11 +438,9 @@ pub struct CompareMoves<'info> {
     pub rps_game: Account<'info, RPSGame>,
 }
 
-#[callback_accounts("compare_moves", payer)]
+#[callback_accounts("compare_moves")]
 #[derive(Accounts)]
 pub struct CompareMovesCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
@@ -456,7 +460,7 @@ pub struct InitCompareMovesCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -486,4 +490,6 @@ pub enum ErrorCode {
     AbortedComputation,
     #[msg("Not authorized")]
     NotAuthorized,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }

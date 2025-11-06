@@ -12,13 +12,14 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
+  getMXEAccAddress,
   getMempoolAccAddress,
   getCompDefAccAddress,
   getExecutingPoolAccAddress,
   x25519,
   getComputationAccAddress,
   getArciumAccountBaseSeed,
-  getMXEAccAddress,
+  getMXEPublicKey,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -71,9 +72,9 @@ function decompressHand(
   const numCardSlots = 11; // Max possible slots in u128 encoding
 
   for (let i = 0; i < numCardSlots; i++) {
-    const card = currentHandValue % 64n; // Get the last 6 bits
+    const card = currentHandValue % BigInt(64); // Get the last 6 bits
     cards.push(Number(card));
-    currentHandValue >>= 6n; // Shift right by 6 bits
+    currentHandValue >>= BigInt(6); // Shift right by 6 bits
   }
 
   // Return only the actual cards based on handSize, reversing because they were pushed LSB first
@@ -85,6 +86,8 @@ function decompressHand(
 }
 
 describe("Blackjack", () => {
+  const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Blackjack as Program<Blackjack>;
@@ -98,7 +101,7 @@ describe("Blackjack", () => {
     let listenerId: number;
     let timeoutId: NodeJS.Timeout;
     const event = await new Promise<Event[E]>((res, rej) => {
-      listenerId = program.addEventListener(eventName, (event) => {
+      listenerId = program.addEventListener(eventName as any, (event) => {
         if (timeoutId) clearTimeout(timeoutId);
         res(event);
       });
@@ -114,29 +117,27 @@ describe("Blackjack", () => {
   const arciumEnv = getArciumEnv();
 
   it("Should play a full blackjack game with state awareness", async () => {
-    const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
-
     console.log("Owner address:", owner.publicKey.toBase58());
 
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
     await Promise.all([
-      initShuffleAndDealCardsCompDef(program, owner, false).then((sig) =>
-        console.log("Shuffle/Deal CompDef Init Sig:", sig)
+      initShuffleAndDealCardsCompDef(program as any, owner, false, false).then(
+        (sig) => console.log("Shuffle/Deal CompDef Init Sig:", sig)
       ),
-      initPlayerHitCompDef(program, owner, false).then((sig) =>
+      initPlayerHitCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Player Hit CompDef Init Sig:", sig)
       ),
-      initPlayerStandCompDef(program, owner, false).then((sig) =>
+      initPlayerStandCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Player Stand CompDef Init Sig:", sig)
       ),
-      initPlayerDoubleDownCompDef(program, owner, false).then((sig) =>
-        console.log("Player DoubleDown CompDef Init Sig:", sig)
+      initPlayerDoubleDownCompDef(program as any, owner, false, false).then(
+        (sig) => console.log("Player DoubleDown CompDef Init Sig:", sig)
       ),
-      initDealerPlayCompDef(program, owner, false).then((sig) =>
+      initDealerPlayCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Dealer Play CompDef Init Sig:", sig)
       ),
-      initResolveGameCompDef(program, owner, false).then((sig) =>
+      initResolveGameCompDef(program as any, owner, false, false).then((sig) =>
         console.log("Resolve Game CompDef Init Sig:", sig)
       ),
     ]);
@@ -144,12 +145,14 @@ describe("Blackjack", () => {
     await new Promise((res) => setTimeout(res, 2000));
 
     // --- Setup Game Cryptography ---
-    const privateKey = x25519.utils.randomPrivateKey();
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
     const clientNonce = randomBytes(16);
@@ -227,9 +230,12 @@ describe("Blackjack", () => {
     expect(gameState.gameState).to.deep.equal({ playerTurn: {} });
 
     // Decrypt initial hands
-    let currentClientNonce = new Uint8Array(
-      cardsShuffledAndDealtEvent.clientNonce
+    // Convert anchor.BN to Uint8Array (16 bytes for u128) - manual conversion
+    let currentClientNonce = Uint8Array.from(
+      cardsShuffledAndDealtEvent.clientNonce.toArray("le", 16)
     );
+
+    console.log("Current client nonce:", currentClientNonce);
     let compressedPlayerHand = cipher.decrypt(
       [cardsShuffledAndDealtEvent.playerHand],
       currentClientNonce
@@ -241,18 +247,20 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
+        playerIsSoft ? " Soft" : ""
       })`
     );
 
-    let currentDealerClientNonce = new Uint8Array(
-      cardsShuffledAndDealtEvent.dealerClientNonce
+    let currentDealerClientNonce = Uint8Array.from(
+      cardsShuffledAndDealtEvent.dealerClientNonce.toArray("le", 16)
     );
+    console.log("Current dealer client nonce:", currentDealerClientNonce);
     let dealerFaceUpCardEncrypted = cipher.decrypt(
       [cardsShuffledAndDealtEvent.dealerFaceUpCard],
       currentDealerClientNonce
     );
-    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % 64n);
+    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % BigInt(64));
     console.log(`Dealer Face Up Card Index: ${dealerFaceUpCard}`);
 
     // --- Player's Turn Loop ---
@@ -331,7 +339,9 @@ describe("Blackjack", () => {
 
           if ("playerHand" in playerHitEvent) {
             console.log("Received PlayerHitEvent.");
-            currentClientNonce = new Uint8Array(playerHitEvent.clientNonce);
+            currentClientNonce = Uint8Array.from(
+              playerHitEvent.clientNonce.toArray("le", 16)
+            );
             compressedPlayerHand = cipher.decrypt(
               [playerHitEvent.playerHand],
               currentClientNonce
@@ -472,7 +482,9 @@ describe("Blackjack", () => {
       const dealerPlayEvent = await dealerPlayEventPromise;
       console.log("Received DealerPlayEvent.");
 
-      const finalDealerNonce = new Uint8Array(dealerPlayEvent.clientNonce);
+      const finalDealerNonce = Uint8Array.from(
+        dealerPlayEvent.clientNonce.toArray("le", 16)
+      );
       const decryptedDealerHand = cipher.decrypt(
         [dealerPlayEvent.dealerHand],
         finalDealerNonce
@@ -546,7 +558,8 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${
+          Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -555,7 +568,8 @@ describe("Blackjack", () => {
   async function initShuffleAndDealCardsCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -596,7 +610,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Shuffle/Deal CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -618,7 +632,8 @@ describe("Blackjack", () => {
   async function initPlayerHitCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -657,7 +672,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player Hit CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -679,7 +694,8 @@ describe("Blackjack", () => {
   async function initPlayerStandCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -718,7 +734,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player Stand CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -740,7 +756,8 @@ describe("Blackjack", () => {
   async function initPlayerDoubleDownCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -779,7 +796,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Player DoubleDown CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -801,7 +818,8 @@ describe("Blackjack", () => {
   async function initDealerPlayCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -840,7 +858,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Dealer Play CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -862,7 +880,8 @@ describe("Blackjack", () => {
   async function initResolveGameCompDef(
     program: Program<Blackjack>,
     owner: Keypair,
-    uploadRawCircuit: boolean
+    uploadRawCircuit: boolean,
+    offchainSource: boolean
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -901,7 +920,7 @@ describe("Blackjack", () => {
         rawCircuit,
         true
       );
-    } else {
+    } else if (!offchainSource) {
       console.log("Finalizing Resolve Game CompDef...");
       const finalizeTx = await buildFinalizeCompDefTx(
         provider,
@@ -920,6 +939,35 @@ describe("Blackjack", () => {
     return sig;
   }
 });
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 10,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);

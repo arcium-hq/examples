@@ -10,7 +10,7 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn play_rps(player_move_ctxt: Enc<Shared, PlayerMove>) -> bool {
+    pub fn play_rps(player_move_ctxt: Enc<Shared, PlayerMove>) -> u8 {
         let player_move = player_move_ctxt.to_arcis();
 
         let first_bit = ArcisRNG::bool();
@@ -43,6 +43,6 @@ mod circuits {
             2
         };
 
-        (result == 1).reveal()
+        result.reveal()
     }
 }

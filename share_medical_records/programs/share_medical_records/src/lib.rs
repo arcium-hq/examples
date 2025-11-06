@@ -1,32 +1,28 @@
 use anchor_lang::prelude::*;
-use arcium_anchor::{
-    comp_def_offset, derive_cluster_pda, derive_comp_def_pda, derive_comp_pda, derive_execpool_pda,
-    derive_mempool_pda, derive_mxe_pda, init_comp_def, queue_computation, ComputationOutputs,
-    ARCIUM_CLOCK_ACCOUNT_ADDRESS, ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS, CLUSTER_PDA_SEED,
-    COMP_DEF_PDA_SEED, COMP_PDA_SEED, EXECPOOL_PDA_SEED, MEMPOOL_PDA_SEED, MXE_PDA_SEED,
-};
-use arcium_client::idl::arcium::{
-    accounts::{
-        ClockAccount, Cluster, ComputationDefinitionAccount, PersistentMXEAccount,
-        StakingPoolAccount,
-    },
-    program::Arcium,
-    types::Argument,
-    ID_CONST as ARCIUM_PROG_ID,
-};
-use arcium_macros::{
-    arcium_callback, arcium_program, callback_accounts, init_computation_definition_accounts,
-    queue_computation_accounts,
-};
+use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_SHARE_PATIENT_DATA: u32 = comp_def_offset("share_patient_data");
 
-declare_id!("4AJmvihTL5s1fwQYQGNA5c49sypuz5iScWnCD4HJZPp4");
+declare_id!("NEnkfYAYz9epwXkXChP3hz2y1L8wUgf2xkrUKAmfxBD");
 
 #[arcium_program]
 pub mod share_medical_records {
     use super::*;
 
+    /// Stores encrypted patient medical data on-chain.
+    ///
+    /// This function stores patient medical information in encrypted form. All data fields
+    /// are provided as encrypted 32-byte arrays that can only be decrypted by authorized parties.
+    /// The data remains confidential while being stored on the public Solana blockchain.
+    ///
+    /// # Arguments
+    /// * `patient_id` - Encrypted unique identifier for the patient
+    /// * `age` - Encrypted patient age
+    /// * `gender` - Encrypted patient gender information
+    /// * `blood_type` - Encrypted blood type information
+    /// * `weight` - Encrypted patient weight
+    /// * `height` - Encrypted patient height
+    /// * `allergies` - Array of encrypted allergy information (up to 5 entries)
     pub fn store_patient_data(
         ctx: Context<StorePatientData>,
         patient_id: [u8; 32],
@@ -52,10 +48,22 @@ pub mod share_medical_records {
     pub fn init_share_patient_data_comp_def(
         ctx: Context<InitSharePatientDataCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
+    /// Initiates confidential sharing of patient data with a specified receiver.
+    ///
+    /// This function triggers an MPC computation that re-encrypts the patient's medical data
+    /// for a specific receiver. The receiver will be able to decrypt the data using their
+    /// private key, while the data remains encrypted for everyone else. The original
+    /// stored data is not modified and remains encrypted for the original owner.
+    ///
+    /// # Arguments
+    /// * `receiver` - Public key of the authorized recipient
+    /// * `receiver_nonce` - Cryptographic nonce for the receiver's encryption
+    /// * `sender_pub_key` - Sender's public key for the operation
+    /// * `nonce` - Cryptographic nonce for the sender's encryption
     pub fn share_patient_data(
         ctx: Context<SharePatientData>,
         computation_offset: u64,
@@ -75,38 +83,46 @@ pub mod share_medical_records {
                 PatientData::INIT_SPACE as u32,
             ),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![SharePatientDataCallback::callback_ix(&[])],
+            1,
+        )?;
         Ok(())
     }
 
+    /// Handles the result of the patient data sharing MPC computation.
+    ///
+    /// This callback processes the re-encrypted patient data that has been prepared for
+    /// the specified receiver. It emits an event containing all the medical data fields
+    /// encrypted specifically for the receiver's public key.
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<SharePatientDataOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(SharePatientDataOutput { field_0 }) => field_0,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        let bytes = bytes.iter().skip(32).cloned().collect::<Vec<_>>();
-
         emit!(ReceivedPatientDataEvent {
-            nonce: bytes[0..16].try_into().unwrap(),
-            patient_id: bytes[16..48].try_into().unwrap(),
-            age: bytes[48..80].try_into().unwrap(),
-            gender: bytes[80..112].try_into().unwrap(),
-            blood_type: bytes[112..144].try_into().unwrap(),
-            weight: bytes[144..176].try_into().unwrap(),
-            height: bytes[176..208].try_into().unwrap(),
-            allergies: [
-                bytes[208..240].try_into().unwrap(),
-                bytes[240..272].try_into().unwrap(),
-                bytes[272..304].try_into().unwrap(),
-                bytes[304..336].try_into().unwrap(),
-                bytes[336..368].try_into().unwrap(),
-            ],
+            nonce: o.nonce.to_le_bytes(),
+            patient_id: o.ciphertexts[0],
+            age: o.ciphertexts[1],
+            gender: o.ciphertexts[2],
+            blood_type: o.ciphertexts[3],
+            weight: o.ciphertexts[4],
+            height: o.ciphertexts[5],
+            allergies: o.ciphertexts[6..11]
+                .try_into()
+                .map_err(|_| ErrorCode::InvalidAllergyData)?,
         });
         Ok(())
     }
@@ -134,9 +150,18 @@ pub struct SharePatientData<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(
+        init_if_needed,
+        space = 9,
+        payer = payer,
+        seeds = [&SIGN_PDA_SEED],
+        bump,
+        address = derive_sign_pda!(),
+    )]
+    pub sign_pda_account: Account<'info, SignerAccount>,
+    #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, PersistentMXEAccount>,
+    pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
         address = derive_mempool_pda!()
@@ -161,14 +186,14 @@ pub struct SharePatientData<'info> {
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account)
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     pub cluster_account: Account<'info, Cluster>,
     #[account(
         mut,
-        address = ARCIUM_STAKING_POOL_ACCOUNT_ADDRESS,
+        address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
     )]
-    pub pool_account: Account<'info, StakingPoolAccount>,
+    pub pool_account: Account<'info, FeePool>,
     #[account(
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
@@ -178,11 +203,9 @@ pub struct SharePatientData<'info> {
     pub patient_data: Account<'info, PatientData>,
 }
 
-#[callback_accounts("share_patient_data", payer)]
+#[callback_accounts("share_patient_data")]
 #[derive(Accounts)]
 pub struct SharePatientDataCallback<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
     pub arcium_program: Program<'info, Arcium>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHARE_PATIENT_DATA)
@@ -202,7 +225,7 @@ pub struct InitSharePatientDataCompDef<'info> {
         mut,
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Box<Account<'info, PersistentMXEAccount>>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
@@ -223,15 +246,23 @@ pub struct ReceivedPatientDataEvent {
     pub allergies: [[u8; 32]; 5],
 }
 
+/// Stores encrypted patient medical information.
 #[account]
 #[derive(InitSpace)]
 pub struct PatientData {
+    /// Encrypted unique patient identifier
     pub patient_id: [u8; 32],
+    /// Encrypted patient age
     pub age: [u8; 32],
+    /// Encrypted gender information
     pub gender: [u8; 32],
+    /// Encrypted blood type
     pub blood_type: [u8; 32],
+    /// Encrypted weight measurement
     pub weight: [u8; 32],
+    /// Encrypted height measurement
     pub height: [u8; 32],
+    /// Array of encrypted allergy information (up to 5 allergies)
     pub allergies: [[u8; 32]; 5],
 }
 
@@ -239,4 +270,8 @@ pub struct PatientData {
 pub enum ErrorCode {
     #[msg("The computation was aborted")]
     AbortedComputation,
+    #[msg("Invalid allergy data format")]
+    InvalidAllergyData,
+    #[msg("Cluster not set")]
+    ClusterNotSet,
 }
