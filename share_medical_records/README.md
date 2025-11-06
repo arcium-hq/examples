@@ -1,14 +1,14 @@
 # Medical Records - Privacy-Preserving Healthcare Data Sharing
 
-Share your medical records with a new doctor and here's who gets to see them: the platform operator, system administrators, database engineers, and probably the cloud infrastructure provider. Everyone except you controls who accesses your health data.
+Share your medical records with a new doctor and here's the problem: the platform operator, system administrators, database engineers, and cloud infrastructure provider all have access. You can't control who sees what.
 
-This example demonstrates selective disclosure where you control exactly which medical information goes to which providers - without intermediaries being able to read any of it.
+This example demonstrates patient-controlled selective disclosure where you specify exactly which medical information each provider can access.
 
 ## What's wrong with healthcare data sharing today?
 
-The problems cascade: medical records sit in centralized databases where system administrators can access everything, patients have no control over who sees what, and every centralized database is a target for breaches. The whole system requires trusting multiple third parties not to misuse your data.
+Medical records in centralized databases face multiple problems: patients have no control over who sees what, and every centralized database is a target for breaches. The system requires trusting multiple third parties not to misuse your data.
 
-The challenge is enabling healthcare data sharing while giving patients control over access permissions and preventing unnecessary data exposure to intermediaries.
+The challenge is enabling healthcare data sharing while giving patients control over access permissions.
 
 ## How Selective Data Sharing Works
 
@@ -18,15 +18,14 @@ The protocol enables patient-controlled data disclosure:
 2. **Access control**: Patient specifies which data fields to share with which providers
 3. **Selective disclosure**: Arcium network enables transfer of authorized data only
 4. **Provider access**: Authorized providers receive only the specific data fields granted access
-5. **Platform isolation**: The sharing platform cannot access unencrypted patient data
 
-The patient maintains granular control over data access. Providers receive only authorized information, while the platform facilitating the transfer operates on encrypted data without plaintext access.
+The patient maintains granular control over data access. Providers receive only authorized information, while the platform facilitating the transfer operates on encrypted data.
 
 ## Running the Example
 
 ```bash
 # Install dependencies
-npm install
+yarn install  # or npm install or pnpm install
 
 # Build the program
 arcium build
@@ -39,24 +38,15 @@ The test suite demonstrates patient data encryption, selective authorization con
 
 ## Technical Implementation
 
-Medical records are encrypted and stored as patient data structures (using `Enc<Shared, PatientData>` in the code). Access control is enforced through encrypted authorization logic that determines which data fields specific providers can access.
-
-Key mechanisms:
-- **Encrypted storage**: Patient data remains encrypted on-chain
-- **Granular access control**: Patients specify field-level access permissions
-- **Network-based selective disclosure**: Selective data transfer occurs without platform decryption
-- **Authorization verification**: Access rights are cryptographically enforced
+Medical records are encrypted and stored as patient data structures. Access control is enforced through encrypted authorization logic that determines which data fields specific providers can access.
 
 ## Implementation Details
 
 ### The Selective Sharing Problem
 
-**Conceptual Challenge**: You want to share medical records with a new doctor, but:
-- Don't want hospital system admins to see your data
-- Don't want the platform operator to access unencrypted records
-- Want to control exactly who can decrypt your information
+**Conceptual Challenge**: You want to share medical records with a new doctor, but you want to control exactly who can decrypt your information.
 
-**The Question**: Can you transfer encrypted data from your key to doctor's key, without anyone (including the platform) seeing the plaintext?
+**The Question**: Can you transfer encrypted data from your key to doctor's key without decrypting it in transit?
 
 ### The Re-encryption Pattern
 
@@ -72,12 +62,12 @@ pub fn share_patient_data(
 
 **What happens**:
 1. Your encrypted data enters MPC
-2. Data is decrypted **inside the secure MPC environment** (never exposed to any single party)
+2. Data is decrypted inside the MPC environment
 3. Data is re-encrypted using doctor's public key
 4. Re-encrypted data is emitted in event
 5. Only the doctor can decrypt (they have the private key)
 
-**Key insight**: The platform facilitates transfer but never sees plaintext. Data is "handed over" inside MPC.
+**Key insight**: Data is "handed over" inside MPC—re-encrypted from one key to another without intermediate plaintext exposure.
 
 ### Multi-field Encrypted Struct
 
@@ -93,7 +83,7 @@ pub struct PatientData {
 }
 ```
 
-Stored as 11 separate encrypted fields (352 bytes total). Each field individually encrypted for granular access control (future enhancement could share only specific fields).
+Stored as a single encrypted data structure containing 11 fields (352 bytes total). The entire record is encrypted together for on-chain storage.
 
 ### When to Use Re-encryption
 
@@ -102,5 +92,3 @@ Apply this pattern when:
 - No single party should see the unencrypted data during transfer
 - Selective disclosure (future: share only age + blood_type, not full record)
 - Examples: credential sharing, encrypted file transfer, confidential data markets
-
-This is powered by Arcium's Cerberus MPC protocol, which is designed to prevent any single party from accessing unauthorized medical information through maliciously secure multi-party computation requiring only one honest actor. Patients maintain data sovereignty while enabling coordinated care.

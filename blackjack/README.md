@@ -1,12 +1,12 @@
 # Blackjack - Hidden Game State
 
-Physical blackjack naturally hides the dealer's hole card. Digital blackjack has a different problem: the card's value must be stored somewhere - whether that's on a game server, in a database, or in code. And whoever has access to that storage can see it. Trusting a server to "hide" it just means betting they won't peek.
+Physical blackjack naturally hides the dealer's hole card. Digital blackjack has a different problem: the card's value must be stored somewhere - whether that's on a game server, in a database, or in code. Trusting a server to "hide" it just means betting they won't peek.
 
-This example shows how to keep cards genuinely hidden from everyone - players, dealers, and even the platform - until the right moment to reveal them.
+This example shows how to implement blackjack where cards remain encrypted until they need to be revealed according to game rules.
 
 ## Why is hidden information hard in digital card games?
 
-Physical blackjack maintains three types of hidden information: the dealer's hole card, undealt cards in the deck, and random shuffle order. In digital implementations, this information must be stored as data - whether somewhere on a server, or on a public blockchain - creating opportunities for whoever controls that storage to access or manipulate it.
+Physical blackjack maintains three types of hidden information: the dealer's hole card, undealt cards in the deck, and random shuffle order. In digital implementations, this information must be stored as data - whether on a server or on a public blockchain - where it becomes vulnerable to inspection or manipulation.
 
 Blockchain implementations face an additional challenge: transparent state. If card data is stored on-chain unencrypted, all participants can view the dealer's hidden cards and remaining deck order, completely breaking the game.
 
@@ -33,9 +33,9 @@ The test suite demonstrates a complete game flow: deck shuffling with secure ran
 
 ## Technical Implementation
 
-The deck is stored as encrypted values (using `Enc<Shared, u128>` in the code), with multiple cards packed together for efficiency. Game logic processes encrypted hand values without ever decrypting them, using Arcium's confidential instructions.
+The deck is stored as encrypted values, with multiple cards packed together for efficiency. Game logic processes encrypted hand values without ever decrypting them, using Arcium's confidential instructions.
 
-The system works through three key mechanisms: network-generated randomness creates unpredictable deck order, selective disclosure reveals only authorized information per game rules, and Arcium's maliciously secure protocol is designed to prevent any single party from manipulating game state or outcomes.
+The system works through three key mechanisms: network-generated randomness creates unpredictable deck order, selective disclosure reveals only authorized information per game rules, and the MPC protocol ensures no party can manipulate game state or outcomes even with a dishonest majority—game integrity is preserved as long as one node is honest.
 
 ## Implementation Details
 

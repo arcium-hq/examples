@@ -1,8 +1,8 @@
 # Voting - Private Ballots, Public Results
 
-How do you count votes on a blockchain where everything is public? Traditional encryption just moves the problem - someone has to hold the decryption key, and whoever holds it can reveal votes.
+Blockchain transparency makes voting dangerous: visible votes enable vote buying (prove your vote, get paid) and coercion. Encrypt the ballots? Whoever holds the decryption key to count them can still see every vote - and potentially sell or leak that data. Traditional encryption just shifts who holds the power.
 
-This example demonstrates anonymous voting where individual ballots remain permanently encrypted while aggregate tallies can be computed and publicly audited. No party - including poll creators, system administrators, or infrastructure operators - can access individual votes.
+This example demonstrates tallying votes without decrypting individual ballots. Votes stay encrypted throughout - only aggregate results are revealed.
 
 ## Why is blockchain voting hard?
 
@@ -20,18 +20,16 @@ The requirement is computing aggregate vote tallies without revealing individual
 The protocol maintains ballot secrecy while providing accurate results:
 
 1. **Ballot encryption**: Votes are encrypted on the client's computer before submission
-2. **On-chain storage**: Encrypted ballots are recorded on the blockchain
-3. **Secure distributed tallying**: Arcium network nodes collaboratively compute aggregate totals without any single node being able to see individual ballots
+2. **On-chain storage**: Encrypted votes are recorded on the blockchain
+3. **Secure distributed tallying**: Arcium nodes collaboratively compute aggregate totals
 4. **Result publication**: Only aggregate vote counts are revealed, not individual choices
-5. **Result accuracy**: Arcium's maliciously secure protocol is designed to prevent manipulation, even if some nodes act dishonestly, requiring only one honest actor
-
-Arcium network nodes jointly compute the tally by processing encrypted votes. No single node can access individual ballot contents, and Arcium's maliciously secure protocol is designed to detect and prevent cheating by any single party.
+5. **Security guarantee**: Arcium's MPC protocol preserves ballot secrecy even with a dishonest majority—individual votes remain private as long as one node is honest
 
 ## Running the Example
 
 ```bash
 # Install dependencies
-npm install
+yarn install  # or npm install or pnpm install
 
 # Build the program
 arcium build
@@ -48,9 +46,8 @@ Votes are sent as encrypted booleans and stored as encrypted vote counts on-chai
 
 Key properties:
 - **Ballot secrecy**: Individual votes remain encrypted throughout the tallying process
-- **Distributed computation**: Arcium network nodes jointly compute tallies without individual ballot access
+- **Distributed computation**: Arcium nodes jointly compute aggregate tallies
 - **Result accuracy**: Aggregate totals are computed correctly despite processing only encrypted data
-- **Result integrity**: Arcium's maliciously secure protocol is designed to prevent manipulation even with dishonest participants, using built-in cheater detection requiring only one honest actor
 
 ## Implementation Details
 
@@ -60,7 +57,6 @@ Key properties:
 
 Traditional approaches all fail:
 - **Encrypt then decrypt**: Someone holds the decryption key and can see votes
-- **Zero-knowledge proofs**: Complex, doesn't solve the tallying problem
 - **Trusted counter**: Requires trusting the tallying authority
 
 **The Question**: Can we compute "yes_votes + no_votes" on encrypted data without ever decrypting individual votes?
@@ -81,13 +77,11 @@ pub struct PollAccount {
 
 **What's stored**: Two encrypted `u64` counters (yes_count, no_count) as raw ciphertexts.
 
-**Storage vs MPC types**: On-chain, these counters are stored as raw bytes `[[u8; 32]; 2]`. When passed to MPC instructions via `Argument::Account()`, Arcium deserializes them into typed `Enc<Mxe, VoteStats>` for computation.
-
 ### Reading Encrypted Account Data
 
-MPC instructions need precise byte locations to read encrypted data from accounts. Unlike normal deserialization, MPC must know exactly where each encrypted value starts:
+Arx nodes need precise byte locations to read encrypted data from accounts and deserialize it into the proper MPC function arguments.
 
-To use encrypted account data in MPC, specify exact byte offsets:
+To specify encrypted account data, provide exact byte offsets:
 
 ```rust
 Argument::Account(
@@ -127,34 +121,24 @@ pub fn vote(
 }
 ```
 
-**Key insight**: The `+= 1` happens on encrypted values inside MPC. No one sees the actual counts.
-
 **Callback** (runs on-chain after MPC completes):
 ```rust
 pub fn vote_callback(
     ctx: Context<VoteCallback>,
-    output: ComputationOutputs<VoteStatsOutput>,
+    output: ComputationOutputs<VoteOutput>,
 ) -> Result<()> {
-    let VoteStatsOutput { nonce, ciphertext } = extract_output(output)?;
+    let o = /* extract output */;
 
     // Save new encrypted tallies + new nonce
-    ctx.accounts.poll_acc.nonce = nonce;
-    ctx.accounts.poll_acc.vote_state = ciphertext;
+    ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+    ctx.accounts.poll_acc.nonce = o.nonce;
     Ok(())
 }
 ```
 
-### Nonce Management
-
-**Critical**: Every MPC operation returns a new nonce. Must update it:
-- Old nonce used for current encryption
-- MPC operation produces new encryption with new nonce
-- Callback must save both new ciphertext AND new nonce
-- Using old nonce with new ciphertext breaks decryption
-
 ### Revealing Results
 
-Only the poll authority can reveal results:
+The program restricts result revelation to the poll authority:
 ```rust
 pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
     let votes = votes.to_arcis();
@@ -162,14 +146,11 @@ pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
 }
 ```
 
-Notice: Returns **boolean** (yes won?), not actual vote counts. Further privacy preservation.
+### What This Example Demonstrates
 
-### When to Use This Pattern
+This example shows how to:
+- **Store encrypted data in Solana accounts**: Using raw bytes (`[[u8; 32]; 2]`) to persist encrypted values on-chain
+- **Pass encrypted account data to MPC**: Using `Argument::Account()` with precise byte offsets to read encrypted state
+- **Compute on encrypted state over time**: Accumulating encrypted values across multiple transactions (adding new votes to running tallies)
 
-Apply encrypted state accumulation when:
-- Need to compute on private data over time (running totals, aggregations)
-- Individual inputs must stay private
-- Final result can be aggregate or comparison
-- Examples: voting, surveys, private auctions, confidential analytics
-
-This demonstrates how Arcium's Cerberus MPC protocol enables voting systems that satisfy both ballot secrecy and result integrity guarantees, suitable for governance systems, polls, and democratic decision-making on blockchain platforms.
+This pattern applies to any scenario requiring private aggregation: voting, surveys, sealed-bid auctions, confidential analytics, and private leaderboards.
