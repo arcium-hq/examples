@@ -1,13 +1,13 @@
+/// A Vickrey auction or sealed-bid second-price auction (SBSPA) is a type of sealed-bid auction.
+/// Bidders submit written bids without knowing the bid of the other people in the auction.
+/// The highest bidder wins but the price paid is the second-highest bid. This type of auction is
+/// strategically similar to an English auction and gives bidders an incentive to bid their true value.
 use arcis_imports::*;
 
 #[encrypted]
 mod circuits {
     use arcis_imports::*;
 
-    /// A Vickrey auction or sealed-bid second-price auction (SBSPA) is a type of sealed-bid auction.
-    /// Bidders submit written bids without knowing the bid of the other people in the auction.
-    /// The highest bidder wins but the price paid is the second-highest bid. This type of auction is
-    /// strategically similar to an English auction and gives bidders an incentive to bid their true value.
     pub struct VickreyAuction {
         highest_bid: u128,
         highest_bidder_pubkey_serialized: SerializedSolanaPublicKey,

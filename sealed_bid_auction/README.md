@@ -31,6 +31,9 @@ mod circuits {
 
 // programs/my_program/src/lib.rs
 
+use anchor_lang::prelude::*;
+use arcium_anchor::prelude::*;
+
 declare_id!("<some ID>");
 
 #[arcium_program]
@@ -38,7 +41,7 @@ pub mod my_program {
     use super::*;
 
     pub fn init_add_together_comp_def(ctx: Context<InitAddTogetherCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, true, None, None)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -56,24 +59,23 @@ pub mod my_program {
             Argument::EncryptedU8(ciphertext_0),
             Argument::EncryptedU8(ciphertext_1),
         ];
-        queue_computation(ctx.accounts, computation_offset, args, vec![], None)?;
+        queue_computation(ctx.accounts, computation_offset, args, None, vec![AddTogetherCallback::callback_ix(&[])], 1)?;
         Ok(())
     }
 
     #[arcium_callback(encrypted_ix = "add_together")]
     pub fn add_together_callback(
         ctx: Context<AddTogetherCallback>,
-        output: ComputationOutputs,
+        output: ComputationOutputs<AddTogetherOutput>,
     ) -> Result<()> {
-        let bytes = if let ComputationOutputs::Bytes(bytes) = output {
-            bytes
-        } else {
-            return Err(ErrorCode::AbortedComputation.into());
+        let o = match output {
+            ComputationOutputs::Success(AddTogetherOutput { field_0: o }) => o,
+            _ => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(SumEvent {
-            sum: bytes[48..80].try_into().unwrap(),
-            nonce: bytes[32..48].try_into().unwrap(),
+            sum: o.ciphertexts[0],
+            nonce: o.nonce.to_le_bytes(),
         });
         Ok(())
     }

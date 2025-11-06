@@ -13,16 +13,36 @@ import {
   buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
+  getMXEPublicKey,
   getMXEAccAddress,
   getMempoolAccAddress,
   getCompDefAccAddress,
   getExecutingPoolAccAddress,
   getComputationAccAddress,
+  getClusterAccAddress,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+// Cluster configuration
+// For localnet testing: null (uses ARCIUM_CLUSTER_PUBKEY from env)
+// For devnet/testnet: specific cluster offset
+const CLUSTER_OFFSET: number | null = null;
+
+/**
+ * Gets the cluster account address based on configuration.
+ * - If CLUSTER_OFFSET is set: Uses getClusterAccAddress (devnet/testnet)
+ * - If null: Uses getArciumEnv().arciumClusterPubkey (localnet)
+ */
+function getClusterAccount(): PublicKey {
+  if (CLUSTER_OFFSET !== null) {
+    return getClusterAccAddress(CLUSTER_OFFSET);
+  } else {
+    return getArciumEnv().arciumClusterPubkey;
+  }
+}
 
 describe("SealedBidAuction", () => {
   // Configure the client to use the local cluster.
@@ -46,24 +66,33 @@ describe("SealedBidAuction", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("Is initialized!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing add together computation definition");
-    const initATSig = await initAddTogetherCompDef(program, owner, false, false);
+    const initATSig = await initAddTogetherCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
     console.log(
       "Add together computation definition initialized with signature",
       initATSig
     );
 
-    const privateKey = x25519.utils.randomPrivateKey();
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
+    console.log("MXE x25519 pubkey is", mxePublicKey);
+
+    const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = new Uint8Array([
-      34, 56, 246, 3, 165, 122, 74, 68, 14, 81, 107, 73, 129, 145, 196, 4, 98,
-      253, 120, 15, 235, 108, 37, 198, 124, 111, 38, 1, 210, 143, 72, 87,
-    ]);
+
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
@@ -90,7 +119,7 @@ describe("SealedBidAuction", () => {
           program.programId,
           computationOffset
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(program.programId),
         executingPool: getExecutingPoolAccAddress(program.programId),
@@ -174,6 +203,35 @@ describe("SealedBidAuction", () => {
     return sig;
   }
 });
+
+async function getMXEPublicKeyWithRetry(
+  provider: anchor.AnchorProvider,
+  programId: PublicKey,
+  maxRetries: number = 20,
+  retryDelayMs: number = 500
+): Promise<Uint8Array> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const mxePublicKey = await getMXEPublicKey(provider, programId);
+      if (mxePublicKey) {
+        return mxePublicKey;
+      }
+    } catch (error) {
+      console.log(`Attempt ${attempt} failed to fetch MXE public key:`, error);
+    }
+
+    if (attempt < maxRetries) {
+      console.log(
+        `Retrying in ${retryDelayMs}ms... (attempt ${attempt}/${maxRetries})`
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch MXE public key after ${maxRetries} attempts`
+  );
+}
 
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
