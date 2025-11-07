@@ -1,41 +1,89 @@
-# Confidential Coin Flip on Solana
+# Coinflip - Trustless Randomness
 
-This project demonstrates building a confidential on-chain Coin Flip game using Arcium. A player chooses Heads or Tails, and the outcome is determined by a random boolean generated securely within Arcium's confidential computation environment.
+Flip a coin online and you have to trust someone. Trust the server not to rig the flip, or trust yourself not to inspect the code and game the system. There's no way to prove it's actually random.
+
+This example shows how to generate verifiably random outcomes using distributed entropy generation.
+
+## Why is randomness hard to trust online?
+
+Traditional random number generation has a fundamental trust problem: whoever generates the random number can potentially influence or predict it. Server-side RNG can be biased by operators, client-side generation can be manipulated, and pseudorandom algorithms may have predictable patterns. The requirement is generating randomness that remains unpredictable and unbiased even when participants don't trust each other.
 
 ## How It Works
 
-### The Challenge of On-Chain Randomness
+The coinflip follows this flow:
 
-Generating true, unpredictable randomness on a public blockchain is difficult. On-chain pseudo-random number generators can often be predicted or influenced, making games like Coin Flip potentially unfair if the outcome could be known beforehand.
+1. **Player commitment**: The player's choice (heads/tails) is encrypted and submitted to the network
+2. **Random generation**: Arcium nodes work together to generate a random boolean outcome
+3. **Encrypted comparison**: The system compares the encrypted choice against the encrypted random result
+4. **Result disclosure**: Only the win/loss outcome is revealed
 
-### Arcium's Solution
+The comparison occurs on encrypted values throughout the computation.
 
-Arcium provides confidential computing on Solana, enabling secure random number generation for games:
+## Running the Example
 
-1.  **Confidential Player Choice**: The player submits their choice (Heads or Tails) encrypted.
-2.  **Secure Random Boolean Generation**: The Arcium network generates a random boolean value (representing the coin flip) securely within its confidential computation environment.
-3.  **Confidential Computation**: The Arcium network compares the player's encrypted choice against the securely generated random boolean.
-4.  **Result Calculation**: The result (win or lose) is computed without revealing the player's choice or the random boolean during the process.
-5.  **On-Chain Result**: Only the final outcome (win or lose) is published to the Solana blockchain.
+```bash
+# Install dependencies
+yarn install  # or npm install or pnpm install
 
-## Game Flow
+# Build the program
+arcium build
 
-1.  The player initializes a game session on Solana.
-2.  The player submits their encrypted choice (Heads or Tails).
-3.  The Solana program triggers the confidential computation on the Arcium network.
-4.  Within Arcium's secure environment:
-    - A random boolean (the coin flip) is securely generated.
-    - The winner is determined based on the player's choice and the generated boolean.
-5.  The result (win or lose) is sent back to the Solana program.
-6.  The game outcome is recorded on-chain.
+# Run tests
+arcium test
+```
 
-## Security Features
+The test suite demonstrates the complete flow: player choice submission, secure random generation, encrypted comparison, and result verification.
 
-- **Player Choice Privacy**: The player's choice (Heads/Tails) is not revealed on-chain or during computation.
-- **Unpredictable Outcome**: The coin flip result (random boolean) is generated securely within Arcium's trusted environment, preventing prediction or manipulation.
-- **Fair Computation**: The game logic runs securely within Arcium.
-- **Verifiable Outcome**: The final result is recorded transparently on the blockchain.
+## Technical Implementation
 
-## Getting Started
+The player's choice is encrypted as a boolean, allowing result verification without exposing the choice prematurely. Random generation uses Arcium's cryptographic primitives, where Arcium nodes contribute entropy that no single node can predict or control.
 
-Refer to the [Arcium documentation](https://docs.arcium.com) for setup instructions.
+## Implementation Details
+
+### The Trustless Randomness Problem
+
+**Conceptual Challenge**: In traditional online systems, randomness comes from somewhere - a server, a third-party service, your browser's `Math.random()`. Each source requires trusting that entity:
+
+- **Server-generated**: Trust the operator doesn't rig outcomes
+- **Third-party service**: Trust the service provider is honest
+- **Client-side**: Trust the player doesn't inspect and manipulate
+
+**The Question**: Can we generate randomness where NO single party can predict or bias the outcome?
+
+### The MPC Randomness Solution
+
+Arcium's `ArcisRNG` generates randomness through multi-party computation:
+
+```rust
+pub fn flip(input_ctxt: Enc<Shared, UserChoice>) -> bool {
+    let input = input_ctxt.to_arcis();
+    let toss = ArcisRNG::bool();  // MPC-generated randomness
+    (input.choice == toss).reveal()
+}
+```
+
+**How it works**:
+
+1. Arcium nodes each generate local random values
+2. Nodes combine their randomness using secure multi-party computation
+3. Final random value is deterministic given all inputs
+4. **No single node can predict the result** before all contribute
+5. **No subset of nodes can bias the outcome**: The MPC protocol guarantees unbiased randomness even with a dishonest majority—the outcome remains unpredictable as long as one node is honest
+
+### Stateless Design
+
+Unlike Voting or Blackjack, Coinflip has **no game state account**:
+
+- Receive encrypted player choice → Generate MPC random → Compare → Emit result
+- Each flip is independent
+- No persistent storage needed
+
+When randomness generation itself is the primary feature, stateless design is simplest.
+
+### When to Use This Pattern
+
+Use MPC randomness (`ArcisRNG`) when:
+
+- **No one should control outcome**: Lotteries, random drops, fair matchmaking
+- **Platform can't be trusted**: House games where operator could cheat
+- **Randomness is high-value**: Large prizes or critical game mechanics
