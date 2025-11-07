@@ -79,16 +79,28 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![ShuffleAndDealCardsCallback::callback_ix(&[
-                CallbackAccount {
-                    pubkey: ctx.accounts.blackjack_game.key(),
-                    is_writable: true,
-                },
-                CallbackAccount {
-                    pubkey: ctx.accounts.temp_data_storage.key(),
-                    is_writable: true,
-                },
-            ])],
+            vec![
+                ShuffleAndDealCardsCallback::callback_ix(&[
+                    CallbackAccount {
+                        pubkey: ctx.accounts.blackjack_game.key(),
+                        is_writable: true,
+                    },
+                    CallbackAccount {
+                        pubkey: ctx.accounts.temp_data_storage.key(),
+                        is_writable: true,
+                    },
+                ]),
+                FinallyInitGame::callback_ix(&[
+                    CallbackAccount {
+                        pubkey: ctx.accounts.blackjack_game.key(),
+                        is_writable: true,
+                    },
+                    CallbackAccount {
+                        pubkey: ctx.accounts.temp_data_storage.key(),
+                        is_writable: true,
+                    },
+                ]),
+            ],
             5,
         )?;
         Ok(())
@@ -120,6 +132,7 @@ pub mod blackjack {
         Ok(())
     }
 
+    #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards", auto_serialize = false)]
     pub fn finally_init_game(
         ctx: Context<FinallyInitGame>,
         _output: ComputationOutputs<ShortVec<u8>>,
@@ -163,6 +176,12 @@ pub mod blackjack {
         let dealer_face_up_card =
             *bytemuck::from_bytes::<[u8; 32]>(&temp_data_storage.data[offset..offset + 32]);
         offset += 32;
+
+        require!(
+            offset == temp_data_storage.length as usize
+                && temp_data_storage.length as usize == temp_data_storage.data.len(),
+            ErrorCode::InvalidDataLength
+        );
 
         require!(
             dealer_client_pubkey == blackjack_game.player_enc_pubkey,
@@ -1366,4 +1385,6 @@ pub enum ErrorCode {
     InvalidDealerClientPubkey,
     #[msg("Cluster not set")]
     ClusterNotSet,
+    #[msg("Invalid data length")]
+    InvalidDataLength,
 }
