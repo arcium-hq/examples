@@ -24,6 +24,7 @@ anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 arcium-client = { default-features = false, version = "0.4.0" }
 arcium-macros = "0.4.0"
 arcium-anchor = "0.4.0"
+bytemuck = { version = "1.24.0", features = ["min_const_generics"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
