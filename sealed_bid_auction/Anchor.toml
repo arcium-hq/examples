@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sealed_bid_auction = "8WTwaMTJr5Ypq7pA8LsRv7mJ3rLBEB31ySxDXU2h28HN"
+sealed_bid_auction = "CESv7Nbw2pLa81oA7J4ZxrmRYqywP3HqMCWfwdeErt8s"
 
 [registry]
 url = "https://api.apr.dev"

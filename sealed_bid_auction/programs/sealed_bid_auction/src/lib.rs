@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 const COMP_DEF_OFFSET_SETUP_VICKREY_AUCTION: u32 = comp_def_offset("setup_vickrey_auction");
 
-declare_id!("8WTwaMTJr5Ypq7pA8LsRv7mJ3rLBEB31ySxDXU2h28HN");
+declare_id!("CESv7Nbw2pLa81oA7J4ZxrmRYqywP3HqMCWfwdeErt8s");
 
 #[arcium_program]
 pub mod sealed_bid_auction {
@@ -31,12 +32,22 @@ pub mod sealed_bid_auction {
             Argument::EncryptedU8(ciphertext_0),
             Argument::EncryptedU8(ciphertext_1),
         ];
+
+        let auction = &mut ctx.accounts.auction;
+
+        auction.auctioneer = ctx.accounts.payer.key();
+
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
             None,
-            vec![SetupVickreyAuctionCallback::callback_ix(&[])],
+            vec![SetupVickreyAuctionCallback::callback_ix(&[
+                CallbackAccount {
+                    pubkey: ctx.accounts.auction.key(),
+                    is_writable: true,
+                },
+            ])],
             1,
         )?;
         Ok(())
@@ -51,6 +62,13 @@ pub mod sealed_bid_auction {
             ComputationOutputs::Success(SetupVickreyAuctionOutput { field_0 }) => field_0,
             _ => return Err(ErrorCode::AbortedComputation.into()),
         };
+
+        let auction = &mut ctx.accounts.auction;
+
+        auction.highest_bid = o.ciphertexts[0];
+        auction.highest_bidder_pubkey_serialized = [o.ciphertexts[1], o.ciphertexts[2]];
+        auction.second_highest_bid = o.ciphertexts[3];
+        auction.second_highest_bidder_pubkey_serialized = [o.ciphertexts[4], o.ciphertexts[5]];
 
         Ok(())
     }
@@ -113,6 +131,8 @@ pub struct SetupAuction<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    #[account(init, payer = payer, space = 8 + VickreyAuction::INIT_SPACE, seeds = [b"auction", payer.key().as_ref()], bump)]
+    pub auction: Account<'info, VickreyAuction>,
 }
 
 #[callback_accounts("setup_vickrey_auction")]
@@ -126,6 +146,8 @@ pub struct SetupVickreyAuctionCallback<'info> {
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+    #[account(mut)]
+    pub auction: Account<'info, VickreyAuction>,
 }
 
 #[init_computation_definition_accounts("setup_vickrey_auction", payer)]
@@ -144,6 +166,16 @@ pub struct InitSetupVickreyAuctionCompDef<'info> {
     pub comp_def_account: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct VickreyAuction {
+    pub highest_bid: [u8; 32],
+    pub highest_bidder_pubkey_serialized: [[u8; 32]; 2],
+    pub second_highest_bid: [u8; 32],
+    pub second_highest_bidder_pubkey_serialized: [[u8; 32]; 2],
+    pub auctioneer: Pubkey,
 }
 
 #[error_code]
