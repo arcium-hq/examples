@@ -45,6 +45,7 @@ The test suite demonstrates poll creation, encrypted ballot submission, secure d
 Votes are sent as encrypted booleans and stored as encrypted vote counts on-chain (using `Enc<Shared, bool>` in the code). Arcium's confidential instructions enable aggregate computation over encrypted ballots.
 
 Key properties:
+
 - **Ballot secrecy**: Individual votes remain encrypted throughout the tallying process
 - **Distributed computation**: Arcium nodes jointly compute aggregate tallies
 - **Result accuracy**: Aggregate totals are computed correctly despite processing only encrypted data
@@ -56,6 +57,7 @@ Key properties:
 **Conceptual Challenge**: How do you count votes without seeing individual ballots?
 
 Traditional approaches all fail:
+
 - **Encrypt then decrypt**: Someone holds the decryption key and can see votes
 - **Trusted counter**: Requires trusting the tallying authority
 
@@ -92,6 +94,7 @@ Argument::Account(
 ```
 
 **Memory layout**:
+
 ```
 Byte 0-7:   Anchor discriminator
 Byte 8:     bump
@@ -103,6 +106,7 @@ Byte 73+:   other fields...
 ### The Vote Accumulation Logic
 
 **MPC instruction** (runs inside encrypted computation):
+
 ```rust
 pub fn vote(
     input: Enc<Shared, UserVote>,    // Voter's encrypted choice
@@ -122,6 +126,7 @@ pub fn vote(
 ```
 
 **Callback** (runs on-chain after MPC completes):
+
 ```rust
 pub fn vote_callback(
     ctx: Context<VoteCallback>,
@@ -139,6 +144,7 @@ pub fn vote_callback(
 ### Revealing Results
 
 The program restricts result revelation to the poll authority:
+
 ```rust
 pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
     let votes = votes.to_arcis();
@@ -149,6 +155,7 @@ pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
 ### What This Example Demonstrates
 
 This example shows how to:
+
 - **Store encrypted data in Solana accounts**: Using raw bytes (`[[u8; 32]; 2]`) to persist encrypted values on-chain
 - **Pass encrypted account data to MPC**: Using `Argument::Account()` with precise byte offsets to read encrypted state
 - **Compute on encrypted state over time**: Accumulating encrypted values across multiple transactions (adding new votes to running tallies)

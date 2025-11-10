@@ -9,6 +9,7 @@ This example demonstrates how encrypted moves enable fair asynchronous gameplay 
 Physical Rock Paper Scissors works because moves are revealed simultaneously. Digital games are asynchronous: Player 1 submits their encrypted move on-chain, then Player 2 submits hours or days later. The challenge is preventing Player 2 from learning Player 1's move before submitting their own.
 
 Traditional approaches fail:
+
 - **Unencrypted storage**: Player 2 sees Player 1's move immediately
 - **Simple hashing (commit-reveal)**: With only 3 moves, Player 2 can brute-force all possible hashes
 - **Trusted servers**: Requires trusting a third party not to leak moves
@@ -31,7 +32,9 @@ Player 1's move is **encrypted and immutable** (stored on-chain, can't be change
 Two implementations demonstrate different encrypted gameplay scenarios:
 
 ### [Player vs Player](./against-player/)
+
 Two players submit encrypted moves. Neither party can access the opponent's choice until both encrypted moves are submitted.
 
 ### [Player vs House](./against-house/)
+
 Player competes against an on-chain algorithm. The system cannot access the player's move before generating its response, ensuring provable fairness.
