@@ -20,10 +20,29 @@ import {
   getComputationAccAddress,
   getArciumAccountBaseSeed,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+// Cluster configuration
+// For localnet testing: null (uses ARCIUM_CLUSTER_PUBKEY from env)
+// For devnet/testnet: specific cluster offset
+const CLUSTER_OFFSET: number | null = null;
+
+/**
+ * Gets the cluster account address based on configuration.
+ * - If CLUSTER_OFFSET is set: Uses getClusterAccAddress (devnet/testnet)
+ * - If null: Uses getArciumEnv().arciumClusterPubkey (localnet)
+ */
+function getClusterAccount(): PublicKey {
+  if (CLUSTER_OFFSET !== null) {
+    return getClusterAccAddress(CLUSTER_OFFSET);
+  } else {
+    return getArciumEnv().arciumClusterPubkey;
+  }
+}
 
 // Helper function to calculate Blackjack hand value
 function calculateHandValue(cards: number[]): {
@@ -114,7 +133,7 @@ describe("Blackjack", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("Should play a full blackjack game with state awareness", async () => {
     console.log("Owner address:", owner.publicKey.toBase58());
@@ -195,7 +214,7 @@ describe("Blackjack", () => {
           program.programId,
           computationOffsetInit
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(program.programId),
         executingPool: getExecutingPoolAccAddress(program.programId),
@@ -247,8 +266,7 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
-        playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -300,7 +318,7 @@ describe("Blackjack", () => {
               program.programId,
               playerHitComputationOffset
             ),
-            clusterAccount: arciumEnv.arciumClusterPubkey,
+            clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
             mempoolAccount: getMempoolAccAddress(program.programId),
             executingPool: getExecutingPoolAccAddress(program.programId),
@@ -389,7 +407,7 @@ describe("Blackjack", () => {
               program.programId,
               playerStandComputationOffset
             ),
-            clusterAccount: arciumEnv.arciumClusterPubkey,
+            clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
             mempoolAccount: getMempoolAccAddress(program.programId),
             executingPool: getExecutingPoolAccAddress(program.programId),
@@ -453,7 +471,7 @@ describe("Blackjack", () => {
             program.programId,
             dealerPlayComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
           mempoolAccount: getMempoolAccAddress(program.programId),
           executingPool: getExecutingPoolAccAddress(program.programId),
@@ -522,7 +540,7 @@ describe("Blackjack", () => {
             program.programId,
             resolveComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
           mempoolAccount: getMempoolAccAddress(program.programId),
           executingPool: getExecutingPoolAccAddress(program.programId),
@@ -558,8 +576,7 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${
-          Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -943,7 +960,7 @@ describe("Blackjack", () => {
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

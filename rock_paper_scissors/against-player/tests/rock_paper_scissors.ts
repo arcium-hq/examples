@@ -20,10 +20,29 @@ import {
   x25519,
   getComputationAccAddress,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+// Cluster configuration
+// For localnet testing: null (uses ARCIUM_CLUSTER_PUBKEY from env)
+// For devnet/testnet: specific cluster offset
+const CLUSTER_OFFSET: number | null = null;
+
+/**
+ * Gets the cluster account address based on configuration.
+ * - If CLUSTER_OFFSET is set: Uses getClusterAccAddress (devnet/testnet)
+ * - If null: Uses getArciumEnv().arciumClusterPubkey (localnet)
+ */
+function getClusterAccount(): PublicKey {
+  if (CLUSTER_OFFSET !== null) {
+    return getClusterAccAddress(CLUSTER_OFFSET);
+  } else {
+    return getArciumEnv().arciumClusterPubkey;
+  }
+}
 
 describe("RockPaperScissors", () => {
   // Configure the client to use the local cluster.
@@ -33,7 +52,9 @@ describe("RockPaperScissors", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -45,7 +66,7 @@ describe("RockPaperScissors", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   // Combined test suite for Rock Paper Scissors game
   it("Tests the complete Rock Paper Scissors game flow", async () => {
@@ -142,7 +163,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -206,7 +227,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -277,7 +298,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -321,7 +342,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -391,7 +412,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -458,7 +479,7 @@ describe("RockPaperScissors", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
             program.programId
@@ -536,7 +557,7 @@ describe("RockPaperScissors", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
         })
         .signers([owner])
         .rpc({ commitment: "confirmed" });
@@ -583,7 +604,7 @@ describe("RockPaperScissors", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -637,7 +658,7 @@ describe("RockPaperScissors", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -681,7 +702,7 @@ describe("RockPaperScissors", () => {
             program.programId,
             Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -755,7 +776,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
       .rpc({ commitment: "confirmed" });
@@ -807,7 +828,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
@@ -860,7 +881,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
@@ -901,7 +922,7 @@ describe("RockPaperScissors", () => {
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
@@ -1116,7 +1137,7 @@ async function initCompareMovesCompDef(
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
