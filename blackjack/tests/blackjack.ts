@@ -615,7 +615,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
@@ -677,7 +677,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_hit.arcis");
@@ -801,7 +801,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
@@ -863,7 +863,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
@@ -925,7 +925,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/resolve_game.arcis");

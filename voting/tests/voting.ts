@@ -288,9 +288,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote stats computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -347,9 +345,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -409,9 +405,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init reveal result computation definition transaction", sig);
 
     if (uploadRawCircuit) {
