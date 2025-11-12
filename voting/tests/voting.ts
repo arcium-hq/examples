@@ -20,10 +20,29 @@ import {
   x25519,
   getComputationAccAddress,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+// Cluster configuration
+// For localnet testing: null (uses ARCIUM_CLUSTER_PUBKEY from env)
+// For devnet/testnet: specific cluster offset
+const CLUSTER_OFFSET: number | null = null;
+
+/**
+ * Gets the cluster account address based on configuration.
+ * - If CLUSTER_OFFSET is set: Uses getClusterAccAddress (devnet/testnet)
+ * - If null: Uses getArciumEnv().arciumClusterPubkey (localnet)
+ */
+function getClusterAccount(): PublicKey {
+  if (CLUSTER_OFFSET !== null) {
+    return getClusterAccAddress(CLUSTER_OFFSET);
+  } else {
+    return getArciumEnv().arciumClusterPubkey;
+  }
+}
 
 describe("Voting", () => {
   // Configure the client to use the local cluster.
@@ -32,7 +51,9 @@ describe("Voting", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -44,7 +65,7 @@ describe("Voting", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("can vote on polls!", async () => {
     const POLL_IDS = [420, 421, 422];
@@ -111,7 +132,7 @@ describe("Voting", () => {
             program.programId,
             pollComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
           mempoolAccount: getMempoolAccAddress(program.programId),
           executingPool: getExecutingPoolAccAddress(program.programId),
@@ -162,7 +183,7 @@ describe("Voting", () => {
             program.programId,
             voteComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
           mempoolAccount: getMempoolAccAddress(program.programId),
           executingPool: getExecutingPoolAccAddress(program.programId),
@@ -206,7 +227,7 @@ describe("Voting", () => {
             program.programId,
             revealComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
           mempoolAccount: getMempoolAccAddress(program.programId),
           executingPool: getExecutingPoolAccAddress(program.programId),
@@ -267,9 +288,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote stats computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -326,9 +345,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -388,9 +405,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init reveal result computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -425,7 +440,7 @@ describe("Voting", () => {
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

@@ -61,6 +61,7 @@ pub fn share_patient_data(
 ```
 
 **What happens**:
+
 1. Your encrypted data enters MPC
 2. Data is decrypted inside the MPC environment
 3. Data is re-encrypted using doctor's public key
@@ -88,6 +89,7 @@ Stored as a single encrypted data structure containing 11 fields (352 bytes tota
 ### When to Use Re-encryption
 
 Apply this pattern when:
+
 - Data encrypted under one key needs to be accessible to another party
 - No single party should see the unencrypted data during transfer
 - Selective disclosure (future: share only age + blood_type, not full record)
