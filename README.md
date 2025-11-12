@@ -8,24 +8,29 @@ For installation instructions and setup, see the [Installation Guide](https://do
 
 ## Examples
 
-### Games with Hidden Information
+### Games
 
-**[Coinflip](./coinflip/)** (Simple) - Implements cryptographically secure randomness generation where outcomes cannot be predicted or manipulated by any party. Players commit to their choice before the random result is computed.
+**[Rock Paper Scissors](./rock_paper_scissors/)** - Simultaneous move games with asynchronous submission where neither player can see the other's choice until both commit.
 
-**[Rock Paper Scissors](./rock_paper_scissors/)** (Simple) - Implements simultaneous move games where players commit to encrypted choices before any moves are revealed. Available in two variants:
-- **[Player vs Player](./rock_paper_scissors/against-player/)** - Two players make asynchronous encrypted commitments
-- **[Player vs House](./rock_paper_scissors/against-house/)** - Player competes against an on-chain algorithm with cryptographically secure randomness
+- **[Player vs Player](./rock_paper_scissors/against-player/)** - Two players make encrypted moves independently
+- **[Player vs House](./rock_paper_scissors/against-house/)** - Player competes against provably fair randomized opponent
 
-**[Blackjack](./blackjack/)** (Complex) - Demonstrates card games where deck state remains hidden from all players until cards are revealed. The dealer, players, and platform cannot access card information before the appropriate game phase.
+**[Blackjack](./blackjack/)** - Card games where deck state remains hidden from all players until cards are revealed.
 
-### Privacy and Governance
+### Privacy Applications
 
-**[Medical Records Sharing](./share_medical_records/)** (Easy) - Demonstrates selective disclosure of healthcare data where patients control access permissions. Medical information can be shared with authorized providers without exposing data to intermediaries or platform operators.
+**[Medical Records Sharing](./share_medical_records/)** - Share healthcare data with patient-controlled access permissions.
 
-**[Confidential Voting](./voting/)** (Medium) - Implements anonymous ballot systems where individual votes remain private while aggregate results are public.
+**[Confidential Voting](./voting/)** - Anonymous ballot systems where individual votes remain private while aggregate results are public.
+
+### Primitives
+
+**[Coinflip](./coinflip/)** - Generate trustless randomness where no party can predict outcomes.
+
+**[Ed25519 Signatures](./ed25519/)** - Distributed Ed25519 signing where private keys are split across MPC nodes and never exist in a single location.
 
 ## Getting Started with Examples
 
 Each example includes complete source code, build instructions, and test suites. Start with any example that addresses your use case.
 
-For questions and support, join the [Discord community](https://discord.com/invite/arcium). 
+For questions and support, join the [Discord community](https://discord.com/invite/arcium).
