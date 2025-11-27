@@ -31,7 +31,7 @@ pub mod rock_paper_scissors {
         game.player_b = player_b;
         game.nonce = nonce;
 
-        let args = vec![Argument::PlaintextU128(nonce)];
+        let args = ArgBuilder::new().plaintext_u128(nonce).build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -90,14 +90,14 @@ pub mod rock_paper_scissors {
             ErrorCode::NotAuthorized
         );
 
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(player_id),
-            Argument::EncryptedU8(player_move),
-            Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
-            Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
-        ];
+        let args = ArgBuilder::new()
+            .arcis_x25519_pubkey(pub_key)
+            .plaintext_u128(nonce)
+            .encrypted_u8(player_id)
+            .encrypted_u8(player_move)
+            .plaintext_u128(ctx.accounts.rps_game.nonce)
+            .account(ctx.accounts.rps_game.key(), 8, 32 * 2)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -142,10 +142,10 @@ pub mod rock_paper_scissors {
     }
 
     pub fn compare_moves(ctx: Context<CompareMoves>, computation_offset: u64) -> Result<()> {
-        let args = vec![
-            Argument::PlaintextU128(ctx.accounts.rps_game.nonce),
-            Argument::Account(ctx.accounts.rps_game.key(), 8, 32 * 2),
-        ];
+        let args = ArgBuilder::new()
+            .plaintext_u128(ctx.accounts.rps_game.nonce)
+            .account(ctx.accounts.rps_game.key(), 8, 32 * 2)
+            .build();
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -205,19 +205,19 @@ pub struct InitGame<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -304,19 +304,19 @@ pub struct PlayerMove<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -398,19 +398,19 @@ pub struct CompareMoves<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

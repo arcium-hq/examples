@@ -72,17 +72,17 @@ pub mod share_medical_records {
         sender_pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(receiver),
-            Argument::PlaintextU128(receiver_nonce),
-            Argument::ArcisPubkey(sender_pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::Account(
+        let args = ArgBuilder::new()
+            .arcis_x25519_pubkey(receiver)
+            .plaintext_u128(receiver_nonce)
+            .arcis_x25519_pubkey(sender_pub_key)
+            .plaintext_u128(nonce)
+            .account(
                 ctx.accounts.patient_data.key(),
                 8,
                 PatientData::INIT_SPACE as u32,
-            ),
-        ];
+            )
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -164,19 +164,19 @@ pub struct SharePatientData<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

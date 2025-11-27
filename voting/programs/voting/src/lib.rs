@@ -44,7 +44,7 @@ pub mod voting {
         ctx.accounts.poll_acc.nonce = nonce;
         ctx.accounts.poll_acc.vote_state = [[0; 32]; 2];
 
-        let args = vec![Argument::PlaintextU128(nonce)];
+        let args = ArgBuilder::new().plaintext_u128(nonce).build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -103,18 +103,18 @@ pub mod voting {
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(vote_encryption_pubkey),
-            Argument::PlaintextU128(vote_nonce),
-            Argument::EncryptedBool(vote),
-            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
-            Argument::Account(
+        let args = ArgBuilder::new()
+            .arcis_x25519_pubkey(vote_encryption_pubkey)
+            .plaintext_u128(vote_nonce)
+            .encrypted_bool(vote)
+            .plaintext_u128(ctx.accounts.poll_acc.nonce)
+            .account(
                 ctx.accounts.poll_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
                 32 * 2, // 2 vote counters (yes/no), each stored as 32-byte ciphertext
-            ),
-        ];
+            )
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -180,15 +180,15 @@ pub mod voting {
 
         msg!("Revealing voting result for poll with id {}", id);
 
-        let args = vec![
-            Argument::PlaintextU128(ctx.accounts.poll_acc.nonce),
-            Argument::Account(
+        let args = ArgBuilder::new()
+            .plaintext_u128(ctx.accounts.poll_acc.nonce)
+            .account(
                 ctx.accounts.poll_acc.key(),
                 // Offset calculation: 8 bytes (discriminator) + 1 byte (bump)
                 8 + 1,
                 32 * 2, // 2 encrypted vote counters (yes/no), 32 bytes each
-            ),
-        ];
+            )
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -240,19 +240,19 @@ pub struct CreateNewPoll<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -341,19 +341,19 @@ pub struct Vote<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -444,19 +444,19 @@ pub struct RevealVotingResult<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

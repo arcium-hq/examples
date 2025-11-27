@@ -61,14 +61,14 @@ pub mod blackjack {
         blackjack_game.dealer_hand_size = 0;
 
         // Queue the shuffle and deal cards computation
-        let args = vec![
-            Argument::PlaintextU128(mxe_nonce),
-            Argument::PlaintextU128(mxe_again_nonce),
-            Argument::ArcisPubkey(client_pubkey),
-            Argument::PlaintextU128(client_nonce),
-            Argument::ArcisPubkey(client_pubkey),
-            Argument::PlaintextU128(client_again_nonce),
-        ];
+        let args = ArgBuilder::new()
+            .plaintext_u128(mxe_nonce)
+            .plaintext_u128(mxe_again_nonce)
+            .arcis_x25519_pubkey(client_pubkey)
+            .plaintext_u128(client_nonce)
+            .arcis_x25519_pubkey(client_pubkey)
+            .plaintext_u128(client_again_nonce)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -185,19 +185,19 @@ pub mod blackjack {
             ErrorCode::InvalidMove
         );
 
-        let args = vec![
+        let args = ArgBuilder::new()
             // Deck
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
+            .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
             // Player hand
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
+            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
-        ];
+            .plaintext_u8(ctx.accounts.blackjack_game.dealer_hand_size)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -281,19 +281,19 @@ pub mod blackjack {
             ErrorCode::InvalidMove
         );
 
-        let args = vec![
+        let args = ArgBuilder::new()
             // Deck
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
+            .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
             // Player hand
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
+            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
-        ];
+            .plaintext_u8(ctx.accounts.blackjack_game.dealer_hand_size)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -375,14 +375,14 @@ pub mod blackjack {
             ErrorCode::InvalidMove
         );
 
-        let args = vec![
+        let args = ArgBuilder::new()
             // Player hand
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
+            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
-        ];
+            .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -447,21 +447,21 @@ pub mod blackjack {
             ErrorCode::InvalidGameState
         );
 
-        let args = vec![
+        let args = ArgBuilder::new()
             // Deck
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.deck_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8, 32 * 3),
+            .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
             // Dealer hand
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.dealer_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
+            .plaintext_u128(ctx.accounts.blackjack_game.dealer_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32)
             // Client nonce
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(nonce),
+            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .plaintext_u128(nonce)
             // Player hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
-        ];
+            .plaintext_u8(ctx.accounts.blackjack_game.dealer_hand_size)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -533,19 +533,19 @@ pub mod blackjack {
             ErrorCode::InvalidGameState
         );
 
-        let args = vec![
+        let args = ArgBuilder::new()
             // Player hand
-            Argument::ArcisPubkey(ctx.accounts.blackjack_game.player_enc_pubkey),
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.client_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32),
+            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Dealer hand
-            Argument::PlaintextU128(ctx.accounts.blackjack_game.dealer_nonce),
-            Argument::Account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32),
+            .plaintext_u128(ctx.accounts.blackjack_game.dealer_nonce)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32)
             // Player hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.player_hand_size),
+            .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
-            Argument::PlaintextU8(ctx.accounts.blackjack_game.dealer_hand_size),
-        ];
+            .plaintext_u8(ctx.accounts.blackjack_game.dealer_hand_size)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -633,19 +633,19 @@ pub struct InitializeBlackjackGame<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -733,19 +733,19 @@ pub struct PlayerHit<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -831,19 +831,19 @@ pub struct PlayerDoubleDown<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -929,19 +929,19 @@ pub struct PlayerStand<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -1027,19 +1027,19 @@ pub struct DealerPlay<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -1125,19 +1125,19 @@ pub struct ResolveGame<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

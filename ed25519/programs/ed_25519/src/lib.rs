@@ -34,10 +34,14 @@ pub mod ed_25519 {
         message: [u8; 5],
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+        let mut builder = ArgBuilder::new();
+        for byte in message {
+            builder = builder.plaintext_u8(byte);
+        }
         queue_computation(
             ctx.accounts,
             computation_offset,
-            message.into_iter().map(Argument::PlaintextU8).collect(),
+            builder.build(),
             None,
             vec![SignMessageCallback::callback_ix(&[])],
             1,
@@ -109,18 +113,19 @@ pub mod ed_25519 {
         observer_nonce: u128,
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-        let mut args = vec![
-            Argument::ArcisPubkey(one_time_pub_key),
-            Argument::PlaintextU128(one_time_nonce),
-            Argument::EncryptedU128(verifying_key_compressed_lo_enc),
-            Argument::EncryptedU128(verifying_key_compressed_hi_enc),
-        ];
-        args.append(&mut message.into_iter().map(Argument::PlaintextU8).collect());
-        args.append(&mut vec![
-            Argument::ArcisSignature(signature),
-            Argument::ArcisPubkey(observer_pub_key),
-            Argument::PlaintextU128(observer_nonce),
-        ]);
+        let mut builder = ArgBuilder::new()
+            .arcis_x25519_pubkey(one_time_pub_key)
+            .plaintext_u128(one_time_nonce)
+            .encrypted_u128(verifying_key_compressed_lo_enc)
+            .encrypted_u128(verifying_key_compressed_hi_enc);
+        for byte in message {
+            builder = builder.plaintext_u8(byte);
+        }
+        let args = builder
+            .arcis_ed25519_signature(signature)
+            .arcis_x25519_pubkey(observer_pub_key)
+            .plaintext_u128(observer_nonce)
+            .build();
         queue_computation(
             ctx.accounts,
             computation_offset,
@@ -175,19 +180,19 @@ pub struct SignMessage<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -272,19 +277,19 @@ pub struct VerifySignature<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

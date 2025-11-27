@@ -26,22 +26,12 @@ import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
 
-// Cluster configuration
-// For localnet testing: null (uses ARCIUM_CLUSTER_PUBKEY from env)
-// For devnet/testnet: specific cluster offset
-const CLUSTER_OFFSET: number | null = null;
-
 /**
- * Gets the cluster account address based on configuration.
- * - If CLUSTER_OFFSET is set: Uses getClusterAccAddress (devnet/testnet)
- * - If null: Uses getArciumEnv().arciumClusterPubkey (localnet)
+ * Gets the cluster account address using the cluster offset from environment.
  */
 function getClusterAccount(): PublicKey {
-  if (CLUSTER_OFFSET !== null) {
-    return getClusterAccAddress(CLUSTER_OFFSET);
-  } else {
-    return getArciumEnv().arciumClusterPubkey;
-  }
+  const arciumEnv = getArciumEnv();
+  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
 }
 
 // Helper function to calculate Blackjack hand value
@@ -211,13 +201,13 @@ describe("Blackjack", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           computationOffsetInit
         ),
         clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(
@@ -315,13 +305,13 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              program.programId,
+              getArciumEnv().arciumClusterOffset,
               playerHitComputationOffset
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(program.programId),
-            executingPool: getExecutingPoolAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
@@ -404,13 +394,13 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              program.programId,
+              getArciumEnv().arciumClusterOffset,
               playerStandComputationOffset
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(program.programId),
-            executingPool: getExecutingPoolAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
@@ -468,13 +458,13 @@ describe("Blackjack", () => {
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             dealerPlayComputationOffset
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
@@ -537,13 +527,13 @@ describe("Blackjack", () => {
         .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             resolveComputationOffset
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
