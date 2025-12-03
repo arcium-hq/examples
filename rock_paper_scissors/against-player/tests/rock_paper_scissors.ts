@@ -8,7 +8,7 @@ import {
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -960,7 +960,7 @@ async function initInitGameCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for init_game:`, compDefPDA.toBase58());
@@ -1017,7 +1017,7 @@ async function initPlayerMoveCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for player_move:`, compDefPDA.toBase58());
@@ -1074,7 +1074,7 @@ async function initCompareMovesCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for compare_moves:`, compDefPDA.toBase58());

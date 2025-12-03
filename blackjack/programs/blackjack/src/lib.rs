@@ -20,7 +20,7 @@ pub mod blackjack {
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -77,13 +77,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![ShuffleAndDealCardsCallback::callback_ix(&[
-                CallbackAccount {
+            vec![ShuffleAndDealCardsCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
                     pubkey: ctx.accounts.blackjack_game.key(),
                     is_writable: true,
-                },
-            ])],
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -96,10 +99,16 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards")]
     pub fn shuffle_and_deal_cards_callback(
         ctx: Context<ShuffleAndDealCardsCallback>,
-        output: ComputationOutputs<ShuffleAndDealCardsOutput>,
+        output: SignedComputationOutputs<
+            ShuffleAndDealCardsOutput,
+            { ShuffleAndDealCardsOutput::SIZE },
+        >,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(ShuffleAndDealCardsOutput {
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(ShuffleAndDealCardsOutput {
                 field_0:
                     ShuffleAndDealCardsOutputStruct0 {
                         field_0: deck,
@@ -108,7 +117,7 @@ pub mod blackjack {
                         field_3: dealer_face_up_card,
                     },
             }) => (deck, dealer_hand, player_hand, dealer_face_up_card),
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let deck_nonce = o.0.nonce;
@@ -162,7 +171,7 @@ pub mod blackjack {
         Ok(())
     }
     pub fn init_player_hit_comp_def(ctx: Context<InitPlayerHitCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -206,11 +215,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![PlayerHitCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }])],
+            vec![PlayerHitCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -218,17 +232,20 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_hit")]
     pub fn player_hit_callback(
         ctx: Context<PlayerHitCallback>,
-        output: ComputationOutputs<PlayerHitOutput>,
+        output: SignedComputationOutputs<PlayerHitOutput, { PlayerHitOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(PlayerHitOutput {
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayerHitOutput {
                 field_0:
                     PlayerHitOutputStruct0 {
                         field_0: player_hand,
                         field_1: is_bust,
                     },
             }) => (player_hand, is_bust),
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let client_nonce = o.0.nonce;
@@ -263,7 +280,7 @@ pub mod blackjack {
     pub fn init_player_double_down_comp_def(
         ctx: Context<InitPlayerDoubleDownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -302,11 +319,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![PlayerDoubleDownCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }])],
+            vec![PlayerDoubleDownCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -314,17 +336,20 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_double_down")]
     pub fn player_double_down_callback(
         ctx: Context<PlayerDoubleDownCallback>,
-        output: ComputationOutputs<PlayerDoubleDownOutput>,
+        output: SignedComputationOutputs<PlayerDoubleDownOutput, { PlayerDoubleDownOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(PlayerDoubleDownOutput {
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayerDoubleDownOutput {
                 field_0:
                     PlayerDoubleDownOutputStruct0 {
                         field_0: player_hand,
                         field_1: is_bust,
                     },
             }) => (player_hand, is_bust),
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let client_nonce = o.0.nonce;
@@ -357,7 +382,7 @@ pub mod blackjack {
     }
 
     pub fn init_player_stand_comp_def(ctx: Context<InitPlayerStandCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -391,11 +416,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![PlayerStandCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }])],
+            vec![PlayerStandCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -403,11 +433,14 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_stand")]
     pub fn player_stand_callback(
         ctx: Context<PlayerStandCallback>,
-        output: ComputationOutputs<PlayerStandOutput>,
+        output: SignedComputationOutputs<PlayerStandOutput, { PlayerStandOutput::SIZE }>,
     ) -> Result<()> {
-        let is_bust = match output {
-            ComputationOutputs::Success(PlayerStandOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let is_bust = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayerStandOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
@@ -432,7 +465,7 @@ pub mod blackjack {
     }
 
     pub fn init_dealer_play_comp_def(ctx: Context<InitDealerPlayCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -470,11 +503,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![DealerPlayCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }])],
+            vec![DealerPlayCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -482,10 +520,13 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "dealer_play")]
     pub fn dealer_play_callback(
         ctx: Context<DealerPlayCallback>,
-        output: ComputationOutputs<DealerPlayOutput>,
+        output: SignedComputationOutputs<DealerPlayOutput, { DealerPlayOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(DealerPlayOutput {
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(DealerPlayOutput {
                 field_0:
                     DealerPlayOutputStruct0 {
                         field_0: dealer_hand,
@@ -493,7 +534,7 @@ pub mod blackjack {
                         field_2: dealer_hand_size,
                     },
             }) => (dealer_hand, dealer_client_hand, dealer_hand_size),
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let dealer_nonce = o.0.nonce;
@@ -519,7 +560,7 @@ pub mod blackjack {
     }
 
     pub fn init_resolve_game_comp_def(ctx: Context<InitResolveGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -554,11 +595,16 @@ pub mod blackjack {
             computation_offset,
             args,
             None,
-            vec![ResolveGameCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.blackjack_game.key(),
-                is_writable: true,
-            }])],
+            vec![ResolveGameCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.blackjack_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -566,11 +612,14 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "resolve_game")]
     pub fn resolve_game_callback(
         ctx: Context<ResolveGameCallback>,
-        output: ComputationOutputs<ResolveGameOutput>,
+        output: SignedComputationOutputs<ResolveGameOutput, { ResolveGameOutput::SIZE }>,
     ) -> Result<()> {
-        let result = match output {
-            ComputationOutputs::Success(ResolveGameOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let result = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(ResolveGameOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         if result == 0 {
@@ -687,6 +736,16 @@ pub struct ShuffleAndDealCardsCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -785,6 +844,16 @@ pub struct PlayerHitCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -883,6 +952,16 @@ pub struct PlayerDoubleDownCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -981,6 +1060,16 @@ pub struct PlayerStandCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -1079,6 +1168,16 @@ pub struct DealerPlayCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -1177,6 +1276,16 @@ pub struct ResolveGameCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

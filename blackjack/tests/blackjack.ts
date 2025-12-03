@@ -7,7 +7,7 @@ import {
   awaitComputationFinalization,
   getArciumEnv,
   getCompDefAccOffset,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -585,7 +585,7 @@ describe("Blackjack", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Shuffle/Deal CompDef PDA:", compDefPDA.toBase58());
@@ -648,7 +648,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_hit");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player Hit CompDef PDA:", compDefPDA.toBase58());
 
@@ -710,7 +710,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_stand");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player Stand CompDef PDA:", compDefPDA.toBase58());
 
@@ -772,7 +772,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_double_down");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player DoubleDown CompDef PDA:", compDefPDA.toBase58());
 
@@ -834,7 +834,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("dealer_play");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Dealer Play CompDef PDA:", compDefPDA.toBase58());
 
@@ -896,7 +896,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("resolve_game");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Resolve Game CompDef PDA:", compDefPDA.toBase58());
 

@@ -13,7 +13,7 @@ pub mod voting {
     use super::*;
 
     pub fn init_vote_stats_comp_def(ctx: Context<InitVoteStatsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -54,11 +54,16 @@ pub mod voting {
             computation_offset,
             args,
             None,
-            vec![InitVoteStatsCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.poll_acc.key(),
-                is_writable: true,
-            }])],
+            vec![InitVoteStatsCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.poll_acc.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
 
         Ok(())
@@ -67,11 +72,14 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: ComputationOutputs<InitVoteStatsOutput>,
+        output: SignedComputationOutputs<InitVoteStatsOutput, { InitVoteStatsOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(InitVoteStatsOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(InitVoteStatsOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         ctx.accounts.poll_acc.vote_state = o.ciphertexts;
@@ -81,7 +89,7 @@ pub mod voting {
     }
 
     pub fn init_vote_comp_def(ctx: Context<InitVoteCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -123,11 +131,16 @@ pub mod voting {
             computation_offset,
             args,
             None,
-            vec![VoteCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.poll_acc.key(),
-                is_writable: true,
-            }])],
+            vec![VoteCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.poll_acc.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -135,11 +148,14 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(
         ctx: Context<VoteCallback>,
-        output: ComputationOutputs<VoteOutput>,
+        output: SignedComputationOutputs<VoteOutput, { VoteOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(VoteOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(VoteOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         ctx.accounts.poll_acc.vote_state = o.ciphertexts;
@@ -156,7 +172,7 @@ pub mod voting {
     }
 
     pub fn init_reveal_result_comp_def(ctx: Context<InitRevealResultCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -197,8 +213,13 @@ pub mod voting {
             computation_offset,
             args,
             None,
-            vec![RevealResultCallback::callback_ix(&[])],
+            vec![RevealResultCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -206,11 +227,14 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealResultCallback>,
-        output: ComputationOutputs<RevealResultOutput>,
+        output: SignedComputationOutputs<RevealResultOutput, { RevealResultOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(RevealResultOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(RevealResultOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(RevealResultEvent { output: o });
@@ -294,6 +318,16 @@ pub struct InitVoteStatsCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_VOTE_STATS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -398,6 +432,16 @@ pub struct VoteCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_VOTE)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -495,6 +539,16 @@ pub struct RevealResultCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

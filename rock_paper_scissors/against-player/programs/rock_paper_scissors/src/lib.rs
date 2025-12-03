@@ -13,7 +13,7 @@ pub mod rock_paper_scissors {
     use super::*;
 
     pub fn init_init_game_comp_def(ctx: Context<InitInitGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -40,11 +40,16 @@ pub mod rock_paper_scissors {
             computation_offset,
             args,
             None,
-            vec![InitGameCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.rps_game.key(),
-                is_writable: true,
-            }])],
+            vec![InitGameCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.rps_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
 
         Ok(())
@@ -53,11 +58,14 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "init_game")]
     pub fn init_game_callback(
         ctx: Context<InitGameCallback>,
-        output: ComputationOutputs<InitGameOutput>,
+        output: SignedComputationOutputs<InitGameOutput, { InitGameOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(InitGameOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(InitGameOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let nonce = o.nonce;
@@ -72,7 +80,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_player_move_comp_def(ctx: Context<InitPlayerMoveCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -106,11 +114,16 @@ pub mod rock_paper_scissors {
             computation_offset,
             args,
             None,
-            vec![PlayerMoveCallback::callback_ix(&[CallbackAccount {
-                pubkey: ctx.accounts.rps_game.key(),
-                is_writable: true,
-            }])],
+            vec![PlayerMoveCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[CallbackAccount {
+                    pubkey: ctx.accounts.rps_game.key(),
+                    is_writable: true,
+                }],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -118,11 +131,14 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "player_move")]
     pub fn player_move_callback(
         ctx: Context<PlayerMoveCallback>,
-        output: ComputationOutputs<PlayerMoveOutput>,
+        output: SignedComputationOutputs<PlayerMoveOutput, { PlayerMoveOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(PlayerMoveOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayerMoveOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let nonce = o.nonce;
@@ -137,7 +153,7 @@ pub mod rock_paper_scissors {
     }
 
     pub fn init_compare_moves_comp_def(ctx: Context<InitCompareMovesCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -153,8 +169,13 @@ pub mod rock_paper_scissors {
             computation_offset,
             args,
             None,
-            vec![CompareMovesCallback::callback_ix(&[])],
+            vec![CompareMovesCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -162,11 +183,14 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,
-        output: ComputationOutputs<CompareMovesOutput>,
+        output: SignedComputationOutputs<CompareMovesOutput, { CompareMovesOutput::SIZE }>,
     ) -> Result<()> {
-        let result = match output {
-            ComputationOutputs::Success(CompareMovesOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let result = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(CompareMovesOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let result_str = match result {
@@ -258,6 +282,16 @@ pub struct InitGameCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_INIT_GAME)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -352,6 +386,16 @@ pub struct PlayerMoveCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_MOVE)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -446,6 +490,16 @@ pub struct CompareMovesCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_COMPARE_MOVES)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

@@ -10,7 +10,7 @@ pub mod rock_paper_scissors_against_rng {
     use super::*;
 
     pub fn init_play_rps_comp_def(ctx: Context<InitPlayRpsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -34,8 +34,13 @@ pub mod rock_paper_scissors_against_rng {
             computation_offset,
             args,
             None,
-            vec![PlayRpsCallback::callback_ix(&[])],
+            vec![PlayRpsCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -43,11 +48,14 @@ pub mod rock_paper_scissors_against_rng {
     #[arcium_callback(encrypted_ix = "play_rps")]
     pub fn play_rps_callback(
         ctx: Context<PlayRpsCallback>,
-        output: ComputationOutputs<PlayRpsOutput>,
+        output: SignedComputationOutputs<PlayRpsOutput, { PlayRpsOutput::SIZE }>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(PlayRpsOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayRpsOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let result = match o {
@@ -129,6 +137,16 @@ pub struct PlayRpsCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAY_RPS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
