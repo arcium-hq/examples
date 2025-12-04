@@ -122,7 +122,7 @@ pub mod ed_25519 {
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
         let mut builder = ArgBuilder::new()
-            .arcis_x25519_pubkey(one_time_pub_key)
+            .x25519_pubkey(one_time_pub_key)
             .plaintext_u128(one_time_nonce)
             .encrypted_u128(verifying_key_compressed_lo_enc)
             .encrypted_u128(verifying_key_compressed_hi_enc);
@@ -131,7 +131,7 @@ pub mod ed_25519 {
         }
         let args = builder
             .arcis_ed25519_signature(signature)
-            .arcis_x25519_pubkey(observer_pub_key)
+            .x25519_pubkey(observer_pub_key)
             .plaintext_u128(observer_nonce)
             .build();
         queue_computation(

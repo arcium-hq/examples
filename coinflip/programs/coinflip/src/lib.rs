@@ -34,7 +34,7 @@ pub mod coinflip {
         nonce: u128,
     ) -> Result<()> {
         let args = ArgBuilder::new()
-            .arcis_x25519_pubkey(pub_key)
+            .x25519_pubkey(pub_key)
             .plaintext_u128(nonce)
             .encrypted_u8(user_choice)
             .build();

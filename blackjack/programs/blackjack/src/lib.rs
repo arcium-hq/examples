@@ -64,9 +64,9 @@ pub mod blackjack {
         let args = ArgBuilder::new()
             .plaintext_u128(mxe_nonce)
             .plaintext_u128(mxe_again_nonce)
-            .arcis_x25519_pubkey(client_pubkey)
+            .x25519_pubkey(client_pubkey)
             .plaintext_u128(client_nonce)
-            .arcis_x25519_pubkey(client_pubkey)
+            .x25519_pubkey(client_pubkey)
             .plaintext_u128(client_again_nonce)
             .build();
 
@@ -196,7 +196,7 @@ pub mod blackjack {
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
             // Player hand
-            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
@@ -300,7 +300,7 @@ pub mod blackjack {
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
             // Player hand
-            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
@@ -399,7 +399,7 @@ pub mod blackjack {
 
         let args = ArgBuilder::new()
             // Player hand
-            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Player hand size
@@ -485,7 +485,7 @@ pub mod blackjack {
             .plaintext_u128(ctx.accounts.blackjack_game.dealer_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32)
             // Client nonce
-            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(nonce)
             // Player hand size
             .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
@@ -573,7 +573,7 @@ pub mod blackjack {
 
         let args = ArgBuilder::new()
             // Player hand
-            .arcis_x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
+            .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
             .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
             // Dealer hand

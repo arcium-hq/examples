@@ -73,9 +73,9 @@ pub mod share_medical_records {
         nonce: u128,
     ) -> Result<()> {
         let args = ArgBuilder::new()
-            .arcis_x25519_pubkey(receiver)
+            .x25519_pubkey(receiver)
             .plaintext_u128(receiver_nonce)
-            .arcis_x25519_pubkey(sender_pub_key)
+            .x25519_pubkey(sender_pub_key)
             .plaintext_u128(nonce)
             .account(
                 ctx.accounts.patient_data.key(),

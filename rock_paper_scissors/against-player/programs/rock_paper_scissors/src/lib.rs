@@ -99,7 +99,7 @@ pub mod rock_paper_scissors {
         );
 
         let args = ArgBuilder::new()
-            .arcis_x25519_pubkey(pub_key)
+            .x25519_pubkey(pub_key)
             .plaintext_u128(nonce)
             .encrypted_u8(player_id)
             .encrypted_u8(player_move)

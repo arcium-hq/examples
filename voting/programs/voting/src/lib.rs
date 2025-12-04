@@ -112,7 +112,7 @@ pub mod voting {
         vote_nonce: u128,
     ) -> Result<()> {
         let args = ArgBuilder::new()
-            .arcis_x25519_pubkey(vote_encryption_pubkey)
+            .x25519_pubkey(vote_encryption_pubkey)
             .plaintext_u128(vote_nonce)
             .encrypted_bool(vote)
             .plaintext_u128(ctx.accounts.poll_acc.nonce)
