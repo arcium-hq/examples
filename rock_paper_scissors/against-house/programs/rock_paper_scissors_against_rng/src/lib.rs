@@ -48,7 +48,7 @@ pub mod rock_paper_scissors_against_rng {
     #[arcium_callback(encrypted_ix = "play_rps")]
     pub fn play_rps_callback(
         ctx: Context<PlayRpsCallback>,
-        output: SignedComputationOutputs<PlayRpsOutput, { PlayRpsOutput::SIZE }>,
+        output: SignedComputationOutputs<PlayRpsOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,

@@ -61,7 +61,7 @@ pub mod ed_25519 {
     #[arcium_callback(encrypted_ix = "sign_message")]
     pub fn sign_message_callback(
         ctx: Context<SignMessageCallback>,
-        output: SignedComputationOutputs<SignMessageOutput, { SignMessageOutput::SIZE }>,
+        output: SignedComputationOutputs<SignMessageOutput>,
     ) -> Result<()> {
         let signature = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -157,7 +157,7 @@ pub mod ed_25519 {
     #[arcium_callback(encrypted_ix = "verify_signature")]
     pub fn verify_signature_callback(
         ctx: Context<VerifySignatureCallback>,
-        output: SignedComputationOutputs<VerifySignatureOutput, { VerifySignatureOutput::SIZE }>,
+        output: SignedComputationOutputs<VerifySignatureOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,

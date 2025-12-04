@@ -72,7 +72,7 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "init_vote_stats")]
     pub fn init_vote_stats_callback(
         ctx: Context<InitVoteStatsCallback>,
-        output: SignedComputationOutputs<InitVoteStatsOutput, { InitVoteStatsOutput::SIZE }>,
+        output: SignedComputationOutputs<InitVoteStatsOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -148,7 +148,7 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "vote")]
     pub fn vote_callback(
         ctx: Context<VoteCallback>,
-        output: SignedComputationOutputs<VoteOutput, { VoteOutput::SIZE }>,
+        output: SignedComputationOutputs<VoteOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -227,7 +227,7 @@ pub mod voting {
     #[arcium_callback(encrypted_ix = "reveal_result")]
     pub fn reveal_result_callback(
         ctx: Context<RevealResultCallback>,
-        output: SignedComputationOutputs<RevealResultOutput, { RevealResultOutput::SIZE }>,
+        output: SignedComputationOutputs<RevealResultOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,

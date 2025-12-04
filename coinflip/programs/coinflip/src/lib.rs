@@ -66,7 +66,7 @@ pub mod coinflip {
     #[arcium_callback(encrypted_ix = "flip")]
     pub fn flip_callback(
         ctx: Context<FlipCallback>,
-        output: SignedComputationOutputs<FlipOutput, { FlipOutput::SIZE }>,
+        output: SignedComputationOutputs<FlipOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,

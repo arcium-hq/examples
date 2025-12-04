@@ -110,7 +110,7 @@ pub mod share_medical_records {
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
-        output: SignedComputationOutputs<SharePatientDataOutput, { SharePatientDataOutput::SIZE }>,
+        output: SignedComputationOutputs<SharePatientDataOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,

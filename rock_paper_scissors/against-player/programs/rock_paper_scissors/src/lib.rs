@@ -58,7 +58,7 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "init_game")]
     pub fn init_game_callback(
         ctx: Context<InitGameCallback>,
-        output: SignedComputationOutputs<InitGameOutput, { InitGameOutput::SIZE }>,
+        output: SignedComputationOutputs<InitGameOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -131,7 +131,7 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "player_move")]
     pub fn player_move_callback(
         ctx: Context<PlayerMoveCallback>,
-        output: SignedComputationOutputs<PlayerMoveOutput, { PlayerMoveOutput::SIZE }>,
+        output: SignedComputationOutputs<PlayerMoveOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -183,7 +183,7 @@ pub mod rock_paper_scissors {
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,
-        output: SignedComputationOutputs<CompareMovesOutput, { CompareMovesOutput::SIZE }>,
+        output: SignedComputationOutputs<CompareMovesOutput>,
     ) -> Result<()> {
         let result = match output.verify_output(
             &ctx.accounts.cluster_account,

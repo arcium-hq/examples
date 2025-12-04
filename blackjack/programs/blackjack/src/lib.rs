@@ -99,10 +99,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards")]
     pub fn shuffle_and_deal_cards_callback(
         ctx: Context<ShuffleAndDealCardsCallback>,
-        output: SignedComputationOutputs<
-            ShuffleAndDealCardsOutput,
-            { ShuffleAndDealCardsOutput::SIZE },
-        >,
+        output: SignedComputationOutputs<ShuffleAndDealCardsOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -232,7 +229,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_hit")]
     pub fn player_hit_callback(
         ctx: Context<PlayerHitCallback>,
-        output: SignedComputationOutputs<PlayerHitOutput, { PlayerHitOutput::SIZE }>,
+        output: SignedComputationOutputs<PlayerHitOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -336,7 +333,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_double_down")]
     pub fn player_double_down_callback(
         ctx: Context<PlayerDoubleDownCallback>,
-        output: SignedComputationOutputs<PlayerDoubleDownOutput, { PlayerDoubleDownOutput::SIZE }>,
+        output: SignedComputationOutputs<PlayerDoubleDownOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -433,7 +430,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "player_stand")]
     pub fn player_stand_callback(
         ctx: Context<PlayerStandCallback>,
-        output: SignedComputationOutputs<PlayerStandOutput, { PlayerStandOutput::SIZE }>,
+        output: SignedComputationOutputs<PlayerStandOutput>,
     ) -> Result<()> {
         let is_bust = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -520,7 +517,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "dealer_play")]
     pub fn dealer_play_callback(
         ctx: Context<DealerPlayCallback>,
-        output: SignedComputationOutputs<DealerPlayOutput, { DealerPlayOutput::SIZE }>,
+        output: SignedComputationOutputs<DealerPlayOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
@@ -612,7 +609,7 @@ pub mod blackjack {
     #[arcium_callback(encrypted_ix = "resolve_game")]
     pub fn resolve_game_callback(
         ctx: Context<ResolveGameCallback>,
-        output: SignedComputationOutputs<ResolveGameOutput, { ResolveGameOutput::SIZE }>,
+        output: SignedComputationOutputs<ResolveGameOutput>,
     ) -> Result<()> {
         let result = match output.verify_output(
             &ctx.accounts.cluster_account,
