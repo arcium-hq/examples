@@ -3,14 +3,14 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_PLAY_RPS: u32 = comp_def_offset("play_rps");
 
-declare_id!("GvEcUdVoj6kGH139bD3u29jpuRUyuLCcsZ6rip2CrnPY");
+declare_id!("AU68jQVHrxf1XcYPEEu3nS9d6QQpVdpQ8SUsX6NofaX4");
 
 #[arcium_program]
 pub mod rock_paper_scissors_against_rng {
     use super::*;
 
     pub fn init_play_rps_comp_def(ctx: Context<InitPlayRpsCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -21,11 +21,11 @@ pub mod rock_paper_scissors_against_rng {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(player_move),
-        ];
+        let args = ArgBuilder::new()
+            .x25519_pubkey(pub_key)
+            .plaintext_u128(nonce)
+            .encrypted_u8(player_move)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -34,8 +34,13 @@ pub mod rock_paper_scissors_against_rng {
             computation_offset,
             args,
             None,
-            vec![PlayRpsCallback::callback_ix(&[])],
+            vec![PlayRpsCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -43,11 +48,14 @@ pub mod rock_paper_scissors_against_rng {
     #[arcium_callback(encrypted_ix = "play_rps")]
     pub fn play_rps_callback(
         ctx: Context<PlayRpsCallback>,
-        output: ComputationOutputs<PlayRpsOutput>,
+        output: SignedComputationOutputs<PlayRpsOutput>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(PlayRpsOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(PlayRpsOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         let result = match o {
@@ -83,19 +91,19 @@ pub struct PlayRps<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -129,6 +137,16 @@ pub struct PlayRpsCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAY_RPS)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

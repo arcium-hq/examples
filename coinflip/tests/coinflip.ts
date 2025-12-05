@@ -8,7 +8,7 @@ import {
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -20,9 +20,18 @@ import {
   x25519,
   getComputationAccAddress,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
+
+/**
+ * Gets the cluster account address using the cluster offset from environment.
+ */
+function getClusterAccount(): PublicKey {
+  const arciumEnv = getArciumEnv();
+  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
+}
 
 describe("Coinflip", () => {
   // Configure the client to use the local cluster.
@@ -31,7 +40,9 @@ describe("Coinflip", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -43,7 +54,7 @@ describe("Coinflip", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("flip a coin!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -86,13 +97,13 @@ describe("Coinflip", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           computationOffset
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("flip")).readUInt32LE()
@@ -131,7 +142,7 @@ describe("Coinflip", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Comp def pda is ", compDefPDA);
@@ -181,7 +192,7 @@ describe("Coinflip", () => {
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

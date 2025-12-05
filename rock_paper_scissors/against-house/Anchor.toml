@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-rock_paper_scissors_against_rng = "GvEcUdVoj6kGH139bD3u29jpuRUyuLCcsZ6rip2CrnPY"
+rock_paper_scissors_against_rng = "AU68jQVHrxf1XcYPEEu3nS9d6QQpVdpQ8SUsX6NofaX4"
 
 [registry]
 url = "https://api.apr.dev"

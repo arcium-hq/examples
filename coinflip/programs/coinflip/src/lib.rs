@@ -12,7 +12,7 @@ pub mod coinflip {
     /// Initializes the computation definition for the coin flip operation.
     /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -33,11 +33,11 @@ pub mod coinflip {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::EncryptedU8(user_choice),
-        ];
+        let args = ArgBuilder::new()
+            .x25519_pubkey(pub_key)
+            .plaintext_u128(nonce)
+            .encrypted_u8(user_choice)
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -46,8 +46,13 @@ pub mod coinflip {
             computation_offset,
             args,
             None,
-            vec![FlipCallback::callback_ix(&[])],
+            vec![FlipCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
 
         Ok(())
@@ -61,11 +66,14 @@ pub mod coinflip {
     #[arcium_callback(encrypted_ix = "flip")]
     pub fn flip_callback(
         ctx: Context<FlipCallback>,
-        output: ComputationOutputs<FlipOutput>,
+        output: SignedComputationOutputs<FlipOutput>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(FlipOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(FlipOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(FlipEvent { result: o });
@@ -95,19 +103,19 @@ pub struct Flip<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -141,6 +149,16 @@ pub struct FlipCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_FLIP)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

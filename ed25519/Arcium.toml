@@ -1,0 +1,13 @@
+[localnet]
+# number of nodes in the single cluster of the localnet
+nodes = 2
+# number of seconds to wait for the localnet to come online
+localnet_timeout_secs = 60
+# MPC backends this MXE supports (default: ["Cerberus"])
+# Supported values: "Cerberus", "Manticore", or both
+# Examples: backends = ["Cerberus"] or backends = ["Cerberus", "Manticore"]
+backends = ["Cerberus"]
+# Required when backends includes "Manticore"
+# Each path is copied to corresponding node's artifacts/manticore/computation_folder_N
+# Example: manticore_data_folders = ["./data/player-0", "./data/player-1"]
+# manticore_data_folders = []

@@ -8,7 +8,7 @@ import {
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -20,10 +20,19 @@ import {
   x25519,
   getComputationAccAddress,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+/**
+ * Gets the cluster account address using the cluster offset from environment.
+ */
+function getClusterAccount(): PublicKey {
+  const arciumEnv = getArciumEnv();
+  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
+}
 
 describe("RockPaperScissors", () => {
   // Configure the client to use the local cluster.
@@ -33,7 +42,9 @@ describe("RockPaperScissors", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -45,7 +56,7 @@ describe("RockPaperScissors", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   // Combined test suite for Rock Paper Scissors game
   it("Tests the complete Rock Paper Scissors game flow", async () => {
@@ -131,21 +142,21 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           initComputationOffset
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx);
 
@@ -196,17 +207,17 @@ describe("RockPaperScissors", () => {
       .accounts({
         payer: playerA.publicKey,
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           playerAMoveComputationOffset
         ),
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -216,7 +227,7 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerA])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Player A move signature:", playerAMoveTx);
 
@@ -266,18 +277,18 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           playerBMoveComputationOffset
         ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -287,7 +298,7 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerB])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Player B move signature:", playerBMoveTx);
 
@@ -310,18 +321,18 @@ describe("RockPaperScissors", () => {
       .compareMoves(compareComputationOffset)
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           compareComputationOffset
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [
             Buffer.from("rps_game"),
@@ -330,7 +341,7 @@ describe("RockPaperScissors", () => {
           program.programId
         )[0],
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -380,21 +391,21 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           initComputationOffset2
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Game initialized with signature:", initGameTx2);
 
@@ -447,25 +458,25 @@ describe("RockPaperScissors", () => {
         )
         .accounts({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             unauthorizedMoveComputationOffset
           ),
           payer: unauthorizedPlayer.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [Buffer.from("rps_game"), gameId2.toArrayLike(Buffer, "le", 8)],
             program.programId
           )[0],
         })
         .signers([unauthorizedPlayer])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       // If we get here, the test should fail because unauthorized player should not be able to make a move
       expect.fail("Unauthorized player was able to make a move");
@@ -525,21 +536,21 @@ describe("RockPaperScissors", () => {
         )
         .accounts({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             initComputationOffset3
           ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       console.log("Game initialized with signature:", initGameTx);
 
@@ -572,18 +583,18 @@ describe("RockPaperScissors", () => {
         )
         .accounts({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             playerAMoveComputationOffset
           ),
           payer: playerA.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -593,7 +604,7 @@ describe("RockPaperScissors", () => {
           )[0],
         })
         .signers([playerA])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       console.log("Player A move signature:", playerAMoveTx);
 
@@ -626,18 +637,18 @@ describe("RockPaperScissors", () => {
         )
         .accounts({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             playerBMoveComputationOffset
           ),
           payer: playerB.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -647,7 +658,7 @@ describe("RockPaperScissors", () => {
           )[0],
         })
         .signers([playerB])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       console.log("Player B move signature:", playerBMoveTx);
 
@@ -670,18 +681,18 @@ describe("RockPaperScissors", () => {
         .compareMoves(compareComputationOffset)
         .accounts({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             compareComputationOffset
           ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           rpsGame: PublicKey.findProgramAddressSync(
             [
               Buffer.from("rps_game"),
@@ -690,7 +701,7 @@ describe("RockPaperScissors", () => {
             program.programId
           )[0],
         })
-        .rpc({ commitment: "confirmed" });
+        .rpc({ skipPreflight: true, commitment: "confirmed" });
 
       console.log("Compare moves signature:", compareTx);
 
@@ -744,21 +755,21 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           initComputationOffset4
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Game initialized for invalid move test:", initGameTx3);
 
@@ -796,25 +807,25 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           playerAMoveComputationOffset3
         ),
         payer: playerA.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
         )[0],
       })
       .signers([playerA])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Player A valid move signature:", playerAMoveTx3);
 
@@ -849,25 +860,25 @@ describe("RockPaperScissors", () => {
       )
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           playerBMoveComputationOffset3
         ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
         )[0],
       })
       .signers([playerB])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Player B invalid move signature:", playerBMoveTx3);
 
@@ -890,24 +901,24 @@ describe("RockPaperScissors", () => {
       .compareMoves(compareComputationOffset3)
       .accounts({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           compareComputationOffset3
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         rpsGame: PublicKey.findProgramAddressSync(
           [Buffer.from("rps_game"), gameId3.toArrayLike(Buffer, "le", 8)],
           program.programId
         )[0],
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ skipPreflight: true, commitment: "confirmed" });
 
     console.log("Compare moves signature for invalid move test:", compareTx3);
 
@@ -949,7 +960,7 @@ async function initInitGameCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for init_game:`, compDefPDA.toBase58());
@@ -962,9 +973,7 @@ async function initInitGameCompDef(
       mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
-    .rpc({
-      commitment: "confirmed",
-    });
+    .rpc();
 
   console.log(`Init init_game computation definition transaction`, sig);
 
@@ -1008,7 +1017,7 @@ async function initPlayerMoveCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for player_move:`, compDefPDA.toBase58());
@@ -1021,9 +1030,7 @@ async function initPlayerMoveCompDef(
       mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
-    .rpc({
-      commitment: "confirmed",
-    });
+    .rpc();
 
   console.log(`Init player_move computation definition transaction`, sig);
 
@@ -1067,7 +1074,7 @@ async function initCompareMovesCompDef(
 
   const compDefPDA = PublicKey.findProgramAddressSync(
     [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-    getArciumProgAddress()
+    getArciumProgramId()
   )[0];
 
   console.log(`Comp def PDA for compare_moves:`, compDefPDA.toBase58());
@@ -1080,9 +1087,7 @@ async function initCompareMovesCompDef(
       mxeAccount: getMXEAccAddress(program.programId),
     })
     .signers([owner])
-    .rpc({
-      commitment: "confirmed",
-    });
+    .rpc();
 
   console.log(`Init compare_moves computation definition transaction`, sig);
 
@@ -1116,7 +1121,7 @@ async function initCompareMovesCompDef(
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

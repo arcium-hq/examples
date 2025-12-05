@@ -1,24 +1,47 @@
-# Confidential Rock Paper Scissors Against the House on Solana
+# Rock Paper Scissors vs House - Fair Gaming
 
-This project demonstrates building a confidential on-chain Rock Paper Scissors game using Arcium, where a player competes against the house. The player's move remains private, and the house's move is generated randomly within Arcium's secure computation environment.
+Player-versus-house games require trust that the house algorithm operates fairly. In traditional implementations, the house can observe player moves before generating responses, or use biased random number generation to favor house outcomes.
 
-## How It Works
+This example demonstrates fair gaming where the house cannot access player moves before generating its response, and randomness generation is cryptographically secure.
 
-### The Challenge of On-Chain Games
+## Why can't you trust the house?
 
-In typical on-chain games, all data is public. For a Player vs. House game, if the house's move generation were predictable or manipulatable on-chain, the game could be unfair.
+Traditional house games have multiple trust problems: the house can see player moves before responding, bias the random number generator, or modify game behavior without transparency. Every layer requires trusting the operator not to cheat, creating information asymmetry that favors the house.
 
-## Game Flow
+## How Provably Fair Gaming Works
 
-1.  The player initializes a game session on Solana.
-2.  The player submits their encrypted move.
-3.  The Solana program triggers the confidential computation on the Arcium network.
-4.  Within Arcium's secure environment:
-    - The house's move is randomly generated.
-    - The winner is determined based on both moves.
-5.  The result (win, lose, draw) is sent back to the Solana program.
-6.  The game outcome is recorded on-chain.
+The protocol ensures fairness through cryptographic isolation:
 
-## Getting Started
+1. **Player encrypted submission**: The player's move is encrypted and submitted to the blockchain
+2. **Random house move**: Arcium nodes generate a random house move using cryptographic randomness
+3. **Encrypted comparison**: Both moves are compared in encrypted form
+4. **Result disclosure**: Only the game outcome (win/loss/tie) is revealed
 
-Refer to the [Arcium documentation](https://docs.arcium.com) for setup instructions.
+Random number generation uses cryptographic primitives that no single party can predict or bias.
+
+## Running the Example
+
+```bash
+# Install dependencies
+yarn install  # or npm install or pnpm install
+
+# Build the program
+arcium build
+
+# Run tests
+arcium test
+```
+
+The test suite demonstrates the complete protocol: player move encryption, house random response generation, encrypted comparison, and outcome verification.
+
+## Technical Implementation
+
+The player's move is encrypted on the client and stored on-chain as a ciphertext. The house move is generated using Arcium's cryptographic randomness (similar to Coinflip), where Arcium nodes contribute entropy that no single node can predict or control.
+
+Both moves are compared inside MPC on encrypted values.
+
+Key properties:
+
+- **Cryptographic randomness**: Arcium nodes contribute entropy; no single node or subset can predict or bias the outcome
+- **Fair comparison**: Both moves processed in encrypted form throughout game resolution
+- **Integrity**: The MPC protocol ensures correct game resolution even with a dishonest majority—neither the house nor the player can manipulate the outcome as long as at least one node is honest

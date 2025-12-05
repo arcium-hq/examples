@@ -7,7 +7,7 @@ import {
   awaitComputationFinalization,
   getArciumEnv,
   getCompDefAccOffset,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -20,10 +20,19 @@ import {
   getComputationAccAddress,
   getArciumAccountBaseSeed,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+/**
+ * Gets the cluster account address using the cluster offset from environment.
+ */
+function getClusterAccount(): PublicKey {
+  const arciumEnv = getArciumEnv();
+  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
+}
 
 // Helper function to calculate Blackjack hand value
 function calculateHandValue(cards: number[]): {
@@ -114,7 +123,7 @@ describe("Blackjack", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("Should play a full blackjack game with state awareness", async () => {
     console.log("Owner address:", owner.publicKey.toBase58());
@@ -192,13 +201,13 @@ describe("Blackjack", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          getArciumEnv().arciumClusterOffset,
           computationOffsetInit
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(
@@ -247,8 +256,7 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
-        playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -297,13 +305,13 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              program.programId,
+              getArciumEnv().arciumClusterOffset,
               playerHitComputationOffset
             ),
-            clusterAccount: arciumEnv.arciumClusterPubkey,
+            clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(program.programId),
-            executingPool: getExecutingPoolAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
@@ -386,13 +394,13 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              program.programId,
+              getArciumEnv().arciumClusterOffset,
               playerStandComputationOffset
             ),
-            clusterAccount: arciumEnv.arciumClusterPubkey,
+            clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(program.programId),
-            executingPool: getExecutingPoolAccAddress(program.programId),
+            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
@@ -450,13 +458,13 @@ describe("Blackjack", () => {
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             dealerPlayComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
@@ -519,13 +527,13 @@ describe("Blackjack", () => {
         .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             resolveComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
@@ -558,8 +566,7 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${
-          Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -578,7 +585,7 @@ describe("Blackjack", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Shuffle/Deal CompDef PDA:", compDefPDA.toBase58());
@@ -598,7 +605,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
@@ -641,7 +648,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_hit");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player Hit CompDef PDA:", compDefPDA.toBase58());
 
@@ -660,7 +667,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_hit.arcis");
@@ -703,7 +710,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_stand");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player Stand CompDef PDA:", compDefPDA.toBase58());
 
@@ -765,7 +772,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("player_double_down");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Player DoubleDown CompDef PDA:", compDefPDA.toBase58());
 
@@ -784,7 +791,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
@@ -827,7 +834,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("dealer_play");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Dealer Play CompDef PDA:", compDefPDA.toBase58());
 
@@ -846,7 +853,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
@@ -889,7 +896,7 @@ describe("Blackjack", () => {
     const offset = getCompDefAccOffset("resolve_game");
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
     console.log("Resolve Game CompDef PDA:", compDefPDA.toBase58());
 
@@ -908,7 +915,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc();
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
@@ -943,7 +950,7 @@ describe("Blackjack", () => {
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

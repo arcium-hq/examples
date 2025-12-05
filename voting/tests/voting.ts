@@ -8,7 +8,7 @@ import {
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -20,10 +20,19 @@ import {
   x25519,
   getComputationAccAddress,
   getMXEPublicKey,
+  getClusterAccAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+/**
+ * Gets the cluster account address using the cluster offset from environment.
+ */
+function getClusterAccount(): PublicKey {
+  const arciumEnv = getArciumEnv();
+  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
+}
 
 describe("Voting", () => {
   // Configure the client to use the local cluster.
@@ -32,7 +41,9 @@ describe("Voting", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
-  const awaitEvent = async <E extends keyof Event>(eventName: E) => {
+  const awaitEvent = async <E extends keyof Event>(
+    eventName: E
+  ): Promise<Event[E]> => {
     let listenerId: number;
     const event = await new Promise<Event[E]>((res) => {
       listenerId = program.addEventListener(eventName, (event) => {
@@ -44,7 +55,7 @@ describe("Voting", () => {
     return event;
   };
 
-  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccount();
 
   it("can vote on polls!", async () => {
     const POLL_IDS = [420, 421, 422];
@@ -108,13 +119,13 @@ describe("Voting", () => {
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             pollComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
@@ -159,13 +170,13 @@ describe("Voting", () => {
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             voteComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
@@ -203,13 +214,13 @@ describe("Voting", () => {
         .revealResult(revealComputationOffset, POLL_ID)
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            program.programId,
+            getArciumEnv().arciumClusterOffset,
             revealComputationOffset
           ),
-          clusterAccount: arciumEnv.arciumClusterPubkey,
+          clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(program.programId),
-          executingPool: getExecutingPoolAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
@@ -251,7 +262,7 @@ describe("Voting", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log(
@@ -267,9 +278,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote stats computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -313,7 +322,7 @@ describe("Voting", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Vote computation definition pda is ", compDefPDA.toBase58());
@@ -326,9 +335,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init vote computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -372,7 +379,7 @@ describe("Voting", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log(
@@ -388,9 +395,7 @@ describe("Voting", () => {
         mxeAccount: getMXEAccAddress(program.programId),
       })
       .signers([owner])
-      .rpc({
-        commitment: "confirmed",
-      });
+      .rpc();
     console.log("Init reveal result computation definition transaction", sig);
 
     if (uploadRawCircuit) {
@@ -425,7 +430,7 @@ describe("Voting", () => {
 async function getMXEPublicKeyWithRetry(
   provider: anchor.AnchorProvider,
   programId: PublicKey,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
