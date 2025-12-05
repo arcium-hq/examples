@@ -13,7 +13,7 @@ pub mod ed_25519 {
     /// Initializes the computation definition for Ed25519 message signing.
     /// This sets up the MPC environment for performing distributed key signing operations.
     pub fn init_sign_message_comp_def(ctx: Context<InitSignMessageCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -34,13 +34,22 @@ pub mod ed_25519 {
         message: [u8; 5],
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+        let mut builder = ArgBuilder::new();
+        for byte in message {
+            builder = builder.plaintext_u8(byte);
+        }
         queue_computation(
             ctx.accounts,
             computation_offset,
-            message.into_iter().map(Argument::PlaintextU8).collect(),
+            builder.build(),
             None,
-            vec![SignMessageCallback::callback_ix(&[])],
+            vec![SignMessageCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -52,10 +61,13 @@ pub mod ed_25519 {
     #[arcium_callback(encrypted_ix = "sign_message")]
     pub fn sign_message_callback(
         ctx: Context<SignMessageCallback>,
-        output: ComputationOutputs<SignMessageOutput>,
+        output: SignedComputationOutputs<SignMessageOutput>,
     ) -> Result<()> {
-        let signature = match output {
-            ComputationOutputs::Success(SignMessageOutput {
+        let signature = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(SignMessageOutput {
                 field_0:
                     SignMessageOutputStruct0 {
                         field_0: r_encoded,
@@ -67,7 +79,7 @@ pub mod ed_25519 {
                 signature[32..].copy_from_slice(&s);
                 signature
             }
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(SignMessageEvent { signature });
@@ -77,7 +89,7 @@ pub mod ed_25519 {
     /// Initializes the computation definition for Ed25519 signature verification.
     /// This sets up the MPC environment for verifying signatures against encrypted public keys.
     pub fn init_verify_signature_comp_def(ctx: Context<InitVerifySignatureCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -109,25 +121,31 @@ pub mod ed_25519 {
         observer_nonce: u128,
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-        let mut args = vec![
-            Argument::ArcisPubkey(one_time_pub_key),
-            Argument::PlaintextU128(one_time_nonce),
-            Argument::EncryptedU128(verifying_key_compressed_lo_enc),
-            Argument::EncryptedU128(verifying_key_compressed_hi_enc),
-        ];
-        args.append(&mut message.into_iter().map(Argument::PlaintextU8).collect());
-        args.append(&mut vec![
-            Argument::ArcisSignature(signature),
-            Argument::ArcisPubkey(observer_pub_key),
-            Argument::PlaintextU128(observer_nonce),
-        ]);
+        let mut builder = ArgBuilder::new()
+            .x25519_pubkey(one_time_pub_key)
+            .plaintext_u128(one_time_nonce)
+            .encrypted_u128(verifying_key_compressed_lo_enc)
+            .encrypted_u128(verifying_key_compressed_hi_enc);
+        for byte in message {
+            builder = builder.plaintext_u8(byte);
+        }
+        let args = builder
+            .arcis_ed25519_signature(signature)
+            .x25519_pubkey(observer_pub_key)
+            .plaintext_u128(observer_nonce)
+            .build();
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
             None,
-            vec![VerifySignatureCallback::callback_ix(&[])],
+            vec![VerifySignatureCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -139,11 +157,14 @@ pub mod ed_25519 {
     #[arcium_callback(encrypted_ix = "verify_signature")]
     pub fn verify_signature_callback(
         ctx: Context<VerifySignatureCallback>,
-        output: ComputationOutputs<VerifySignatureOutput>,
+        output: SignedComputationOutputs<VerifySignatureOutput>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(VerifySignatureOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(VerifySignatureOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(VerifySignatureEvent {
@@ -175,19 +196,19 @@ pub struct SignMessage<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -221,6 +242,16 @@ pub struct SignMessageCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SIGN_MESSAGE)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
@@ -272,19 +303,19 @@ pub struct VerifySignature<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -318,6 +349,16 @@ pub struct VerifySignatureCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_VERIFY_SIGNATURE)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,

@@ -10,7 +10,7 @@ import {
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
-  getArciumProgAddress,
+  getArciumProgramId,
   uploadCircuit,
   buildFinalizeCompDefTx,
   RescueCipher,
@@ -22,6 +22,7 @@ import {
   getCompDefAccAddress,
   getExecutingPoolAccAddress,
   getComputationAccAddress,
+  getClusterAccAddress,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -82,13 +83,13 @@ describe("Ed25519", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          arciumEnv.arciumClusterOffset,
           computationOffsetSignMessage
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(arciumEnv.arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("sign_message")).readUInt32LE()
@@ -174,13 +175,13 @@ describe("Ed25519", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          program.programId,
+          arciumEnv.arciumClusterOffset,
           computationOffsetVerifySignature
         ),
-        clusterAccount: arciumEnv.arciumClusterPubkey,
+        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(program.programId),
-        executingPool: getExecutingPoolAccAddress(program.programId),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(arciumEnv.arciumClusterOffset),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("verify_signature")).readUInt32LE()
@@ -214,7 +215,7 @@ describe("Ed25519", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Comp def pda is ", compDefPDA);
@@ -271,7 +272,7 @@ describe("Ed25519", () => {
 
     const compDefPDA = PublicKey.findProgramAddressSync(
       [baseSeedCompDefAcc, program.programId.toBuffer(), offset],
-      getArciumProgAddress()
+      getArciumProgramId()
     )[0];
 
     console.log("Comp def pda is ", compDefPDA);

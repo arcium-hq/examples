@@ -130,9 +130,15 @@ pub fn vote(
 ```rust
 pub fn vote_callback(
     ctx: Context<VoteCallback>,
-    output: ComputationOutputs<VoteOutput>,
+    output: SignedComputationOutputs<VoteOutput>,
 ) -> Result<()> {
-    let o = /* extract output */;
+    let o = match output.verify_output(
+        &ctx.accounts.cluster_account,
+        &ctx.accounts.computation_account,
+    ) {
+        Ok(VoteOutput { field_0 }) => field_0,
+        Err(_) => return Err(ErrorCode::AbortedComputation.into()),
+    };
 
     // Save new encrypted tallies + new nonce
     ctx.accounts.poll_acc.vote_state = o.ciphertexts;

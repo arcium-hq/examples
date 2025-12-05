@@ -48,7 +48,7 @@ pub mod share_medical_records {
     pub fn init_share_patient_data_comp_def(
         ctx: Context<InitSharePatientDataCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -72,17 +72,17 @@ pub mod share_medical_records {
         sender_pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
-        let args = vec![
-            Argument::ArcisPubkey(receiver),
-            Argument::PlaintextU128(receiver_nonce),
-            Argument::ArcisPubkey(sender_pub_key),
-            Argument::PlaintextU128(nonce),
-            Argument::Account(
+        let args = ArgBuilder::new()
+            .x25519_pubkey(receiver)
+            .plaintext_u128(receiver_nonce)
+            .x25519_pubkey(sender_pub_key)
+            .plaintext_u128(nonce)
+            .account(
                 ctx.accounts.patient_data.key(),
                 8,
                 PatientData::INIT_SPACE as u32,
-            ),
-        ];
+            )
+            .build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -91,8 +91,13 @@ pub mod share_medical_records {
             computation_offset,
             args,
             None,
-            vec![SharePatientDataCallback::callback_ix(&[])],
+            vec![SharePatientDataCallback::callback_ix(
+                computation_offset,
+                &ctx.accounts.mxe_account,
+                &[],
+            )?],
             1,
+            0,
         )?;
         Ok(())
     }
@@ -105,11 +110,14 @@ pub mod share_medical_records {
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,
-        output: ComputationOutputs<SharePatientDataOutput>,
+        output: SignedComputationOutputs<SharePatientDataOutput>,
     ) -> Result<()> {
-        let o = match output {
-            ComputationOutputs::Success(SharePatientDataOutput { field_0 }) => field_0,
-            _ => return Err(ErrorCode::AbortedComputation.into()),
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
+            Ok(SharePatientDataOutput { field_0 }) => field_0,
+            Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
         emit!(ReceivedPatientDataEvent {
@@ -164,19 +172,19 @@ pub struct SharePatientData<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
@@ -211,6 +219,16 @@ pub struct SharePatientDataCallback<'info> {
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHARE_PATIENT_DATA)
     )]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Account<'info, MXEAccount>,
+    /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
+    pub computation_account: UncheckedAccount<'info>,
+    #[account(
+        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
