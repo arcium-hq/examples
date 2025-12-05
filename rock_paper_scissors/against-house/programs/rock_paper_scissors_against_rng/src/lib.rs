@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_PLAY_RPS: u32 = comp_def_offset("play_rps");
 
-declare_id!("GvEcUdVoj6kGH139bD3u29jpuRUyuLCcsZ6rip2CrnPY");
+declare_id!("AU68jQVHrxf1XcYPEEu3nS9d6QQpVdpQ8SUsX6NofaX4");
 
 #[arcium_program]
 pub mod rock_paper_scissors_against_rng {
