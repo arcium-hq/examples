@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-blackjack = "DQxanaqqWcTYvVhrKbeoY6q52NrGksWBL6vSbuVipnS7"
+blackjack = "7fJeDSDS5dnCYQWAA4K6FjVyew3c2fH5Ba2cQ9KGcjoo"
 
 [registry]
 url = "https://api.apr.dev"
