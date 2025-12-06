@@ -6,8 +6,8 @@ on:
     branches: [main]
 
 env:
-  ARCUP_USER: testnet_user_20842437
-  ARCUP_TOKEN: ${{ secrets.ARCUP_TOKEN }}
+  RUSTFLAGS: "-Dwarnings -A deprecated"
+  CARGO_TERM_COLOR: always
 
 jobs:
   find-examples:
@@ -30,10 +30,9 @@ jobs:
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup/
-      - uses: ./.github/actions/setup-solana/
-      - uses: ./.github/actions/setup-anchor/
-      - uses: ./.github/actions/setup-arcium/
+      - uses: arcium-hq/setup-arcium@v0.5.1
+        with:
+          runner-arch-os: x86_64_linux
 
       - name: Load cached cargo registry
         uses: actions/cache/restore@v4
