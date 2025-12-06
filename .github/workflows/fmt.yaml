@@ -14,14 +14,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup/
-
       - uses: actions-rs/toolchain@v1
         with:
+          toolchain: nightly
           override: true
           components: rustfmt
-          toolchain: nightly
-      - run: rustup update
 
       # Find all example directories and their Cargo.lock files
       - name: Find example directories
