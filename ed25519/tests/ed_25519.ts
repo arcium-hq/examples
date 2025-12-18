@@ -56,19 +56,18 @@ describe("Ed25519", () => {
   it("sign and verify with MPC Ed25519", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+    console.log("MXE x25519 pubkey:", mxePublicKey);
+
     console.log("Initializing computation definitions");
     const initSMSig = await initSignMessageCompDef(program, owner, false, false);
     console.log("Sign message computation definition initialized with signature", initSMSig);
 
     const initVSSig = await initVerifySignatureCompDef(program, owner, false, false);
     console.log("Verify signature computation definition initialized with signature", initVSSig);
-
-    const mxePublicKey = await getMXEPublicKeyWithRetry(
-      provider as anchor.AnchorProvider,
-      program.programId
-    );
-
-    console.log("MXE x25519 pubkey:", mxePublicKey);
 
     console.log("\nSigning message with MPC Ed25519");
     let message = new TextEncoder().encode('hello');
