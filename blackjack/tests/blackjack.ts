@@ -288,7 +288,9 @@ describe("Blackjack", () => {
 
       // Basic Strategy: Hit on 16 or less, Stand on 17 or more. Hit soft 17.
       let action: "hit" | "stand" = "stand";
-      if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
+      if (gameState.playerHandSize >= 11) {
+        action = "stand";
+      } else if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
         action = "hit";
       }
 
@@ -367,10 +369,10 @@ describe("Blackjack", () => {
             );
 
             if (playerValue > 21) {
-              console.error(
-                "ERROR: Bust detected after PlayerHitEvent, expected PlayerBustEvent!"
-              );
-              playerBusted = true;
+              expect(
+                playerValue,
+                "Bust detected after PlayerHitEvent, expected PlayerBustEvent"
+              ).to.be.at.most(21);
             }
           } else {
             console.log("Received PlayerBustEvent.");

@@ -190,6 +190,10 @@ pub mod blackjack {
             !ctx.accounts.blackjack_game.player_has_stood,
             ErrorCode::InvalidMove
         );
+        require!(
+            ctx.accounts.blackjack_game.player_hand_size < 11,
+            ErrorCode::InvalidMove
+        );
 
         let args = ArgBuilder::new()
             // Deck
@@ -254,6 +258,7 @@ pub mod blackjack {
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
         blackjack_game.client_nonce = client_nonce;
+        blackjack_game.player_hand_size += 1;
 
         if is_bust {
             blackjack_game.game_state = GameState::DealerTurn;
@@ -268,7 +273,6 @@ pub mod blackjack {
                 client_nonce,
                 game_id: blackjack_game.game_id,
             });
-            blackjack_game.player_hand_size += 1;
         }
 
         Ok(())
@@ -292,6 +296,10 @@ pub mod blackjack {
         );
         require!(
             !ctx.accounts.blackjack_game.player_has_stood,
+            ErrorCode::InvalidMove
+        );
+        require!(
+            ctx.accounts.blackjack_game.player_hand_size < 11,
             ErrorCode::InvalidMove
         );
 
@@ -358,6 +366,7 @@ pub mod blackjack {
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
         blackjack_game.client_nonce = client_nonce;
+        blackjack_game.player_hand_size += 1;
         blackjack_game.player_has_stood = true;
 
         if is_bust {
