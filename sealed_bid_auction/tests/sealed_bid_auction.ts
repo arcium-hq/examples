@@ -25,9 +25,6 @@ import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
 
-/**
- * Gets the cluster account address using the cluster offset from environment.
- */
 function getClusterAccount(): PublicKey {
   const arciumEnv = getArciumEnv();
   return getClusterAccAddress(arciumEnv.arciumClusterOffset);
@@ -50,31 +47,7 @@ function splitPubkeyToU128s(pubkey: Uint8Array): { lo: bigint; hi: bigint } {
   return { lo, hi };
 }
 
-/**
- * Reconstructs a 32-byte public key from lo and hi u128 values.
- */
-function reconstructPubkeyFromU128s(lo: bigint, hi: bigint): Uint8Array {
-  const result = new Uint8Array(32);
-
-  // Convert lo to bytes (little-endian)
-  let loVal = lo;
-  for (let i = 0; i < 16; i++) {
-    result[i] = Number(loVal & BigInt(0xff));
-    loVal >>= BigInt(8);
-  }
-
-  // Convert hi to bytes (little-endian)
-  let hiVal = hi;
-  for (let i = 0; i < 16; i++) {
-    result[16 + i] = Number(hiVal & BigInt(0xff));
-    hiVal >>= BigInt(8);
-  }
-
-  return result;
-}
-
 describe("SealedBidAuction", () => {
-  // Configure the client to use the local cluster
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace
     .SealedBidAuction as Program<SealedBidAuction>;
@@ -615,8 +588,6 @@ describe("SealedBidAuction", () => {
       );
     });
   });
-
-  // ============ Helper Functions ============
 
   async function initCompDef(
     program: Program<SealedBidAuction>,

@@ -10,31 +10,22 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine
 
 declare_id!("659TqLmsCXCHotnPZmKaPo91vAV7a1VFqsmD5GTfyttk");
 
-/// The type of auction determines how the winner pays
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
 pub enum AuctionType {
-    /// Winner pays their own bid amount
     FirstPrice,
-    /// Winner pays the second-highest bid amount
     Vickrey,
 }
 
-/// Current status of the auction
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
 pub enum AuctionStatus {
-    /// Auction is accepting bids
     Open,
-    /// Auction is closed, waiting for winner determination
     Closed,
-    /// Winner has been determined
     Resolved,
 }
 
 #[arcium_program]
 pub mod sealed_bid_auction {
     use super::*;
-
-    // ============ Computation Definition Initializers ============
 
     pub fn init_auction_state_comp_def(ctx: Context<InitAuctionStateCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, None, None)?;
@@ -60,9 +51,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    // ============ Auction Management ============
-
-    /// Creates a new auction and initializes its encrypted state via MPC
     pub fn create_auction(
         ctx: Context<CreateAuction>,
         computation_offset: u64,
@@ -83,7 +71,6 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        // Queue computation to initialize encrypted auction state
         let args = ArgBuilder::new().build();
 
         queue_computation(
@@ -106,7 +93,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Callback for auction creation - stores the encrypted initial state
     #[arcium_callback(encrypted_ix = "init_auction_state")]
     pub fn init_auction_state_callback(
         ctx: Context<InitAuctionStateCallback>,
@@ -120,7 +106,6 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Capture values before mutable borrow
         let auction_key = ctx.accounts.auction.key();
         let authority = ctx.accounts.auction.authority;
         let auction_type = ctx.accounts.auction.auction_type;
@@ -142,15 +127,13 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Places an encrypted bid in the auction
-    /// The bid contains [bidder_lo (u128), bidder_hi (u128), amount (u64)] - 3 ciphertexts
     pub fn place_bid(
         ctx: Context<PlaceBid>,
         computation_offset: u64,
-        encrypted_bidder_lo: [u8; 32], // Encrypted lower 128 bits of bidder pubkey
-        encrypted_bidder_hi: [u8; 32], // Encrypted upper 128 bits of bidder pubkey
-        encrypted_amount: [u8; 32],    // Encrypted bid amount
-        bidder_pubkey: [u8; 32],       // X25519 encryption pubkey
+        encrypted_bidder_lo: [u8; 32],
+        encrypted_bidder_hi: [u8; 32],
+        encrypted_amount: [u8; 32],
+        bidder_pubkey: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
         let auction = &ctx.accounts.auction;
@@ -161,22 +144,16 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        // Auction account layout:
-        // 8 (discriminator) + 1 (bump) + 32 (authority) + 1 (auction_type) + 1 (status)
-        // + 8 (min_bid) + 8 (end_time) + 1 (bid_count) + 16 (state_nonce) = 76 bytes
-        // Then encrypted_state: 5 * 32 = 160 bytes
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5; // 5 ciphertexts for AuctionState
+        // Account offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16 = 76
+        const ENCRYPTED_STATE_OFFSET: u32 = 76;
+        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
-        // Build arguments: bidder's encrypted bid + current auction state
         let args = ArgBuilder::new()
-            // Bidder's encrypted data (Enc<Shared, Bid>) - 3 ciphertexts
             .x25519_pubkey(bidder_pubkey)
             .plaintext_u128(nonce)
             .encrypted_u128(encrypted_bidder_lo)
             .encrypted_u128(encrypted_bidder_hi)
             .encrypted_u64(encrypted_amount)
-            // Current auction state (Enc<Mxe, AuctionState>)
             .plaintext_u128(auction.state_nonce)
             .account(
                 ctx.accounts.auction.key(),
@@ -205,7 +182,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Callback for bid placement - updates the encrypted auction state
     #[arcium_callback(encrypted_ix = "place_bid")]
     pub fn place_bid_callback(
         ctx: Context<PlaceBidCallback>,
@@ -219,9 +195,7 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Capture key before mutable borrow
         let auction_key = ctx.accounts.auction.key();
-
         let auction = &mut ctx.accounts.auction;
         auction.encrypted_state = o.ciphertexts;
         auction.state_nonce = o.nonce;
@@ -235,7 +209,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Closes the auction to new bids (authority only)
     pub fn close_auction(ctx: Context<CloseAuction>) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         require!(
@@ -252,7 +225,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Determines the winner for a first-price auction
     pub fn determine_winner_first_price(
         ctx: Context<DetermineWinnerFirstPrice>,
         computation_offset: u64,
@@ -301,13 +273,11 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Callback for first-price winner determination
     #[arcium_callback(encrypted_ix = "determine_winner_first_price")]
     pub fn determine_winner_first_price_callback(
         ctx: Context<DetermineWinnerFirstPriceCallback>,
         output: SignedComputationOutputs<DetermineWinnerFirstPriceOutput>,
     ) -> Result<()> {
-        // For revealed struct output: field_0 contains the struct with field_0, field_1, field_2
         let (winner_lo, winner_hi, payment_amount) = match output.verify_output(
             &ctx.accounts.cluster_account,
             &ctx.accounts.computation_account,
@@ -323,15 +293,12 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Reconstruct the 32-byte winner pubkey from lo and hi parts
         let mut winner = [0u8; 32];
         winner[..16].copy_from_slice(&winner_lo.to_le_bytes());
         winner[16..].copy_from_slice(&winner_hi.to_le_bytes());
 
-        // Capture values before mutable borrow
         let auction_key = ctx.accounts.auction.key();
         let auction_type = ctx.accounts.auction.auction_type;
-
         let auction = &mut ctx.accounts.auction;
         auction.status = AuctionStatus::Resolved;
 
@@ -345,7 +312,6 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Determines the winner for a Vickrey (second-price) auction
     pub fn determine_winner_vickrey(
         ctx: Context<DetermineWinnerVickrey>,
         computation_offset: u64,
@@ -394,13 +360,11 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
-    /// Callback for Vickrey winner determination
     #[arcium_callback(encrypted_ix = "determine_winner_vickrey")]
     pub fn determine_winner_vickrey_callback(
         ctx: Context<DetermineWinnerVickreyCallback>,
         output: SignedComputationOutputs<DetermineWinnerVickreyOutput>,
     ) -> Result<()> {
-        // For revealed struct output: field_0 contains the struct with field_0, field_1, field_2
         let (winner_lo, winner_hi, payment_amount) = match output.verify_output(
             &ctx.accounts.cluster_account,
             &ctx.accounts.computation_account,
@@ -416,15 +380,12 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        // Reconstruct the 32-byte winner pubkey from lo and hi parts
         let mut winner = [0u8; 32];
         winner[..16].copy_from_slice(&winner_lo.to_le_bytes());
         winner[16..].copy_from_slice(&winner_hi.to_le_bytes());
 
-        // Capture values before mutable borrow
         let auction_key = ctx.accounts.auction.key();
         let auction_type = ctx.accounts.auction.auction_type;
-
         let auction = &mut ctx.accounts.auction;
         auction.status = AuctionStatus::Resolved;
 
@@ -439,9 +400,6 @@ pub mod sealed_bid_auction {
     }
 }
 
-// ============ Account Structures ============
-
-/// The auction account storing metadata and encrypted state
 #[account]
 #[derive(InitSpace)]
 pub struct Auction {
@@ -453,12 +411,8 @@ pub struct Auction {
     pub end_time: i64,
     pub bid_count: u8,
     pub state_nonce: u128,
-    /// Encrypted auction state from MPC (highest_bid, highest_bidder_lo, highest_bidder_hi, second_highest_bid, bid_count)
-    /// 5 ciphertexts: u64 + u128 + u128 + u64 + u8
     pub encrypted_state: [[u8; 32]; 5],
 }
-
-// ============ Create Auction Accounts ============
 
 #[queue_computation_accounts("init_auction_state", authority)]
 #[derive(Accounts)]
@@ -525,8 +479,6 @@ pub struct InitAuctionStateCallback<'info> {
     pub auction: Account<'info, Auction>,
 }
 
-// ============ Place Bid Accounts ============
-
 #[queue_computation_accounts("place_bid", bidder)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64)]
@@ -586,8 +538,6 @@ pub struct PlaceBidCallback<'info> {
     pub auction: Account<'info, Auction>,
 }
 
-// ============ Close Auction Accounts ============
-
 #[derive(Accounts)]
 pub struct CloseAuction<'info> {
     #[account(mut)]
@@ -598,8 +548,6 @@ pub struct CloseAuction<'info> {
     )]
     pub auction: Account<'info, Auction>,
 }
-
-// ============ Determine Winner First Price Accounts ============
 
 #[queue_computation_accounts("determine_winner_first_price", authority)]
 #[derive(Accounts)]
@@ -660,8 +608,6 @@ pub struct DetermineWinnerFirstPriceCallback<'info> {
     pub auction: Account<'info, Auction>,
 }
 
-// ============ Determine Winner Vickrey Accounts ============
-
 #[queue_computation_accounts("determine_winner_vickrey", authority)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64)]
@@ -721,8 +667,6 @@ pub struct DetermineWinnerVickreyCallback<'info> {
     pub auction: Account<'info, Auction>,
 }
 
-// ============ Init Computation Definition Accounts ============
-
 #[init_computation_definition_accounts("init_auction_state", payer)]
 #[derive(Accounts)]
 pub struct InitAuctionStateCompDef<'info> {
@@ -779,8 +723,6 @@ pub struct InitDetermineWinnerVickreyCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// ============ Events ============
-
 #[event]
 pub struct AuctionCreatedEvent {
     pub auction: Pubkey,
@@ -809,8 +751,6 @@ pub struct AuctionResolvedEvent {
     pub payment_amount: u64,
     pub auction_type: AuctionType,
 }
-
-// ============ Errors ============
 
 #[error_code]
 pub enum ErrorCode {
