@@ -52,25 +52,19 @@ mod circuits {
         let game_moves = game_ctxt.to_arcis();
 
         // 0 - tie, 1 - player A wins, 2 - player B wins, 3 - invalid move
-        let mut result = 3;
-
-        // If moves are the same, it's a tie
-        if game_moves.player_a_move == game_moves.player_b_move {
-            result = 0;
+        let result = if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
+            3 // Invalid - at least one player hasn't moved
+        } else if game_moves.player_a_move == game_moves.player_b_move {
+            0 // Tie
         } else if (game_moves.player_a_move == 0 && game_moves.player_b_move == 2) || // Rock beats Scissors
                   (game_moves.player_a_move == 1 && game_moves.player_b_move == 0) || // Paper beats Rock
                   (game_moves.player_a_move == 2 && game_moves.player_b_move == 1)
         // Scissors beats Paper
         {
-            result = 1; // Player A wins
+            1 // Player A wins
         } else {
-            result = 2; // Player B wins
-        }
-
-        // If either player hasn't played their move yet, the result is invalid
-        if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
-            result = 3;
-        }
+            2 // Player B wins
+        };
 
         result.reveal()
     }

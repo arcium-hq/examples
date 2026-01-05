@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis-imports = "0.5.1"
+arcis-imports = "0.5.4"
