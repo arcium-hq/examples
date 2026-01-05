@@ -100,13 +100,6 @@ mod circuits {
         }
     }
 
-    // Initial hand is 2 player cards and 2 dealer cards (1 face up, 1 face down)
-    pub struct InitialHandVisible {
-        pub player_card_one: u8,
-        pub player_card_two: u8,
-        pub dealer_card_one: u8,
-    }
-
     pub struct Hand {
         pub cards: u128,
     }
@@ -197,8 +190,6 @@ mod circuits {
 
         player_hand[player_hand_size as usize] = new_card;
 
-        let player_updated_hand_value = calculate_hand_value(&player_hand, player_hand_size + 1);
-
         (
             player_hand_ctxt
                 .owner
@@ -261,11 +252,11 @@ mod circuits {
         dealer_hand_size: u8,
     ) -> (Enc<Mxe, Hand>, Enc<Shared, Hand>, u8) {
         let deck = deck_ctxt.to_arcis();
-        let mut deck_array = deck.to_array();
+        let deck_array = deck.to_array();
         let mut dealer = dealer_hand_ctxt.to_arcis().to_array();
         let mut size = dealer_hand_size as usize;
 
-        for i in 0..7 {
+        for _ in 0..7 {
             let val = calculate_hand_value(&dealer, size as u8);
             if val < 17 {
                 let idx = (player_hand_size as usize + size) as usize;
@@ -299,7 +290,7 @@ mod circuits {
         // Process each card in the hand
         for i in 0..11 {
             let rank = if i < hand_length as usize {
-                (hand[i] % 13) // Card rank (0=Ace, 1-9=pip cards, 10-12=face cards)
+                hand[i] % 13 // Card rank (0=Ace, 1-9=pip cards, 10-12=face cards)
             } else {
                 0
             };
