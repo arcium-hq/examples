@@ -612,6 +612,7 @@ describe("SealedBidAuction", () => {
     )[0];
 
     // Map circuit name to the correct init method
+    // Using preflightCommitment to get fresh blockhash for each transaction
     let sig: string;
     switch (circuitName) {
       case "init_auction_state":
@@ -623,7 +624,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc();
+          .rpc({ preflightCommitment: "confirmed" });
         break;
       case "place_bid":
         sig = await program.methods
@@ -634,7 +635,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc();
+          .rpc({ preflightCommitment: "confirmed" });
         break;
       case "determine_winner_first_price":
         sig = await program.methods
@@ -645,7 +646,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc();
+          .rpc({ preflightCommitment: "confirmed" });
         break;
       case "determine_winner_vickrey":
         sig = await program.methods
@@ -656,7 +657,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc();
+          .rpc({ preflightCommitment: "confirmed" });
         break;
       default:
         throw new Error(`Unknown circuit: ${circuitName}`);
