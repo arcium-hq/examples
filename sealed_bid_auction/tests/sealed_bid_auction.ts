@@ -133,12 +133,16 @@ describe("SealedBidAuction", () => {
         program.programId
       );
 
+      // Generate nonce for MXE encryption
+      const createNonce = randomBytes(16);
+
       const createSig = await program.methods
         .createAuction(
           createComputationOffset,
           { firstPrice: {} }, // AuctionType::FirstPrice
           new anchor.BN(100), // min_bid: 100 lamports
-          new anchor.BN(Date.now() / 1000 + 3600) // end_time: 1 hour from now
+          new anchor.BN(Date.now() / 1000 + 3600), // end_time: 1 hour from now
+          new anchor.BN(deserializeLE(createNonce).toString()) // nonce for MXE
         )
         .accountsPartial({
           authority: owner.publicKey,
@@ -354,12 +358,16 @@ describe("SealedBidAuction", () => {
         program.programId
       );
 
+      // Generate nonce for MXE encryption
+      const vickreyCreateNonce = randomBytes(16);
+
       const createSig = await program.methods
         .createAuction(
           createComputationOffset,
           { vickrey: {} }, // AuctionType::Vickrey
           new anchor.BN(50), // min_bid: 50 lamports
-          new anchor.BN(Date.now() / 1000 + 3600)
+          new anchor.BN(Date.now() / 1000 + 3600),
+          new anchor.BN(deserializeLE(vickreyCreateNonce).toString()) // nonce for MXE
         )
         .accountsPartial({
           authority: vickreyAuthority.publicKey,

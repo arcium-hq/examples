@@ -57,6 +57,7 @@ pub mod sealed_bid_auction {
         auction_type: AuctionType,
         min_bid: u64,
         end_time: i64,
+        nonce: u128,
     ) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         auction.bump = ctx.bumps.auction;
@@ -66,12 +67,12 @@ pub mod sealed_bid_auction {
         auction.min_bid = min_bid;
         auction.end_time = end_time;
         auction.bid_count = 0;
-        auction.state_nonce = 0;
+        auction.state_nonce = nonce;
         auction.encrypted_state = [[0u8; 32]; 5];
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        let args = ArgBuilder::new().build();
+        let args = ArgBuilder::new().plaintext_u128(nonce).build();
 
         queue_computation(
             ctx.accounts,
