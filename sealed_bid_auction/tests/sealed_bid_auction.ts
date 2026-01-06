@@ -84,25 +84,26 @@ describe("SealedBidAuction", () => {
     );
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
-    // Initialize all computation definitions
+    // Initialize all computation definitions in parallel (like blackjack)
     if (!compDefsInitialized) {
       console.log("\n=== Initializing Computation Definitions ===\n");
 
-      console.log("1. Initializing init_auction_state comp def...");
-      await initCompDef(program, owner, "init_auction_state");
-      console.log("   Done.");
-
-      console.log("2. Initializing place_bid comp def...");
-      await initCompDef(program, owner, "place_bid");
-      console.log("   Done.");
-
-      console.log("3. Initializing determine_winner_first_price comp def...");
-      await initCompDef(program, owner, "determine_winner_first_price");
-      console.log("   Done.");
-
-      console.log("4. Initializing determine_winner_vickrey comp def...");
-      await initCompDef(program, owner, "determine_winner_vickrey");
-      console.log("   Done.\n");
+      await Promise.all([
+        initCompDef(program, owner, "init_auction_state").then((sig) =>
+          console.log("init_auction_state CompDef Init Sig:", sig)
+        ),
+        initCompDef(program, owner, "place_bid").then((sig) =>
+          console.log("place_bid CompDef Init Sig:", sig)
+        ),
+        initCompDef(program, owner, "determine_winner_first_price").then(
+          (sig) =>
+            console.log("determine_winner_first_price CompDef Init Sig:", sig)
+        ),
+        initCompDef(program, owner, "determine_winner_vickrey").then((sig) =>
+          console.log("determine_winner_vickrey CompDef Init Sig:", sig)
+        ),
+      ]);
+      console.log("All computation definitions initialized.");
 
       compDefsInitialized = true;
     }
@@ -155,7 +156,9 @@ describe("SealedBidAuction", () => {
           ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
-            Buffer.from(getCompDefAccOffset("init_auction_state")).readUInt32LE()
+            Buffer.from(
+              getCompDefAccOffset("init_auction_state")
+            ).readUInt32LE()
           ),
         })
         .rpc({ skipPreflight: true, commitment: "confirmed" });
@@ -172,7 +175,10 @@ describe("SealedBidAuction", () => {
       console.log("   Finalize tx:", createFinalizeSig);
 
       const auctionCreatedEvent = await auctionCreatedPromise;
-      console.log("   Auction created:", auctionCreatedEvent.auction.toBase58());
+      console.log(
+        "   Auction created:",
+        auctionCreatedEvent.auction.toBase58()
+      );
       expect(auctionCreatedEvent.minBid.toNumber()).to.equal(100);
 
       // Step 2: Place a bid
@@ -371,7 +377,9 @@ describe("SealedBidAuction", () => {
           ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
-            Buffer.from(getCompDefAccOffset("init_auction_state")).readUInt32LE()
+            Buffer.from(
+              getCompDefAccOffset("init_auction_state")
+            ).readUInt32LE()
           ),
         })
         .signers([vickreyAuthority])
@@ -616,7 +624,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc();
         break;
       case "place_bid":
         sig = await program.methods
@@ -627,7 +635,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc();
         break;
       case "determine_winner_first_price":
         sig = await program.methods
@@ -638,7 +646,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc();
         break;
       case "determine_winner_vickrey":
         sig = await program.methods
@@ -649,7 +657,7 @@ describe("SealedBidAuction", () => {
             mxeAccount: getMXEAccAddress(program.programId),
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc();
         break;
       default:
         throw new Error(`Unknown circuit: ${circuitName}`);
@@ -667,7 +675,9 @@ describe("SealedBidAuction", () => {
     finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
     finalizeTx.sign(owner);
-    await provider.sendAndConfirm(finalizeTx);
+    await provider.sendAndConfirm(finalizeTx, [owner], {
+      commitment: "confirmed",
+    });
 
     return sig;
   }
