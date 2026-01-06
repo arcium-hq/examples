@@ -84,26 +84,25 @@ describe("SealedBidAuction", () => {
     );
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
-    // Initialize all computation definitions in parallel (like blackjack)
+    // Initialize all computation definitions sequentially (like voting/ed25519)
     if (!compDefsInitialized) {
       console.log("\n=== Initializing Computation Definitions ===\n");
 
-      await Promise.all([
-        initCompDef(program, owner, "init_auction_state").then((sig) =>
-          console.log("init_auction_state CompDef Init Sig:", sig)
-        ),
-        initCompDef(program, owner, "place_bid").then((sig) =>
-          console.log("place_bid CompDef Init Sig:", sig)
-        ),
-        initCompDef(program, owner, "determine_winner_first_price").then(
-          (sig) =>
-            console.log("determine_winner_first_price CompDef Init Sig:", sig)
-        ),
-        initCompDef(program, owner, "determine_winner_vickrey").then((sig) =>
-          console.log("determine_winner_vickrey CompDef Init Sig:", sig)
-        ),
-      ]);
-      console.log("All computation definitions initialized.");
+      console.log("1. Initializing init_auction_state comp def...");
+      await initCompDef(program, owner, "init_auction_state");
+      console.log("   Done.");
+
+      console.log("2. Initializing place_bid comp def...");
+      await initCompDef(program, owner, "place_bid");
+      console.log("   Done.");
+
+      console.log("3. Initializing determine_winner_first_price comp def...");
+      await initCompDef(program, owner, "determine_winner_first_price");
+      console.log("   Done.");
+
+      console.log("4. Initializing determine_winner_vickrey comp def...");
+      await initCompDef(program, owner, "determine_winner_vickrey");
+      console.log("   Done.\n");
 
       compDefsInitialized = true;
     }
