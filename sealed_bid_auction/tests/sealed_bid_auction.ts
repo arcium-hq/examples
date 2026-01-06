@@ -683,9 +683,8 @@ describe("SealedBidAuction", () => {
     finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
     finalizeTx.sign(owner);
-    await provider.sendAndConfirm(finalizeTx, [owner], {
-      commitment: "confirmed",
-    });
+
+    await provider.sendAndConfirm(finalizeTx);
 
     return sig;
   }
