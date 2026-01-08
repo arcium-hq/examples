@@ -88,6 +88,8 @@ jobs:
           cat artifacts/callback_server.log || true
           echo "=== Docker Compose Logs ==="
           docker compose -f artifacts/docker-compose-arx-env.yml logs || true
+          echo "=== Anchor Program Logs ==="
+          cat .anchor/program-logs/*.log 2>/dev/null || true
           popd
           
           pkill -f solana-test-validator

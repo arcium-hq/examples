@@ -129,7 +129,7 @@ describe("ShareMedicalRecords", () => {
           ciphertext[10],
         ]
       )
-      .rpc({ commitment: "confirmed" });
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
     console.log("Store sig is ", storeSig);
 
     const receiverSecretKey = x25519.utils.randomSecretKey();
@@ -168,7 +168,7 @@ describe("ShareMedicalRecords", () => {
           program.programId
         )[0],
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -248,6 +248,7 @@ describe("ShareMedicalRecords", () => {
       .signers([owner])
       .rpc({
         commitment: "confirmed",
+        preflightCommitment: "confirmed",
       });
     console.log(
       "Init share patient data computation definition transaction",
