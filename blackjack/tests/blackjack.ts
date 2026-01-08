@@ -217,7 +217,7 @@ describe("Blackjack", () => {
         blackjackGame: blackjackGamePDA,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed" });
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
     console.log("Initialize game TX Signature:", initGameSig);
 
     console.log("Waiting for shuffle/deal computation finalization...");
@@ -320,7 +320,7 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
         console.log("Player Hit TX Signature:", playerHitSig);
 
         console.log("Waiting for player hit computation finalization...");
@@ -409,7 +409,7 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed" });
+          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
         console.log("Player Stand TX Signature:", playerStandSig);
 
         console.log("Waiting for player stand computation finalization...");
@@ -472,7 +472,7 @@ describe("Blackjack", () => {
           blackjackGame: blackjackGamePDA,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
       console.log("Dealer Play TX Signature:", dealerPlaySig);
 
       console.log("Waiting for dealer play computation finalization...");
@@ -542,7 +542,7 @@ describe("Blackjack", () => {
           payer: owner.publicKey,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
       console.log("Resolve Game TX Signature:", resolveSig);
 
       console.log("Waiting for resolve game computation finalization...");
@@ -605,7 +605,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc();
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
@@ -667,7 +667,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc();
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_hit.arcis");
@@ -729,7 +729,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_stand.arcis");
@@ -791,7 +791,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc();
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
@@ -853,7 +853,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc();
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
@@ -915,7 +915,7 @@ describe("Blackjack", () => {
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
       })
-      .rpc();
+      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
