@@ -23,6 +23,8 @@ For installation instructions and setup, see the [Installation Guide](https://do
 
 **[Confidential Voting](./voting/)** - Anonymous ballot systems where individual votes remain private while aggregate results are public.
 
+**[Sealed-Bid Auction](./sealed_bid_auction/)** - Auction systems where bids remain encrypted until winner determination, supporting first-price and Vickrey (second-price) auction types.
+
 ### Primitives
 
 **[Coinflip](./coinflip/)** - Generate trustless randomness where no party can predict outcomes.
