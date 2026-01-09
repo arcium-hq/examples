@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::rent::Rent;
+use anchor_lang::solana_program::sysvar::Sysvar;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
 
@@ -124,7 +126,31 @@ pub mod voting {
             )
             .build();
 
+        if !ctx.accounts.voter_record.data_is_empty() {
+            return Err(ErrorCode::AlreadyVoted.into());
+        }
+
+        let rent = Rent::get()?;
+        let space = 8 + VoterRecord::INIT_SPACE;
+        let lamports_needed = rent.minimum_balance(space);
+        let current_lamports = ctx.accounts.voter_record.lamports();
+
+        if current_lamports < lamports_needed {
+            let transfer_amount = lamports_needed - current_lamports;
+            anchor_lang::system_program::transfer(
+                CpiContext::new(
+                    ctx.accounts.system_program.to_account_info(),
+                    anchor_lang::system_program::Transfer {
+                        from: ctx.accounts.payer.to_account_info(),
+                        to: ctx.accounts.voter_record.to_account_info(),
+                    },
+                ),
+                transfer_amount,
+            )?;
+        }
+
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+        let voter_record_key = ctx.accounts.voter_record.key();
 
         queue_computation(
             ctx.accounts,
@@ -134,10 +160,20 @@ pub mod voting {
             vec![VoteCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
-                &[CallbackAccount {
-                    pubkey: ctx.accounts.poll_acc.key(),
-                    is_writable: true,
-                }],
+                &[
+                    CallbackAccount {
+                        pubkey: ctx.accounts.poll_acc.key(),
+                        is_writable: true,
+                    },
+                    CallbackAccount {
+                        pubkey: ctx.accounts.payer.key(), // Original voter pubkey
+                        is_writable: false,
+                    },
+                    CallbackAccount {
+                        pubkey: voter_record_key, // Pre-funded VoterRecord
+                        is_writable: true,
+                    },
+                ],
             )?],
             1,
             0,
@@ -160,6 +196,39 @@ pub mod voting {
 
         ctx.accounts.poll_acc.vote_state = o.ciphertexts;
         ctx.accounts.poll_acc.nonce = o.nonce;
+
+        let voter_record_info = ctx.accounts.voter_record.to_account_info();
+        let voter = &ctx.accounts.voter;
+        let poll = &ctx.accounts.poll_acc;
+
+        if !voter_record_info.data_is_empty() {
+            return Ok(());
+        }
+
+        require!(
+            *voter_record_info.owner == anchor_lang::system_program::ID,
+            ErrorCode::InvalidVoterRecord
+        );
+
+        let (expected_pda, bump) = Pubkey::find_program_address(
+            &[b"voter", poll.key().as_ref(), voter.key().as_ref()],
+            ctx.program_id,
+        );
+        require!(
+            voter_record_info.key() == expected_pda,
+            ErrorCode::InvalidVoterRecord
+        );
+
+        let space = 8 + VoterRecord::INIT_SPACE;
+        voter_record_info.resize(space)?;
+
+        {
+            let mut data = voter_record_info.try_borrow_mut_data()?;
+            data[..8].copy_from_slice(&VoterRecord::DISCRIMINATOR);
+            data[8] = bump;
+        }
+
+        voter_record_info.assign(&crate::ID);
 
         let clock = Clock::get()?;
         let current_timestamp = clock.unix_timestamp;
@@ -422,6 +491,15 @@ pub struct Vote<'info> {
         has_one = authority
     )]
     pub poll_acc: Account<'info, PollAccount>,
+    /// CHECK: VoterRecord PDA - checked manually in vote().
+    /// Pre-funded here, initialized atomically in vote_callback().
+    /// This ensures voter isn't locked out if callback fails.
+    #[account(
+        mut,
+        seeds = [b"voter", poll_acc.key().as_ref(), payer.key().as_ref()],
+        bump,
+    )]
+    pub voter_record: UncheckedAccount<'info>,
 }
 
 #[callback_accounts("vote")]
@@ -447,6 +525,12 @@ pub struct VoteCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
     #[account(mut)]
     pub poll_acc: Account<'info, PollAccount>,
+    /// CHECK: Original voter's pubkey, passed from vote() for PDA verification
+    pub voter: UncheckedAccount<'info>,
+    /// CHECK: Pre-funded VoterRecord PDA to be initialized
+    #[account(mut)]
+    pub voter_record: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
 }
 
 #[init_computation_definition_accounts("vote", payer)]
@@ -591,6 +675,16 @@ pub struct PollAccount {
     pub question: String,
 }
 
+/// Tracks that a voter has already voted on a specific poll.
+/// The PDA seeds [b"voter", poll.key(), voter.key()] ensure each voter
+/// can only have one record per poll, preventing double-voting.
+#[account]
+#[derive(InitSpace)]
+pub struct VoterRecord {
+    /// PDA bump seed
+    pub bump: u8,
+}
+
 #[error_code]
 pub enum ErrorCode {
     #[msg("Invalid authority")]
@@ -599,6 +693,10 @@ pub enum ErrorCode {
     AbortedComputation,
     #[msg("Cluster not set")]
     ClusterNotSet,
+    #[msg("Already voted on this poll")]
+    AlreadyVoted,
+    #[msg("Invalid voter record PDA")]
+    InvalidVoterRecord,
 }
 
 #[event]

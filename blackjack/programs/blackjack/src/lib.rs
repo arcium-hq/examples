@@ -453,8 +453,8 @@ pub mod blackjack {
         blackjack_game.player_has_stood = true;
 
         if is_bust {
-            // This should never happen
-            blackjack_game.game_state = GameState::PlayerTurn;
+            // Player bust edge case
+            blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerBustEvent {
                 client_nonce: blackjack_game.client_nonce,
                 game_id: blackjack_game.game_id,
@@ -838,6 +838,7 @@ pub struct PlayerHit<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -946,6 +947,7 @@ pub struct PlayerDoubleDown<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1054,6 +1056,7 @@ pub struct PlayerStand<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1162,6 +1165,7 @@ pub struct DealerPlay<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1270,6 +1274,7 @@ pub struct ResolveGame<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1429,4 +1434,6 @@ pub enum ErrorCode {
     InvalidDealerClientPubkey,
     #[msg("Cluster not set")]
     ClusterNotSet,
+    #[msg("Not authorized to perform this action")]
+    NotAuthorized,
 }
