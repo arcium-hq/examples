@@ -141,7 +141,7 @@ describe("SealedBidAuction", () => {
           createComputationOffset,
           { firstPrice: {} }, // AuctionType::FirstPrice
           new anchor.BN(100), // min_bid: 100 lamports
-          new anchor.BN(Date.now() / 1000 + 3600), // end_time: 1 hour from now
+          new anchor.BN(Math.floor(Date.now() / 1000) + 5), // end_time: 5 seconds from now
           new anchor.BN(deserializeLE(createNonce).toString()) // nonce for MXE
         )
         .accountsPartial({
@@ -240,7 +240,9 @@ describe("SealedBidAuction", () => {
       expect(bidPlacedEvent.bidCount).to.equal(1);
 
       // Step 3: Close auction
-      console.log("\nStep 3: Closing auction...");
+      console.log("\nStep 3: Waiting for auction to end...");
+      await new Promise((resolve) => setTimeout(resolve, 6000));
+      console.log("Closing auction...");
       const auctionClosedPromise = awaitEvent("auctionClosedEvent");
 
       const closeSig = await program.methods
@@ -366,7 +368,7 @@ describe("SealedBidAuction", () => {
           createComputationOffset,
           { vickrey: {} }, // AuctionType::Vickrey
           new anchor.BN(50), // min_bid: 50 lamports
-          new anchor.BN(Date.now() / 1000 + 3600),
+          new anchor.BN(Math.floor(Date.now() / 1000) + 5), // end_time: 5 seconds from now
           new anchor.BN(deserializeLE(vickreyCreateNonce).toString()) // nonce for MXE
         )
         .accountsPartial({
@@ -518,7 +520,9 @@ describe("SealedBidAuction", () => {
       expect(bidPlaced2Event.bidCount).to.equal(2);
 
       // Step 4: Close auction
-      console.log("\nStep 4: Closing Vickrey auction...");
+      console.log("\nStep 4: Waiting for auction to end...");
+      await new Promise((resolve) => setTimeout(resolve, 6000));
+      console.log("Closing Vickrey auction...");
       const auctionClosedPromise = awaitEvent("auctionClosedEvent");
 
       const closeSig = await program.methods
