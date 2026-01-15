@@ -6,7 +6,6 @@ import { randomBytes } from "crypto";
 import {
   arcisEd25519,
   awaitComputationFinalization,
-  compressUint128,
   getArciumEnv,
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
@@ -25,6 +24,7 @@ import {
   getClusterAccAddress,
   x25519,
 } from "@arcium-hq/client";
+import { circuits } from "../build/circuits";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
@@ -32,8 +32,7 @@ import { expect } from "chai";
 describe("Ed25519", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  const program = anchor.workspace
-    .Ed25519 as Program<Ed25519>;
+  const program = anchor.workspace.Ed25519 as Program<Ed25519>;
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
@@ -57,11 +56,27 @@ describe("Ed25519", () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing computation definitions");
-    const initSMSig = await initSignMessageCompDef(program, owner, false, false);
-    console.log("Sign message computation definition initialized with signature", initSMSig);
+    const initSMSig = await initSignMessageCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
+    console.log(
+      "Sign message computation definition initialized with signature",
+      initSMSig
+    );
 
-    const initVSSig = await initVerifySignatureCompDef(program, owner, false, false);
-    console.log("Verify signature computation definition initialized with signature", initVSSig);
+    const initVSSig = await initVerifySignatureCompDef(
+      program,
+      owner,
+      false,
+      false
+    );
+    console.log(
+      "Verify signature computation definition initialized with signature",
+      initVSSig
+    );
 
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
@@ -71,16 +86,13 @@ describe("Ed25519", () => {
     console.log("MXE x25519 pubkey:", mxePublicKey);
 
     console.log("\nSigning message with MPC Ed25519");
-    let message = new TextEncoder().encode('hello');
+    let message = new TextEncoder().encode("hello");
 
     const signMessageEventPromise = awaitEvent("signMessageEvent");
     const computationOffsetSignMessage = new anchor.BN(randomBytes(8), "hex");
 
     const queueSigSignMessage = await program.methods
-      .signMessage(
-        computationOffsetSignMessage,
-        Array.from(message),
-      )
+      .signMessage(computationOffsetSignMessage, Array.from(message))
       .accountsPartial({
         computationAccount: getComputationAccAddress(
           arciumEnv.arciumClusterOffset,
@@ -89,7 +101,9 @@ describe("Ed25519", () => {
         clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(
+          arciumEnv.arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("sign_message")).readUInt32LE()
@@ -120,7 +134,10 @@ describe("Ed25519", () => {
     // ephemeral x25519 key to encrypt verifyingKey
     const oneTimePrivateKey = x25519.utils.randomSecretKey();
     const oneTimePublicKey = x25519.getPublicKey(oneTimePrivateKey);
-    const oneTimeSharedSecret = x25519.getSharedSecret(oneTimePrivateKey, mxePublicKey);
+    const oneTimeSharedSecret = x25519.getSharedSecret(
+      oneTimePrivateKey,
+      mxePublicKey
+    );
     const oneTimeCipher = new RescueCipher(oneTimeSharedSecret);
     const oneTimeNonce = randomBytes(16);
 
@@ -142,36 +159,50 @@ describe("Ed25519", () => {
       }
 
       const isFakeMessage = randomBytes(1)[0] % 2;
-      if (isFakeMessage === 1 || isFakeSignature === 0 && isFakeVerifyingKey === 0) {
+      if (
+        isFakeMessage === 1 ||
+        (isFakeSignature === 0 && isFakeVerifyingKey === 0)
+      ) {
         message[0] += 1;
       }
     }
 
-    // we compress verifyingKey as two 128-bit numbers
-    let verifyingKeyCompressed = compressUint128(verifyingKey);
-    const verifyingKeyCompressedEnc = oneTimeCipher.encrypt(verifyingKeyCompressed, oneTimeNonce);
+    // pack the verifying key
+    const verifyingKeyPacked = circuits.VerifyingKey.pack({
+      public_key_encoded: Array.from(verifyingKey),
+    });
+    const verifyingKeyEnc = oneTimeCipher.encrypt(
+      verifyingKeyPacked,
+      oneTimeNonce
+    );
 
     // observer who can decrypt isValid
     const observerPrivateKey = x25519.utils.randomSecretKey();
     const observerPublicKey = x25519.getPublicKey(observerPrivateKey);
-    const observerSharedSecret = x25519.getSharedSecret(observerPrivateKey, mxePublicKey);
+    const observerSharedSecret = x25519.getSharedSecret(
+      observerPrivateKey,
+      mxePublicKey
+    );
     const observerCipher = new RescueCipher(observerSharedSecret);
     const observerNonce = randomBytes(16);
 
     const verifySignatureEventPromise = awaitEvent("verifySignatureEvent");
-    const computationOffsetVerifySignature = new anchor.BN(randomBytes(8), "hex");
+    const computationOffsetVerifySignature = new anchor.BN(
+      randomBytes(8),
+      "hex"
+    );
 
     const queueSigVerifySignature = await program.methods
       .verifySignature(
         computationOffsetVerifySignature,
         Array.from(oneTimePublicKey),
         new anchor.BN(deserializeLE(oneTimeNonce).toString()),
-        Array.from(verifyingKeyCompressedEnc[0]),
-        Array.from(verifyingKeyCompressedEnc[1]),
+        Array.from(verifyingKeyEnc[0]),
+        Array.from(verifyingKeyEnc[1]),
         Array.from(message),
         Array.from(signature),
         Array.from(observerPublicKey),
-        new anchor.BN(deserializeLE(observerNonce).toString()),
+        new anchor.BN(deserializeLE(observerNonce).toString())
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
@@ -181,7 +212,9 @@ describe("Ed25519", () => {
         clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(
+          arciumEnv.arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("verify_signature")).readUInt32LE()
@@ -197,8 +230,15 @@ describe("Ed25519", () => {
     );
 
     const verifySignatureEvent = await verifySignatureEventPromise;
-    const decrypted = observerCipher.decrypt([verifySignatureEvent.isValid], new Uint8Array(verifySignatureEvent.nonce))[0];
-    console.log(`Encrypted verification completed, result: ${decrypted === BigInt(1) ? 'valid' : 'invalid'}`);
+    const decrypted = observerCipher.decrypt(
+      [verifySignatureEvent.isValid],
+      new Uint8Array(verifySignatureEvent.nonce)
+    )[0];
+    console.log(
+      `Encrypted verification completed, result: ${
+        decrypted === BigInt(1) ? "valid" : "invalid"
+      }`
+    );
     expect(decrypted).to.equal(BigInt(isValidSignature));
   });
 
@@ -286,7 +326,10 @@ describe("Ed25519", () => {
       })
       .signers([owner])
       .rpc();
-    console.log("\nInit verify signature computation definition transaction", sig);
+    console.log(
+      "\nInit verify signature computation definition transaction",
+      sig
+    );
 
     if (uploadRawCircuit) {
       const rawCircuit = fs.readFileSync("build/verify_signature.arcis");

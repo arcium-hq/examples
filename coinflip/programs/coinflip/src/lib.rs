@@ -96,7 +96,7 @@ pub struct Flip<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -134,6 +134,7 @@ pub struct Flip<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
