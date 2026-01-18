@@ -1,22 +1,35 @@
 #!/bin/bash
 # sync-version.sh - Update all Arcium version references across examples
 # Usage: ./scripts/sync-version.sh <version>
-# Example: ./scripts/sync-version.sh 0.6.2
+# Example: ./scripts/sync-version.sh 0.6.3
 
 set -eo pipefail
 
-VERSION=${1:-0.6.2}
+VERSION=${1:-0.6.3}
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Validate version format
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: Version must be in format X.Y.Z (e.g., 0.6.2)"
+  echo "Error: Version must be in format X.Y.Z (e.g., 0.6.3)"
   exit 1
 fi
 
 # Check for jq
 if ! command -v jq &> /dev/null; then
   echo "Error: jq is required but not installed"
+  exit 1
+fi
+
+# Check arcium CLI version
+ARCIUM_VERSION=$(arcium --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+if [ -z "$ARCIUM_VERSION" ]; then
+  echo "Error: arcium CLI not found"
+  exit 1
+fi
+
+if [ "$ARCIUM_VERSION" != "$VERSION" ]; then
+  echo "Error: arcium CLI version ($ARCIUM_VERSION) doesn't match target ($VERSION)"
+  echo "Install matching version: cargo install arcium-cli --version $VERSION"
   exit 1
 fi
 
@@ -65,6 +78,16 @@ for EXAMPLE in $EXAMPLES; do
   echo "Regenerating yarn.lock for $EXAMPLE_NAME..."
   rm -f "$EXAMPLE/yarn.lock"
   (cd "$EXAMPLE" && yarn install --silent 2>/dev/null || yarn install)
+done
+
+echo ""
+echo "Running arcium build in each example..."
+echo ""
+
+for EXAMPLE in $EXAMPLES; do
+  EXAMPLE_NAME=$(echo "$EXAMPLE" | sed "s|$REPO_ROOT/||")
+  echo "Building $EXAMPLE_NAME..."
+  (cd "$EXAMPLE" && arcium build)
 done
 
 echo ""
