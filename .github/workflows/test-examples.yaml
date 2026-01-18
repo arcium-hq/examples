@@ -30,7 +30,7 @@ jobs:
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v5
-      - uses: arcium-hq/setup-arcium@v0.5.4
+      - uses: arcium-hq/setup-arcium@v0.6.3
         with:
           runner-arch-os: x86_64_linux
 
@@ -57,13 +57,13 @@ jobs:
 
           if [[ "${{ matrix.example }}" = *"manticore"* ]]; then
             echo "Manticore test"
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_0 
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_0
             rm -r /tmp/computation_folder_0/player-1
 
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_1 
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_1
             rm -r /tmp/computation_folder_1/player-0
 
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_2 
+            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_2
             rm -r /tmp/computation_folder_2/player-0
             rm -r /tmp/computation_folder_2/player-1
           else
@@ -72,11 +72,11 @@ jobs:
             mkdir /tmp/computation_folder_1
             mkdir /tmp/computation_folder_2
           fi
-          
+
           pushd ${{ matrix.example }}
           yarn install
           arcium build
-          
+
           # Run the test and capture logs
           echo "Running arcium test..."
           timeout 10m arcium test || EXIT_CODE=$?
@@ -91,7 +91,7 @@ jobs:
           echo "=== Anchor Program Logs ==="
           cat .anchor/program-logs/*.log 2>/dev/null || true
           popd
-          
+
           pkill -f solana-test-validator
 
           if [ -n "$EXIT_CODE" ]; then
