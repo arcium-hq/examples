@@ -32,7 +32,7 @@ pub mod blackjack {
     ///
     /// # Arguments
     /// * `game_id` - Unique identifier for this game session
-    /// * `mxe_nonce` - Cryptographic nonce for MXE operations  
+    /// * `mxe_nonce` - Cryptographic nonce for MXE operations
     /// * `client_pubkey` - Player's encryption public key for receiving encrypted cards
     /// * `client_nonce` - Player's cryptographic nonce for encryption operations
     pub fn initialize_blackjack_game(
@@ -672,7 +672,7 @@ pub struct InitializeBlackjackGame<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -710,6 +710,7 @@ pub struct InitializeBlackjackGame<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -782,7 +783,7 @@ pub struct PlayerHit<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -820,6 +821,7 @@ pub struct PlayerHit<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -890,7 +892,7 @@ pub struct PlayerDoubleDown<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -928,6 +930,7 @@ pub struct PlayerDoubleDown<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -998,7 +1001,7 @@ pub struct PlayerStand<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -1036,6 +1039,7 @@ pub struct PlayerStand<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -1106,7 +1110,7 @@ pub struct DealerPlay<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -1144,6 +1148,7 @@ pub struct DealerPlay<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -1214,7 +1219,7 @@ pub struct ResolveGame<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -1252,6 +1257,7 @@ pub struct ResolveGame<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS,
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -1325,7 +1331,7 @@ pub struct BlackjackGame {
     pub dealer_hand: [u8; 32],
     /// Cryptographic nonce for deck encryption
     pub deck_nonce: u128,
-    /// Cryptographic nonce for player's hand encryption  
+    /// Cryptographic nonce for player's hand encryption
     pub client_nonce: u128,
     /// Cryptographic nonce for dealer's hand encryption
     pub dealer_nonce: u128,

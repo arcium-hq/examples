@@ -1,8 +1,8 @@
-use arcis_imports::*;
+use arcis::*;
 
 #[encrypted]
 mod circuits {
-    use arcis_imports::*;
+    use arcis::*;
 
     /// Bidder pubkey split into two u128s (Arcis encrypts each primitive separately).
     pub struct Bid {
