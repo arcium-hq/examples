@@ -81,8 +81,13 @@ jobs:
           echo "Running arcium test..."
           sudo prlimit --pid $$ --nofile=1048576:1048576
           timeout 10m arcium test || EXIT_CODE=$?
-          echo "Most recent docker container id: $(docker ps -q -l)"
-          docker logs $(docker ps -q -l)
+          CONTAINER_ID=$(docker ps -q -l)
+          if [ -n "$CONTAINER_ID" ]; then
+            echo "Most recent docker container id: $CONTAINER_ID"
+            docker logs "$CONTAINER_ID"
+          else
+            echo "No docker container found"
+          fi
           echo "=== Docker Containers ==="
           docker ps -a
           echo "=== Callback Server Logs ==="
