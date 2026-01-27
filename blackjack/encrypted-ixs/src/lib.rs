@@ -175,20 +175,20 @@ mod circuits {
 
         let mut player_hand = player_hand_ctxt.to_arcis().to_array();
 
-        let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
-
-        let is_bust = player_hand_value > 21;
-
-        let new_card = if !is_bust {
+        let can_draw = (player_hand_size as usize) < 11;
+        if can_draw {
             let card_index = (player_hand_size + dealer_hand_size) as usize;
+            let new_card = deck[card_index];
+            player_hand[player_hand_size as usize] = new_card;
+        }
 
-            // Get the next card from the deck
-            deck[card_index]
+        let hand_len = if can_draw {
+            player_hand_size + 1
         } else {
-            53
+            player_hand_size
         };
 
-        player_hand[player_hand_size as usize] = new_card;
+        let is_bust = calculate_hand_value(&player_hand, hand_len) > 21;
 
         (
             player_hand_ctxt
@@ -219,20 +219,20 @@ mod circuits {
 
         let mut player_hand = player_hand_ctxt.to_arcis().to_array();
 
-        let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
-
-        let is_bust = player_hand_value > 21;
-
-        let new_card = if !is_bust {
+        let can_draw = (player_hand_size as usize) < 11;
+        if can_draw {
             let card_index = (player_hand_size + dealer_hand_size) as usize;
+            let new_card = deck_array[card_index];
+            player_hand[player_hand_size as usize] = new_card;
+        }
 
-            // Get the next card from the deck
-            deck_array[card_index]
+        let hand_len = if can_draw {
+            player_hand_size + 1
         } else {
-            53
+            player_hand_size
         };
 
-        player_hand[player_hand_size as usize] = new_card;
+        let is_bust = calculate_hand_value(&player_hand, hand_len) > 21;
 
         (
             player_hand_ctxt
@@ -251,15 +251,15 @@ mod circuits {
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Mxe, Hand>, Enc<Shared, Hand>, u8) {
-        let deck = deck_ctxt.to_arcis();
-        let deck_array = deck.to_array();
+        let deck_array = deck_ctxt.to_arcis().to_array();
         let mut dealer = dealer_hand_ctxt.to_arcis().to_array();
         let mut size = dealer_hand_size as usize;
 
-        for _ in 0..7 {
+        // Dealer can draw at most 9 additional cards (starting from 2, capped at 11).
+        for _ in 0..9 {
             let val = calculate_hand_value(&dealer, size as u8);
-            if val < 17 {
-                let idx = (player_hand_size as usize + size) as usize;
+            if val < 17 && size < 11 {
+                let idx = player_hand_size as usize + size;
                 dealer[size] = deck_array[idx];
                 size += 1;
             }
@@ -284,35 +284,31 @@ mod circuits {
     /// # Returns
     /// The total value of the hand (1-21, or >21 if busted)
     fn calculate_hand_value(hand: &[u8; 11], hand_length: u8) -> u8 {
-        let mut value = 0;
-        let mut has_ace = false;
+        let mut value: u8 = 0;
+        let mut ace_count: u8 = 0;
 
-        // Process each card in the hand
         for i in 0..11 {
-            let rank = if i < hand_length as usize {
-                hand[i] % 13 // Card rank (0=Ace, 1-9=pip cards, 10-12=face cards)
-            } else {
-                0
-            };
-
             if i < hand_length as usize {
-                if rank == 0 {
-                    // Ace: start with value of 11
-                    value += 11;
-                    has_ace = true;
-                } else if rank > 10 {
-                    // Face cards (Jack, Queen, King): value of 10
-                    value += 10;
-                } else {
-                    // Pip cards (2-10): face value (rank 1-9 becomes value 1-9)
-                    value += rank;
+                let card = hand[i];
+                if card <= 51 {
+                    let rank = card % 13; // 0=Ace, 1=2, ..., 9=10, 10=J, 11=Q, 12=K
+                    if rank == 0 {
+                        value += 11;
+                        ace_count += 1;
+                    } else if rank <= 9 {
+                        value += rank + 1;
+                    } else {
+                        value += 10;
+                    }
                 }
             }
         }
 
-        // Convert Ace from 11 to 1 if hand would bust with 11
-        if value > 21 && has_ace {
-            value -= 10;
+        for _ in 0..11 {
+            if value > 21 && ace_count > 0 {
+                value -= 10;
+                ace_count -= 1;
+            }
         }
 
         value
