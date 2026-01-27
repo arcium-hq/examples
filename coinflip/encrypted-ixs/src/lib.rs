@@ -1,8 +1,8 @@
-use arcis_imports::*;
+use arcis::*;
 
 #[encrypted]
 mod circuits {
-    use arcis_imports::*;
+    use arcis::*;
 
     /// Represents the player's choice in the coin flip game.
     pub struct UserChoice {

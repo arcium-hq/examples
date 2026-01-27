@@ -8,31 +8,35 @@ For installation instructions and setup, see the [Installation Guide](https://do
 
 ## Examples
 
-### Games
+New to Arcium? Start with Coinflip and progress through the tiers in order. For conceptual background, see [Mental Model](https://docs.arcium.com/developers/arcis/mental-model).
 
-**[Rock Paper Scissors](./rock_paper_scissors/)** - Simultaneous move games with asynchronous submission where neither player can see the other's choice until both commit.
+### Getting Started
 
-- **[Player vs Player](./rock_paper_scissors/against-player/)** - Two players make encrypted moves independently
-- **[Player vs House](./rock_paper_scissors/against-house/)** - Player competes against provably fair randomized opponent
+**[Coinflip](./coinflip/)** - Generate trustless randomness using `ArcisRNG`. Stateless design, simplest example.
 
-**[Blackjack](./blackjack/)** - Card games where deck state remains hidden from all players until cards are revealed.
+**[Rock Paper Scissors](./rock_paper_scissors/)** - Encrypted asynchronous gameplay with hidden moves.
+- [Player vs Player](./rock_paper_scissors/against-player/) - Two encrypted submissions
+- [Player vs House](./rock_paper_scissors/against-house/) - Provably fair randomized opponent
 
-### Privacy Applications
+### Intermediate
 
-**[Medical Records Sharing](./share_medical_records/)** - Share healthcare data with patient-controlled access permissions.
+**[Voting](./voting/)** - Private ballots with public results. Encrypted state accumulation and callbacks.
 
-**[Confidential Voting](./voting/)** - Anonymous ballot systems where individual votes remain private while aggregate results are public.
+**[Medical Records](./share_medical_records/)** - Patient-controlled data sharing via re-encryption.
 
-**[Sealed-Bid Auction](./sealed_bid_auction/)** - Auction systems where bids remain encrypted until winner determination, supporting first-price and Vickrey (second-price) auction types.
+**[Sealed-Bid Auction](./sealed_bid_auction/)** - Encrypted bid comparison with first-price and Vickrey mechanisms.
 
-### Primitives
+### Advanced
 
-**[Coinflip](./coinflip/)** - Generate trustless randomness where no party can predict outcomes.
+**[Blackjack](./blackjack/)** - Hidden deck state with base-64 compression (94% size reduction).
 
-**[Ed25519 Signatures](./ed25519/)** - Distributed Ed25519 signing where private keys are split across MPC nodes and never exist in a single location.
+**[Ed25519 Signatures](./ed25519/)** - Distributed key management. Private keys never exist in single location.
 
-## Getting Started with Examples
+## Documentation
 
-Each example includes complete source code, build instructions, and test suites. Start with any example that addresses your use case.
+- [Mental Model](https://docs.arcium.com/developers/arcis/mental-model) - Conceptual foundation
+- [Computation Lifecycle](https://docs.arcium.com/developers/computation-lifecycle) - How MPC computations execute
+- [Arcis Framework](https://docs.arcium.com/developers/arcis) - Programming model reference
+- [Best Practices](https://docs.arcium.com/developers/arcis/best-practices) - Performance optimization
 
 For questions and support, join the [Discord community](https://discord.com/invite/arcium).

@@ -1,8 +1,8 @@
-use arcis_imports::*;
+use arcis::*;
 
 #[encrypted]
 mod circuits {
-    use arcis_imports::*;
+    use arcis::*;
 
     /// Standard 52-card deck represented as indices 0-51
     const INITIAL_DECK: [u8; 52] = [

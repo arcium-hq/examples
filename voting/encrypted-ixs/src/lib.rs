@@ -1,8 +1,8 @@
-use arcis_imports::*;
+use arcis::*;
 
 #[encrypted]
 mod circuits {
-    use arcis_imports::*;
+    use arcis::*;
 
     /// Tracks the encrypted vote tallies for a poll.
     pub struct VoteStats {

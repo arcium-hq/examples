@@ -100,8 +100,8 @@ pub mod ed_25519 {
     /// and only the boolean result (valid/invalid) is revealed.
     ///
     /// # Arguments
-    /// * `verifying_key_compressed_lo_enc` - Lower 128 bits of the encrypted compressed public key
-    /// * `verifying_key_compressed_hi_enc` - Upper 128 bits of the encrypted compressed public key
+    /// * `verifying_key_enc_lo` - Lower 128 bits of the encrypted packed verifying key
+    /// * `verifying_key_enc_hi` - Upper 128 bits of the encrypted packed verifying key
     /// * `message` - The 5-byte message that was signed
     /// * `signature` - The 64-byte Ed25519 signature to verify
     /// * `observer_pub_key` - Public key for encrypting the verification result
@@ -113,8 +113,8 @@ pub mod ed_25519 {
         computation_offset: u64,
         one_time_pub_key: [u8; 32],
         one_time_nonce: u128,
-        verifying_key_compressed_lo_enc: [u8; 32],
-        verifying_key_compressed_hi_enc: [u8; 32],
+        verifying_key_enc_lo: [u8; 32],
+        verifying_key_enc_hi: [u8; 32],
         message: [u8; 5],
         signature: [u8; 64],
         observer_pub_key: [u8; 32],
@@ -124,8 +124,8 @@ pub mod ed_25519 {
         let mut builder = ArgBuilder::new()
             .x25519_pubkey(one_time_pub_key)
             .plaintext_u128(one_time_nonce)
-            .encrypted_u128(verifying_key_compressed_lo_enc)
-            .encrypted_u128(verifying_key_compressed_hi_enc);
+            .encrypted_u128(verifying_key_enc_lo)
+            .encrypted_u128(verifying_key_enc_hi);
         for byte in message {
             builder = builder.plaintext_u8(byte);
         }
@@ -189,7 +189,7 @@ pub struct SignMessage<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -227,6 +227,7 @@ pub struct SignMessage<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS
     )]
     pub clock_account: Account<'info, ClockAccount>,
@@ -296,7 +297,7 @@ pub struct VerifySignature<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
     #[account(
         address = derive_mxe_pda!()
     )]
@@ -334,6 +335,7 @@ pub struct VerifySignature<'info> {
     )]
     pub pool_account: Account<'info, FeePool>,
     #[account(
+        mut,
         address = ARCIUM_CLOCK_ACCOUNT_ADDRESS
     )]
     pub clock_account: Account<'info, ClockAccount>,

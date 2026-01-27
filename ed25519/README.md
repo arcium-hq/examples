@@ -38,6 +38,8 @@ pub fn sign_message(message: [u8; 5]) -> ArcisEd25519Signature {
 
 Each MPC node holds a share of the private key and executes a distributed signing protocol to produce a standard Ed25519 signature without reconstructing the complete key.
 
+> See [Arcis Primitives](https://docs.arcium.com/developers/arcis/primitives) for the full cryptographic API.
+
 ### Confidential Public Key Verification
 
 ```rust

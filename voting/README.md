@@ -147,6 +147,8 @@ pub fn vote_callback(
 }
 ```
 
+> Learn more: [Callback Type Generation](https://docs.arcium.com/developers/program/callback-type-generation), [Input/Output Patterns](https://docs.arcium.com/developers/arcis/input-output)
+
 ### Revealing Results
 
 The program restricts result revelation to the poll authority:

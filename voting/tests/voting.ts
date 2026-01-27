@@ -2,7 +2,8 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Voting } from "../target/types/voting";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
+import nacl from "tweetnacl";
 import {
   awaitComputationFinalization,
   getArciumEnv,
@@ -25,6 +26,25 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+const ENCRYPTION_KEY_MESSAGE = "arcium-voting-encryption-key-v1";
+
+/**
+ * Derives a deterministic X25519 encryption keypair from a Solana wallet.
+ * Signs a fixed message with the wallet's Ed25519 key, then hashes the signature
+ * to produce a valid X25519 private key. This allows users to recover their
+ * encryption keys from their wallet alone.
+ */
+function deriveEncryptionKey(
+  wallet: anchor.web3.Keypair,
+  message: string
+): { privateKey: Uint8Array; publicKey: Uint8Array } {
+  const messageBytes = new TextEncoder().encode(message);
+  const signature = nacl.sign.detached(messageBytes, wallet.secretKey);
+  const privateKey = new Uint8Array(createHash("sha256").update(signature).digest());
+  const publicKey = x25519.getPublicKey(privateKey);
+  return { privateKey, publicKey };
+}
 
 /**
  * Gets the cluster account address using the cluster offset from environment.
@@ -99,8 +119,7 @@ describe("Voting", () => {
       initRRSig
     );
 
-    const privateKey = x25519.utils.randomSecretKey();
-    const publicKey = x25519.getPublicKey(privateKey);
+    const { privateKey, publicKey } = deriveEncryptionKey(owner, ENCRYPTION_KEY_MESSAGE);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 

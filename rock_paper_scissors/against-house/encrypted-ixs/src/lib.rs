@@ -1,8 +1,8 @@
-use arcis_imports::*;
+use arcis::*;
 
 #[encrypted]
 mod circuits {
-    use arcis_imports::*;
+    use arcis::*;
 
     // Consider 0 - Rock, 1 - Paper, 2 - Scissors
     pub struct PlayerMove {
