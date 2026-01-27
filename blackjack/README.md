@@ -184,6 +184,8 @@ pub struct BlackjackGame {
 - Faster computation (less encrypted data to process)
 - Lower costs (fewer computation units)
 
+> For more optimization techniques, see [Best Practices](https://docs.arcium.com/developers/arcis/best-practices).
+
 ### When to Use This Pattern
 
 Apply compression when:

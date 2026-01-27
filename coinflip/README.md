@@ -62,6 +62,8 @@ pub fn flip(input_ctxt: Enc<Shared, UserChoice>) -> bool {
 }
 ```
 
+> See [Arcis Primitives](https://docs.arcium.com/developers/arcis/primitives) for all randomness and cryptographic operations.
+
 **How it works**:
 
 1. Arcium nodes each generate local random values

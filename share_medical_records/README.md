@@ -70,6 +70,8 @@ pub fn share_patient_data(
 
 **Key insight**: Data is "handed over" inside MPC—re-encrypted from one key to another without intermediate plaintext exposure.
 
+> See [Input/Output Patterns](https://docs.arcium.com/developers/arcis/input-output) for more on encrypted data transfer.
+
 ### Multi-field Encrypted Struct
 
 ```rust
