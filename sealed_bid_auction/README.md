@@ -84,6 +84,8 @@ pub struct AuctionState {
 
 **On-chain storage**: The encrypted state is stored as `[[u8; 32]; 5]` - five 32-byte ciphertexts representing each field.
 
+> Learn more about [Arcis Types](https://docs.arcium.com/developers/arcis/types) for encrypted value handling.
+
 ### The Bid Comparison Logic
 
 **MPC instruction** (runs inside encrypted computation):
