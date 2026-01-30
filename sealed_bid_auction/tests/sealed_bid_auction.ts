@@ -9,7 +9,7 @@ import {
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgramId,
-  buildFinalizeCompDefTx,
+  uploadCircuit,
   RescueCipher,
   deserializeLE,
   getMXEPublicKey,
@@ -25,11 +25,6 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
 
 /**
  * Splits a 32-byte public key into two u128 values (lo and hi parts).
@@ -69,7 +64,7 @@ describe("SealedBidAuction", () => {
   };
 
   const arciumEnv = getArciumEnv();
-  const clusterAccount = getClusterAccount();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   let owner: anchor.web3.Keypair;
   let mxePublicKey: Uint8Array;
@@ -676,20 +671,14 @@ describe("SealedBidAuction", () => {
         throw new Error(`Unknown circuit: ${circuitName}`);
     }
 
-    // Finalize computation definition
-    const finalizeTx = await buildFinalizeCompDefTx(
+    const rawCircuit = fs.readFileSync(`build/${circuitName}.arcis`);
+    await uploadCircuit(
       provider as anchor.AnchorProvider,
-      Buffer.from(offset).readUInt32LE(),
-      program.programId
+      circuitName,
+      program.programId,
+      rawCircuit,
+      true
     );
-
-    const latestBlockhash = await provider.connection.getLatestBlockhash();
-    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-    finalizeTx.sign(owner);
-
-    await provider.sendAndConfirm(finalizeTx);
 
     return sig;
   }

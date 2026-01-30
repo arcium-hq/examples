@@ -11,7 +11,6 @@ import {
   getArciumAccountBaseSeed,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -52,28 +51,19 @@ describe("Ed25519", () => {
   };
 
   const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("sign and verify with MPC Ed25519", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     console.log("Initializing computation definitions");
-    const initSMSig = await initSignMessageCompDef(
-      program,
-      owner,
-      false,
-      false
-    );
+    const initSMSig = await initSignMessageCompDef(program, owner);
     console.log(
       "Sign message computation definition initialized with signature",
       initSMSig
     );
 
-    const initVSSig = await initVerifySignatureCompDef(
-      program,
-      owner,
-      false,
-      false
-    );
+    const initVSSig = await initVerifySignatureCompDef(program, owner);
     console.log(
       "Verify signature computation definition initialized with signature",
       initVSSig
@@ -99,7 +89,7 @@ describe("Ed25519", () => {
           arciumEnv.arciumClusterOffset,
           computationOffsetSignMessage
         ),
-        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
         executingPool: getExecutingPoolAccAddress(
@@ -210,7 +200,7 @@ describe("Ed25519", () => {
           arciumEnv.arciumClusterOffset,
           computationOffsetVerifySignature
         ),
-        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
         executingPool: getExecutingPoolAccAddress(
@@ -245,9 +235,7 @@ describe("Ed25519", () => {
 
   async function initSignMessageCompDef(
     program: Program<Ed25519>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -273,39 +261,21 @@ describe("Ed25519", () => {
       .rpc();
     console.log("\nInit sign message computation definition transaction", sig);
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/sign_message.arcis");
+    const rawCircuit = fs.readFileSync("build/sign_message.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "sign_message",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "sign_message",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 
   async function initVerifySignatureCompDef(
     program: Program<Ed25519>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -334,31 +304,15 @@ describe("Ed25519", () => {
       sig
     );
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/verify_signature.arcis");
+    const rawCircuit = fs.readFileSync("build/verify_signature.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "verify_signature",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "verify_signature",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 });

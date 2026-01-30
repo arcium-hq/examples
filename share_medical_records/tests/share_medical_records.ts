@@ -10,7 +10,6 @@ import {
   getArciumAccountBaseSeed,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -26,14 +25,6 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-
-/**
- * Gets the cluster account address using the cluster offset from environment.
- */
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
 
 describe("ShareMedicalRecords", () => {
   // Configure the client to use the local cluster.
@@ -57,7 +48,8 @@ describe("ShareMedicalRecords", () => {
     return event;
   };
 
-  const clusterAccount = getClusterAccount();
+  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("can store and share patient data confidentially!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -70,12 +62,7 @@ describe("ShareMedicalRecords", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing share patient data computation definition");
-    const initSPDSig = await initSharePatientDataCompDef(
-      program,
-      owner,
-      false,
-      false
-    );
+    const initSPDSig = await initSharePatientDataCompDef(program, owner);
     console.log(
       "Share patient data computation definition initialized with signature",
       initSPDSig
@@ -153,16 +140,14 @@ describe("ShareMedicalRecords", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          getArciumEnv().arciumClusterOffset,
+          arciumEnv.arciumClusterOffset,
           computationOffset
         ),
-        clusterAccount: clusterAccount,
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(
-          getArciumEnv().arciumClusterOffset
-        ),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
         executingPool: getExecutingPoolAccAddress(
-          getArciumEnv().arciumClusterOffset
+          arciumEnv.arciumClusterOffset
         ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
@@ -227,9 +212,7 @@ describe("ShareMedicalRecords", () => {
 
   async function initSharePatientDataCompDef(
     program: Program<ShareMedicalRecords>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -261,31 +244,15 @@ describe("ShareMedicalRecords", () => {
       sig
     );
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/share_patient_data.arcis");
+    const rawCircuit = fs.readFileSync("build/share_patient_data.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "share_patient_data",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "share_patient_data",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 });
