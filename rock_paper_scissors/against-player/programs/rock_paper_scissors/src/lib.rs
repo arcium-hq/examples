@@ -39,7 +39,6 @@ pub mod rock_paper_scissors {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![InitGameCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -113,7 +112,6 @@ pub mod rock_paper_scissors {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![PlayerMoveCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -168,7 +166,6 @@ pub mod rock_paper_scissors {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![CompareMovesCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -314,6 +311,12 @@ pub struct InitInitGameCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!())]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -419,6 +422,12 @@ pub struct InitPlayerMoveCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!())]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -522,6 +531,12 @@ pub struct InitCompareMovesCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!())]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
