@@ -21,6 +21,7 @@ import {
   getComputationAccAddress,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -147,8 +148,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
@@ -211,8 +216,12 @@ describe("RockPaperScissors", () => {
           playerAMoveComputationOffset
         ),
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -282,8 +291,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -326,8 +339,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
@@ -396,8 +413,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
@@ -463,8 +484,12 @@ describe("RockPaperScissors", () => {
           ),
           payer: unauthorizedPlayer.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -541,8 +566,12 @@ describe("RockPaperScissors", () => {
           ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
@@ -588,8 +617,12 @@ describe("RockPaperScissors", () => {
           ),
           payer: playerA.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -642,8 +675,12 @@ describe("RockPaperScissors", () => {
           ),
           payer: playerB.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -686,8 +723,12 @@ describe("RockPaperScissors", () => {
           ),
           payer: owner.publicKey,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
@@ -760,8 +801,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("init_game")).readUInt32LE()
@@ -812,8 +857,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: playerA.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -865,8 +914,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: playerB.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("player_move")).readUInt32LE()
@@ -906,8 +959,12 @@ describe("RockPaperScissors", () => {
         ),
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("compare_moves")).readUInt32LE()
@@ -971,6 +1028,7 @@ async function initInitGameCompDef(
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
       mxeAccount: getMXEAccAddress(program.programId),
+      addressLookupTable: getLookupTableAddress(program.programId),
     })
     .signers([owner])
     .rpc();
@@ -1028,6 +1086,7 @@ async function initPlayerMoveCompDef(
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
       mxeAccount: getMXEAccAddress(program.programId),
+      addressLookupTable: getLookupTableAddress(program.programId),
     })
     .signers([owner])
     .rpc();
@@ -1085,6 +1144,7 @@ async function initCompareMovesCompDef(
       compDefAccount: compDefPDA,
       payer: owner.publicKey,
       mxeAccount: getMXEAccAddress(program.programId),
+      addressLookupTable: getLookupTableAddress(program.programId),
     })
     .signers([owner])
     .rpc();

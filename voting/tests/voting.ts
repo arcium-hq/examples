@@ -22,6 +22,7 @@ import {
   getComputationAccAddress,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -41,7 +42,9 @@ function deriveEncryptionKey(
 ): { privateKey: Uint8Array; publicKey: Uint8Array } {
   const messageBytes = new TextEncoder().encode(message);
   const signature = nacl.sign.detached(messageBytes, wallet.secretKey);
-  const privateKey = new Uint8Array(createHash("sha256").update(signature).digest());
+  const privateKey = new Uint8Array(
+    createHash("sha256").update(signature).digest()
+  );
   const publicKey = x25519.getPublicKey(privateKey);
   return { privateKey, publicKey };
 }
@@ -119,7 +122,10 @@ describe("Voting", () => {
       initRRSig
     );
 
-    const { privateKey, publicKey } = deriveEncryptionKey(owner, ENCRYPTION_KEY_MESSAGE);
+    const { privateKey, publicKey } = deriveEncryptionKey(
+      owner,
+      ENCRYPTION_KEY_MESSAGE
+    );
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
@@ -143,8 +149,12 @@ describe("Voting", () => {
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
@@ -194,8 +204,12 @@ describe("Voting", () => {
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
@@ -238,8 +252,12 @@ describe("Voting", () => {
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
@@ -295,6 +313,7 @@ describe("Voting", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .signers([owner])
       .rpc();
@@ -352,6 +371,7 @@ describe("Voting", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .signers([owner])
       .rpc();
@@ -412,6 +432,7 @@ describe("Voting", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .signers([owner])
       .rpc();

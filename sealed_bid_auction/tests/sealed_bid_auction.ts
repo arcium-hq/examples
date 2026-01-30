@@ -19,6 +19,7 @@ import {
   getExecutingPoolAccAddress,
   getComputationAccAddress,
   getClusterAccAddress,
+  getLookupTableAddress,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -630,6 +631,7 @@ describe("SealedBidAuction", () => {
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
             mxeAccount: getMXEAccAddress(program.programId),
+            addressLookupTable: getLookupTableAddress(program.programId),
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -641,6 +643,7 @@ describe("SealedBidAuction", () => {
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
             mxeAccount: getMXEAccAddress(program.programId),
+            addressLookupTable: getLookupTableAddress(program.programId),
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -652,6 +655,7 @@ describe("SealedBidAuction", () => {
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
             mxeAccount: getMXEAccAddress(program.programId),
+            addressLookupTable: getLookupTableAddress(program.programId),
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -663,6 +667,7 @@ describe("SealedBidAuction", () => {
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
             mxeAccount: getMXEAccAddress(program.programId),
+            addressLookupTable: getLookupTableAddress(program.programId),
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });

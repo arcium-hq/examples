@@ -22,6 +22,7 @@ import {
   getExecutingPoolAccAddress,
   getComputationAccAddress,
   getClusterAccAddress,
+  getLookupTableAddress,
   x25519,
 } from "@arcium-hq/client";
 import { circuits } from "../build/circuits";
@@ -266,6 +267,7 @@ describe("Ed25519", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .signers([owner])
       .rpc();
@@ -323,6 +325,7 @@ describe("Ed25519", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .signers([owner])
       .rpc();

@@ -21,6 +21,7 @@ import {
   getArciumAccountBaseSeed,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -206,8 +207,12 @@ describe("Blackjack", () => {
         ),
         clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
+        executingPool: getExecutingPoolAccAddress(
+          getArciumEnv().arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(
@@ -256,7 +261,8 @@ describe("Blackjack", () => {
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
+        playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -310,8 +316,12 @@ describe("Blackjack", () => {
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+            mempoolAccount: getMempoolAccAddress(
+              getArciumEnv().arciumClusterOffset
+            ),
+            executingPool: getExecutingPoolAccAddress(
+              getArciumEnv().arciumClusterOffset
+            ),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
@@ -399,8 +409,12 @@ describe("Blackjack", () => {
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+            mempoolAccount: getMempoolAccAddress(
+              getArciumEnv().arciumClusterOffset
+            ),
+            executingPool: getExecutingPoolAccAddress(
+              getArciumEnv().arciumClusterOffset
+            ),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
@@ -463,8 +477,12 @@ describe("Blackjack", () => {
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
@@ -532,8 +550,12 @@ describe("Blackjack", () => {
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
+          executingPool: getExecutingPoolAccAddress(
+            getArciumEnv().arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
@@ -566,7 +588,8 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${
+          Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -604,6 +627,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -666,6 +690,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -728,6 +753,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -790,6 +816,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -852,6 +879,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -914,6 +942,7 @@ describe("Blackjack", () => {
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
         mxeAccount: getMXEAccAddress(program.programId),
+        addressLookupTable: getLookupTableAddress(program.programId),
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
