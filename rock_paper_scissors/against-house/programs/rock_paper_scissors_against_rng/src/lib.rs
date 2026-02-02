@@ -166,7 +166,7 @@ pub struct InitPlayRpsCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
-    #[account(mut, address = derive_mxe_lut_pda!())]
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
     /// CHECK: address_lookup_table, checked by arcium program.
     pub address_lookup_table: UncheckedAccount<'info>,
     #[account(address = LUT_PROGRAM_ID)]

@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis = "0.6.6"
+arcis = "0.7.0"
 blake3 = "=1.8.2"

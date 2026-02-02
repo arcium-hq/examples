@@ -21,6 +21,7 @@ import {
   getMXEPublicKey,
   getClusterAccAddress,
   getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -140,13 +141,21 @@ describe("Coinflip", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initFlipCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc({

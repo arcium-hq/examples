@@ -22,6 +22,7 @@ import {
   getMXEPublicKey,
   getClusterAccAddress,
   getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -281,13 +282,21 @@ describe("Voting", () => {
       compDefPDA.toBase58()
     );
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initVoteStatsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc();
@@ -321,13 +330,21 @@ describe("Voting", () => {
 
     console.log("Vote computation definition pda is ", compDefPDA.toBase58());
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initVoteCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc();
@@ -364,13 +381,21 @@ describe("Voting", () => {
       compDefPDA.toBase58()
     );
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initRevealResultCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc();

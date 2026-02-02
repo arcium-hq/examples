@@ -22,6 +22,7 @@ import {
   getComputationAccAddress,
   getClusterAccAddress,
   getLookupTableAddress,
+  getArciumProgram,
   x25519,
 } from "@arcium-hq/client";
 import { circuits } from "../build/circuits";
@@ -249,13 +250,21 @@ describe("Ed25519", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initSignMessageCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc();
@@ -289,13 +298,21 @@ describe("Ed25519", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initVerifySignatureCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc();

@@ -20,6 +20,7 @@ import {
   getComputationAccAddress,
   getClusterAccAddress,
   getLookupTableAddress,
+  getArciumProgram,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
@@ -615,6 +616,15 @@ describe("SealedBidAuction", () => {
       getArciumProgramId()
     )[0];
 
+    // Fetch MXE account for LUT address
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     // Map circuit name to the correct init method
     // Using preflightCommitment to get fresh blockhash for each transaction
     let sig: string;
@@ -625,8 +635,8 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
-            addressLookupTable: getLookupTableAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -637,8 +647,8 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
-            addressLookupTable: getLookupTableAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -649,8 +659,8 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
-            addressLookupTable: getLookupTableAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });
@@ -661,8 +671,8 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
-            addressLookupTable: getLookupTableAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
           .rpc({ preflightCommitment: "confirmed" });

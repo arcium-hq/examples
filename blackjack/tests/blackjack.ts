@@ -21,6 +21,7 @@ import {
   getMXEPublicKey,
   getClusterAccAddress,
   getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
@@ -601,13 +602,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initShuffleAndDealCardsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -645,13 +654,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerHitCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -689,13 +706,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerStandCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -733,13 +758,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerDoubleDownCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -777,13 +810,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initDealerPlayCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
@@ -821,13 +862,21 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initResolveGameCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
-        addressLookupTable: getLookupTableAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
