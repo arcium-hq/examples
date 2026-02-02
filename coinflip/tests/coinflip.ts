@@ -10,7 +10,6 @@ import {
   getArciumAccountBaseSeed,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -21,17 +20,11 @@ import {
   getComputationAccAddress,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
-
-/**
- * Gets the cluster account address using the cluster offset from environment.
- */
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
 
 describe("Coinflip", () => {
   // Configure the client to use the local cluster.
@@ -54,7 +47,8 @@ describe("Coinflip", () => {
     return event;
   };
 
-  const clusterAccount = getClusterAccount();
+  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("flip a coin!", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -67,7 +61,7 @@ describe("Coinflip", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing flip computation definition");
-    const initFlipSig = await initFlipCompDef(program, owner, false, false);
+    const initFlipSig = await initFlipCompDef(program, owner);
     console.log(
       "Flip computation definition initialized with signature",
       initFlipSig
@@ -97,19 +91,25 @@ describe("Coinflip", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          getArciumEnv().arciumClusterOffset,
+          arciumEnv.arciumClusterOffset,
           computationOffset
         ),
         clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(
+          arciumEnv.arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("flip")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -131,9 +131,7 @@ describe("Coinflip", () => {
 
   async function initFlipCompDef(
     program: Program<Coinflip>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -147,44 +145,38 @@ describe("Coinflip", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initFlipCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc({
+        preflightCommitment: "confirmed",
         commitment: "confirmed",
       });
     console.log("Init flip computation definition transaction", sig);
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/flip.arcis");
+    const rawCircuit = fs.readFileSync("build/flip.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "flip",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "flip",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 });

@@ -76,7 +76,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![ShuffleAndDealCardsCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -211,7 +210,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![PlayerHitCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -315,7 +313,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![PlayerDoubleDownCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -412,7 +409,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![PlayerStandCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -499,7 +495,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![DealerPlayCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -591,7 +586,6 @@ pub mod blackjack {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![ResolveGameCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -765,6 +759,12 @@ pub struct InitShuffleAndDealCardsCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -874,6 +874,12 @@ pub struct InitPlayerHitCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -983,6 +989,12 @@ pub struct InitPlayerDoubleDownCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -1092,6 +1104,12 @@ pub struct InitPlayerStandCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -1201,6 +1219,12 @@ pub struct InitDealerPlayCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -1310,6 +1334,12 @@ pub struct InitResolveGameCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }

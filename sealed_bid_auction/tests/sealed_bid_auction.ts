@@ -9,7 +9,7 @@ import {
   getCompDefAccOffset,
   getArciumAccountBaseSeed,
   getArciumProgramId,
-  buildFinalizeCompDefTx,
+  uploadCircuit,
   RescueCipher,
   deserializeLE,
   getMXEPublicKey,
@@ -19,16 +19,13 @@ import {
   getExecutingPoolAccAddress,
   getComputationAccAddress,
   getClusterAccAddress,
+  getLookupTableAddress,
+  getArciumProgram,
   x25519,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
 
 /**
  * Splits a 32-byte public key into two u128 values (lo and hi parts).
@@ -68,7 +65,7 @@ describe("SealedBidAuction", () => {
   };
 
   const arciumEnv = getArciumEnv();
-  const clusterAccount = getClusterAccount();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   let owner: anchor.web3.Keypair;
   let mxePublicKey: Uint8Array;
@@ -164,7 +161,7 @@ describe("SealedBidAuction", () => {
             ).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Create auction tx:", createSig);
 
@@ -223,7 +220,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBidSig);
 
@@ -249,7 +246,7 @@ describe("SealedBidAuction", () => {
           authority: owner.publicKey,
           auction: auctionPDA,
         })
-        .rpc({ commitment: "confirmed" });
+        .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Close auction tx:", closeSig);
 
@@ -283,7 +280,7 @@ describe("SealedBidAuction", () => {
             ).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Determine winner tx:", resolveSig);
 
@@ -390,7 +387,7 @@ describe("SealedBidAuction", () => {
           ),
         })
         .signers([vickreyAuthority])
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Create auction tx:", createSig);
 
@@ -445,7 +442,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBid1Sig);
 
@@ -502,7 +499,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBid2Sig);
 
@@ -528,7 +525,7 @@ describe("SealedBidAuction", () => {
           auction: vickreyAuctionPDA,
         })
         .signers([vickreyAuthority])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Close auction tx:", closeSig);
 
@@ -563,7 +560,7 @@ describe("SealedBidAuction", () => {
           ),
         })
         .signers([vickreyAuthority])
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Determine winner tx:", resolveSig);
 
@@ -619,6 +616,15 @@ describe("SealedBidAuction", () => {
       getArciumProgramId()
     )[0];
 
+    // Fetch MXE account for LUT address
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     // Map circuit name to the correct init method
     // Using preflightCommitment to get fresh blockhash for each transaction
     let sig: string;
@@ -629,10 +635,11 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "place_bid":
         sig = await program.methods
@@ -640,10 +647,11 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "determine_winner_first_price":
         sig = await program.methods
@@ -651,10 +659,11 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "determine_winner_vickrey":
         sig = await program.methods
@@ -662,29 +671,24 @@ describe("SealedBidAuction", () => {
           .accounts({
             compDefAccount: compDefPDA,
             payer: owner.publicKey,
-            mxeAccount: getMXEAccAddress(program.programId),
+            mxeAccount,
+            addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       default:
         throw new Error(`Unknown circuit: ${circuitName}`);
     }
 
-    // Finalize computation definition
-    const finalizeTx = await buildFinalizeCompDefTx(
+    const rawCircuit = fs.readFileSync(`build/${circuitName}.arcis`);
+    await uploadCircuit(
       provider as anchor.AnchorProvider,
-      Buffer.from(offset).readUInt32LE(),
-      program.programId
+      circuitName,
+      program.programId,
+      rawCircuit,
+      true
     );
-
-    const latestBlockhash = await provider.connection.getLatestBlockhash();
-    finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-    finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-    finalizeTx.sign(owner);
-
-    await provider.sendAndConfirm(finalizeTx);
 
     return sig;
   }

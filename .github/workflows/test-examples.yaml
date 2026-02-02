@@ -30,7 +30,7 @@ jobs:
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v5
-      - uses: arcium-hq/setup-arcium@v0.6.3
+      - uses: arcium-hq/setup-arcium@v0.7.0
         with:
           runner-arch-os: x86_64_linux
 
