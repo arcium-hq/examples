@@ -141,7 +141,11 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       console.log(`Poll ${POLL_ID} created with signature`, pollSig);
 
@@ -195,7 +199,11 @@ describe("Voting", () => {
           ),
           authority: owner.publicKey,
         })
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
       console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
 
       const finalizeSig = await awaitComputationFinalization(
@@ -240,7 +248,11 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
       console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
 
       const revealFinalizeSig = await awaitComputationFinalization(

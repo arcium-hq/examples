@@ -142,7 +142,11 @@ describe("RockPaperScissors", () => {
         clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Game initialized with signature:", initGameTx);
 
@@ -215,7 +219,11 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerA])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Player A move signature:", playerAMoveTx);
 
@@ -288,7 +296,11 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerB])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Player B move signature:", playerBMoveTx);
 
@@ -333,7 +345,11 @@ describe("RockPaperScissors", () => {
           program.programId
         )[0],
       })
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     const finalizeSig = await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -399,7 +415,11 @@ describe("RockPaperScissors", () => {
         clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Game initialized with signature:", initGameTx2);
 
@@ -472,7 +492,11 @@ describe("RockPaperScissors", () => {
           )[0],
         })
         .signers([unauthorizedPlayer])
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       // If we get here, the test should fail because unauthorized player should not be able to make a move
       expect.fail("Unauthorized player was able to make a move");
@@ -548,7 +572,11 @@ describe("RockPaperScissors", () => {
           clusterAccount: clusterAccount,
         })
         .signers([owner])
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       console.log("Game initialized with signature:", initGameTx);
 
@@ -604,7 +632,11 @@ describe("RockPaperScissors", () => {
           )[0],
         })
         .signers([playerA])
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       console.log("Player A move signature:", playerAMoveTx);
 
@@ -660,7 +692,11 @@ describe("RockPaperScissors", () => {
           )[0],
         })
         .signers([playerB])
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       console.log("Player B move signature:", playerBMoveTx);
 
@@ -705,7 +741,11 @@ describe("RockPaperScissors", () => {
             program.programId
           )[0],
         })
-        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
 
       console.log("Compare moves signature:", compareTx);
 
@@ -775,7 +815,11 @@ describe("RockPaperScissors", () => {
         clusterAccount: clusterAccount,
       })
       .signers([owner])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Game initialized for invalid move test:", initGameTx3);
 
@@ -833,7 +877,11 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerA])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Player A valid move signature:", playerAMoveTx3);
 
@@ -888,7 +936,11 @@ describe("RockPaperScissors", () => {
         )[0],
       })
       .signers([playerB])
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Player B invalid move signature:", playerBMoveTx3);
 
@@ -930,7 +982,11 @@ describe("RockPaperScissors", () => {
           program.programId
         )[0],
       })
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
 
     console.log("Compare moves signature for invalid move test:", compareTx3);
 

@@ -105,7 +105,11 @@ describe("Coinflip", () => {
           Buffer.from(getCompDefAccOffset("flip")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
