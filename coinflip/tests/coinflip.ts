@@ -105,7 +105,7 @@ describe("Coinflip", () => {
           Buffer.from(getCompDefAccOffset("flip")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -159,6 +159,7 @@ describe("Coinflip", () => {
       })
       .signers([owner])
       .rpc({
+        preflightCommitment: "confirmed",
         commitment: "confirmed",
       });
     console.log("Init flip computation definition transaction", sig);

@@ -161,7 +161,7 @@ describe("SealedBidAuction", () => {
             ).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Create auction tx:", createSig);
 
@@ -220,7 +220,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBidSig);
 
@@ -246,7 +246,7 @@ describe("SealedBidAuction", () => {
           authority: owner.publicKey,
           auction: auctionPDA,
         })
-        .rpc({ commitment: "confirmed" });
+        .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Close auction tx:", closeSig);
 
@@ -280,7 +280,7 @@ describe("SealedBidAuction", () => {
             ).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Determine winner tx:", resolveSig);
 
@@ -387,7 +387,7 @@ describe("SealedBidAuction", () => {
           ),
         })
         .signers([vickreyAuthority])
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Create auction tx:", createSig);
 
@@ -442,7 +442,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBid1Sig);
 
@@ -499,7 +499,7 @@ describe("SealedBidAuction", () => {
             Buffer.from(getCompDefAccOffset("place_bid")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Place bid tx:", placeBid2Sig);
 
@@ -525,7 +525,7 @@ describe("SealedBidAuction", () => {
           auction: vickreyAuctionPDA,
         })
         .signers([vickreyAuthority])
-        .rpc({ commitment: "confirmed" });
+        .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Close auction tx:", closeSig);
 
@@ -560,7 +560,7 @@ describe("SealedBidAuction", () => {
           ),
         })
         .signers([vickreyAuthority])
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log("   Determine winner tx:", resolveSig);
 
@@ -639,7 +639,7 @@ describe("SealedBidAuction", () => {
             addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "place_bid":
         sig = await program.methods
@@ -651,7 +651,7 @@ describe("SealedBidAuction", () => {
             addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "determine_winner_first_price":
         sig = await program.methods
@@ -663,7 +663,7 @@ describe("SealedBidAuction", () => {
             addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       case "determine_winner_vickrey":
         sig = await program.methods
@@ -675,7 +675,7 @@ describe("SealedBidAuction", () => {
             addressLookupTable: lutAddress,
           })
           .signers([owner])
-          .rpc({ preflightCommitment: "confirmed" });
+          .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
         break;
       default:
         throw new Error(`Unknown circuit: ${circuitName}`);

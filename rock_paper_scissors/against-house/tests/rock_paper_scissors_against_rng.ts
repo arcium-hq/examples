@@ -105,7 +105,7 @@ describe("RockPaperScissorsAgainstRng", () => {
           Buffer.from(getCompDefAccOffset("play_rps")).readUInt32LE()
         ),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -155,6 +155,7 @@ describe("RockPaperScissorsAgainstRng", () => {
       })
       .signers([owner])
       .rpc({
+        preflightCommitment: "confirmed",
         commitment: "confirmed",
       });
     console.log("Init play rps computation definition transaction", sig);

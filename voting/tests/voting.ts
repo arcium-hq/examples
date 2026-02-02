@@ -141,7 +141,7 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("init_vote_stats")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
       console.log(`Poll ${POLL_ID} created with signature`, pollSig);
 
@@ -195,7 +195,7 @@ describe("Voting", () => {
           ),
           authority: owner.publicKey,
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
       console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
 
       const finalizeSig = await awaitComputationFinalization(
@@ -240,7 +240,7 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("reveal_result")).readUInt32LE()
           ),
         })
-        .rpc({ skipPreflight: true, commitment: "confirmed" });
+        .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
       console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
 
       const revealFinalizeSig = await awaitComputationFinalization(
@@ -299,7 +299,10 @@ describe("Voting", () => {
         addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("Init vote stats computation definition transaction", sig);
 
     const rawCircuit = fs.readFileSync("build/init_vote_stats.arcis");
@@ -347,7 +350,10 @@ describe("Voting", () => {
         addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("Init vote computation definition transaction", sig);
 
     const rawCircuit = fs.readFileSync("build/vote.arcis");
@@ -398,7 +404,10 @@ describe("Voting", () => {
         addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("Init reveal result computation definition transaction", sig);
 
     const rawCircuit = fs.readFileSync("build/reveal_result.arcis");

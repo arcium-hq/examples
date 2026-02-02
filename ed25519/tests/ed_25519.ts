@@ -101,7 +101,7 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("sign_message")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -212,7 +212,7 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("verify_signature")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -267,7 +267,10 @@ describe("Ed25519", () => {
         addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("\nInit sign message computation definition transaction", sig);
 
     const rawCircuit = fs.readFileSync("build/sign_message.arcis");
@@ -315,7 +318,10 @@ describe("Ed25519", () => {
         addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log(
       "\nInit verify signature computation definition transaction",
       sig
