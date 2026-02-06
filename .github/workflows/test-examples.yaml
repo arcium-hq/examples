@@ -30,7 +30,7 @@ jobs:
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v5
-      - uses: arcium-hq/setup-arcium@v0.7.0
+      - uses: arcium-hq/setup-arcium@v0.8.0
         with:
           runner-arch-os: x86_64_linux
 
@@ -48,31 +48,6 @@ jobs:
 
       - name: Test ${{ matrix.example }}
         run: |
-          # Setup computation folders and vault
-          rm -rf /tmp/computation_folder_0
-          rm -rf /tmp/computation_folder_1
-          rm -rf /tmp/computation_folder_2
-          rm -rf /tmp/vault
-          mkdir /tmp/vault
-
-          if [[ "${{ matrix.example }}" = *"manticore"* ]]; then
-            echo "Manticore test"
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_0
-            rm -r /tmp/computation_folder_0/player-1
-
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_1
-            rm -r /tmp/computation_folder_1/player-0
-
-            cp -r ./examples/manticore/resources/computation_folder /tmp/computation_folder_2
-            rm -r /tmp/computation_folder_2/player-0
-            rm -r /tmp/computation_folder_2/player-1
-          else
-            echo "Cerberus test"
-            mkdir /tmp/computation_folder_0
-            mkdir /tmp/computation_folder_1
-            mkdir /tmp/computation_folder_2
-          fi
-
           pushd ${{ matrix.example }}
           yarn install
           arcium build
