@@ -189,6 +189,10 @@ pub mod blackjack {
             !ctx.accounts.blackjack_game.player_has_stood,
             ErrorCode::InvalidMove
         );
+        require!(
+            ctx.accounts.blackjack_game.player_hand_size < 11,
+            ErrorCode::InvalidMove
+        );
 
         let args = ArgBuilder::new()
             // Deck
@@ -252,6 +256,7 @@ pub mod blackjack {
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
         blackjack_game.client_nonce = client_nonce;
+        blackjack_game.player_hand_size += 1;
 
         if is_bust {
             blackjack_game.game_state = GameState::DealerTurn;
@@ -266,7 +271,6 @@ pub mod blackjack {
                 client_nonce,
                 game_id: blackjack_game.game_id,
             });
-            blackjack_game.player_hand_size += 1;
         }
 
         Ok(())
@@ -290,6 +294,10 @@ pub mod blackjack {
         );
         require!(
             !ctx.accounts.blackjack_game.player_has_stood,
+            ErrorCode::InvalidMove
+        );
+        require!(
+            ctx.accounts.blackjack_game.player_hand_size < 11,
             ErrorCode::InvalidMove
         );
 
@@ -355,6 +363,7 @@ pub mod blackjack {
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.player_hand = player_hand;
         blackjack_game.client_nonce = client_nonce;
+        blackjack_game.player_hand_size += 1;
         blackjack_game.player_has_stood = true;
 
         if is_bust {
@@ -440,8 +449,8 @@ pub mod blackjack {
         blackjack_game.player_has_stood = true;
 
         if is_bust {
-            // This should never happen
-            blackjack_game.game_state = GameState::PlayerTurn;
+            // Player bust edge case
+            blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerBustEvent {
                 client_nonce: blackjack_game.client_nonce,
                 game_id: blackjack_game.game_id,
@@ -831,6 +840,7 @@ pub struct PlayerHit<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -946,6 +956,7 @@ pub struct PlayerDoubleDown<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1061,6 +1072,7 @@ pub struct PlayerStand<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1176,6 +1188,7 @@ pub struct DealerPlay<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1291,6 +1304,7 @@ pub struct ResolveGame<'info> {
         mut,
         seeds = [b"blackjack_game".as_ref(), _game_id.to_le_bytes().as_ref()],
         bump = blackjack_game.bump,
+        constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1456,4 +1470,6 @@ pub enum ErrorCode {
     InvalidDealerClientPubkey,
     #[msg("Cluster not set")]
     ClusterNotSet,
+    #[msg("Not authorized to perform this action")]
+    NotAuthorized,
 }

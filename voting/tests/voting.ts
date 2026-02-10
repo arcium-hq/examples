@@ -172,6 +172,20 @@ describe("Voting", () => {
 
       console.log(`Voting for poll ${POLL_ID}`);
 
+      // Derive poll PDA (poll_id uses little-endian u32)
+      const pollIdBuffer = Buffer.alloc(4);
+      pollIdBuffer.writeUInt32LE(POLL_ID);
+      const [pollPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("poll"), owner.publicKey.toBuffer(), pollIdBuffer],
+        program.programId
+      );
+
+      // Derive voter_record PDA
+      const [voterRecordPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("voter"), pollPDA.toBuffer(), owner.publicKey.toBuffer()],
+        program.programId
+      );
+
       const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const queueVoteSig = await program.methods
@@ -198,6 +212,8 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
           ),
           authority: owner.publicKey,
+          pollAcc: pollPDA,
+          voterRecord: voterRecordPDA,
         })
         .rpc({
           skipPreflight: true,

@@ -285,7 +285,9 @@ describe("Blackjack", () => {
 
       // Basic Strategy: Hit on 16 or less, Stand on 17 or more. Hit soft 17.
       let action: "hit" | "stand" = "stand";
-      if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
+      if (gameState.playerHandSize >= 11) {
+        action = "stand";
+      } else if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
         action = "hit";
       }
 
@@ -366,10 +368,10 @@ describe("Blackjack", () => {
             );
 
             if (playerValue > 21) {
-              console.error(
-                "ERROR: Bust detected after PlayerHitEvent, expected PlayerBustEvent!"
-              );
-              playerBusted = true;
+              expect(
+                playerValue,
+                "Bust detected after PlayerHitEvent, expected PlayerBustEvent"
+              ).to.be.at.most(21);
             }
           } else {
             console.log("Received PlayerBustEvent.");
@@ -385,6 +387,7 @@ describe("Blackjack", () => {
         console.log("Player decides to STAND.");
         const playerStandComputationOffset = new anchor.BN(randomBytes(8));
         const playerStandEventPromise = awaitEvent("playerStandEvent");
+        const playerBustOnStandEventPromise = awaitEvent("playerBustEvent");
 
         const playerStandSig = await program.methods
           .playerStand(
@@ -425,16 +428,30 @@ describe("Blackjack", () => {
           finalizeStandSig
         );
 
-        const playerStandEvent = await playerStandEventPromise;
-        console.log(
-          `Received PlayerStandEvent. Is Bust reported? ${playerStandEvent.isBust}`
-        );
-        expect(playerStandEvent.isBust).to.be.false;
+        // Handle both stand and bust events (player might bust during stand calculation)
+        const standEvent = await Promise.race([
+          playerStandEventPromise,
+          playerBustOnStandEventPromise,
+        ]);
 
-        playerStood = true;
         gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-        expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
-        console.log("Player stands. Proceeding to Dealer's Turn.");
+
+        if ("isBust" in standEvent) {
+          // PlayerStandEvent
+          console.log(
+            `Received PlayerStandEvent. Is Bust reported? ${standEvent.isBust}`
+          );
+          expect(standEvent.isBust).to.be.false;
+          playerStood = true;
+          expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+          console.log("Player stands. Proceeding to Dealer's Turn.");
+        } else {
+          // PlayerBustEvent - player busted during stand calculation
+          console.log("Received PlayerBustEvent during stand.");
+          playerBusted = true;
+          expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+          console.log("Player BUSTED during stand!");
+        }
       }
 
       if (!playerBusted && !playerStood) {
@@ -445,7 +462,7 @@ describe("Blackjack", () => {
 
     // --- Dealer's Turn ---
     gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-    if (gameState.gameState.hasOwnProperty("dealerTurn")) {
+    if (gameState.gameState.hasOwnProperty("dealerTurn") && !playerBusted) {
       console.log("Dealer's Turn...");
       const dealerPlayComputationOffset = new anchor.BN(randomBytes(8));
       const dealerPlayNonce = randomBytes(16);

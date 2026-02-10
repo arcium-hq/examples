@@ -208,6 +208,10 @@ pub struct SharePatientData<'info> {
     pub clock_account: Account<'info, ClockAccount>,
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    #[account(
+        seeds = [b"patient_data", payer.key().as_ref()],
+        bump,
+    )]
     pub patient_data: Account<'info, PatientData>,
 }
 

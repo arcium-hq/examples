@@ -141,11 +141,15 @@ pub mod sealed_bid_auction {
             auction.status == AuctionStatus::Open,
             ErrorCode::AuctionNotOpen
         );
+        require!(
+            Clock::get()?.unix_timestamp < auction.end_time,
+            ErrorCode::AuctionEnded
+        );
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        // Account offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16 = 76
-        const ENCRYPTED_STATE_OFFSET: u32 = 76;
+        // Account offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16 = 77
+        const ENCRYPTED_STATE_OFFSET: u32 = 77;
         const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
@@ -198,7 +202,10 @@ pub mod sealed_bid_auction {
         let auction = &mut ctx.accounts.auction;
         auction.encrypted_state = o.ciphertexts;
         auction.state_nonce = o.nonce;
-        auction.bid_count += 1;
+        auction.bid_count = auction
+            .bid_count
+            .checked_add(1)
+            .ok_or(ErrorCode::BidCountOverflow)?;
 
         emit!(BidPlacedEvent {
             auction: auction_key,
@@ -213,6 +220,10 @@ pub mod sealed_bid_auction {
         require!(
             auction.status == AuctionStatus::Open,
             ErrorCode::AuctionNotOpen
+        );
+        require!(
+            Clock::get()?.unix_timestamp >= auction.end_time,
+            ErrorCode::AuctionNotEnded
         );
         auction.status = AuctionStatus::Closed;
 
@@ -240,7 +251,7 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16;
+        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16;
         const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
@@ -326,7 +337,7 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16;
+        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16;
         const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
@@ -406,7 +417,7 @@ pub struct Auction {
     pub status: AuctionStatus,
     pub min_bid: u64,
     pub end_time: i64,
-    pub bid_count: u8,
+    pub bid_count: u16,
     pub state_nonce: u128,
     pub encrypted_state: [[u8; 32]; 5],
 }
@@ -764,13 +775,13 @@ pub struct AuctionCreatedEvent {
 #[event]
 pub struct BidPlacedEvent {
     pub auction: Pubkey,
-    pub bid_count: u8,
+    pub bid_count: u16,
 }
 
 #[event]
 pub struct AuctionClosedEvent {
     pub auction: Pubkey,
-    pub bid_count: u8,
+    pub bid_count: u16,
 }
 
 #[event]
@@ -795,4 +806,10 @@ pub enum ErrorCode {
     WrongAuctionType,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Auction has ended")]
+    AuctionEnded,
+    #[msg("Auction has not ended yet")]
+    AuctionNotEnded,
+    #[msg("Bid count overflow")]
+    BidCountOverflow,
 }
