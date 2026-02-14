@@ -4,24 +4,20 @@ use arcis::*;
 mod circuits {
     use arcis::*;
 
-    /// Bidder pubkey split into two u128s (Arcis encrypts each primitive separately).
     pub struct Bid {
-        pub bidder_lo: u128,
-        pub bidder_hi: u128,
+        pub bidder: SerializedSolanaPublicKey,
         pub amount: u64,
     }
 
     pub struct AuctionState {
         pub highest_bid: u64,
-        pub highest_bidder_lo: u128,
-        pub highest_bidder_hi: u128,
+        pub highest_bidder: SerializedSolanaPublicKey,
         pub second_highest_bid: u64,
         pub bid_count: u8,
     }
 
     pub struct AuctionResult {
-        pub winner_lo: u128,
-        pub winner_hi: u128,
+        pub winner: SerializedSolanaPublicKey,
         pub payment_amount: u64,
     }
 
@@ -29,8 +25,7 @@ mod circuits {
     pub fn init_auction_state(mxe: Mxe) -> Enc<Mxe, AuctionState> {
         let initial_state = AuctionState {
             highest_bid: 0,
-            highest_bidder_lo: 0,
-            highest_bidder_hi: 0,
+            highest_bidder: SerializedSolanaPublicKey { lo: 0, hi: 0 },
             second_highest_bid: 0,
             bid_count: 0,
         };
@@ -48,8 +43,7 @@ mod circuits {
         if bid.amount > state.highest_bid {
             state.second_highest_bid = state.highest_bid;
             state.highest_bid = bid.amount;
-            state.highest_bidder_lo = bid.bidder_lo;
-            state.highest_bidder_hi = bid.bidder_hi;
+            state.highest_bidder = bid.bidder;
         } else if bid.amount > state.second_highest_bid {
             state.second_highest_bid = bid.amount;
         }
@@ -65,8 +59,7 @@ mod circuits {
         let state = state_ctxt.to_arcis();
 
         AuctionResult {
-            winner_lo: state.highest_bidder_lo,
-            winner_hi: state.highest_bidder_hi,
+            winner: state.highest_bidder,
             payment_amount: state.highest_bid,
         }
         .reveal()
@@ -78,8 +71,7 @@ mod circuits {
         let state = state_ctxt.to_arcis();
 
         AuctionResult {
-            winner_lo: state.highest_bidder_lo,
-            winner_hi: state.highest_bidder_hi,
+            winner: state.highest_bidder,
             payment_amount: state.second_highest_bid,
         }
         .reveal()

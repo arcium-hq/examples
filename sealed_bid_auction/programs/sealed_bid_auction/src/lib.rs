@@ -283,9 +283,12 @@ pub mod sealed_bid_auction {
             Ok(DetermineWinnerFirstPriceOutput {
                 field_0:
                     DetermineWinnerFirstPriceOutputStruct0 {
-                        field_0: winner_lo,
-                        field_1: winner_hi,
-                        field_2: payment_amount,
+                        field_0:
+                            DetermineWinnerFirstPriceOutputStruct00 {
+                                field_0: winner_lo,
+                                field_1: winner_hi,
+                            },
+                        field_1: payment_amount,
                     },
             }) => (winner_lo, winner_hi, payment_amount),
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
@@ -369,9 +372,12 @@ pub mod sealed_bid_auction {
             Ok(DetermineWinnerVickreyOutput {
                 field_0:
                     DetermineWinnerVickreyOutputStruct0 {
-                        field_0: winner_lo,
-                        field_1: winner_hi,
-                        field_2: payment_amount,
+                        field_0:
+                            DetermineWinnerVickreyOutputStruct00 {
+                                field_0: winner_lo,
+                                field_1: winner_hi,
+                            },
+                        field_1: payment_amount,
                     },
             }) => (winner_lo, winner_hi, payment_amount),
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),

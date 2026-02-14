@@ -118,7 +118,7 @@ pub mod blackjack {
 
         let deck_nonce = o.0.nonce;
 
-        let deck: [[u8; 32]; 3] = o.0.ciphertexts;
+        let deck: [[u8; 32]; 2] = o.0.ciphertexts;
 
         let dealer_nonce = o.1.nonce;
 
@@ -193,11 +193,11 @@ pub mod blackjack {
         let args = ArgBuilder::new()
             // Deck
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 2)
             // Player hand
             .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2, 32)
             // Player hand size
             .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
@@ -296,11 +296,11 @@ pub mod blackjack {
         let args = ArgBuilder::new()
             // Deck
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 2)
             // Player hand
             .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2, 32)
             // Player hand size
             .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
@@ -398,7 +398,7 @@ pub mod blackjack {
             // Player hand
             .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2, 32)
             // Player hand size
             .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             .build();
@@ -476,10 +476,10 @@ pub mod blackjack {
         let args = ArgBuilder::new()
             // Deck
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 3)
+            .account(ctx.accounts.blackjack_game.key(), 8, 32 * 2)
             // Dealer hand
             .plaintext_u128(ctx.accounts.blackjack_game.dealer_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2 + 32, 32)
             // Client nonce
             .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(nonce)
@@ -570,10 +570,10 @@ pub mod blackjack {
             // Player hand
             .x25519_pubkey(ctx.accounts.blackjack_game.player_enc_pubkey)
             .plaintext_u128(ctx.accounts.blackjack_game.client_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2, 32)
             // Dealer hand
             .plaintext_u128(ctx.accounts.blackjack_game.dealer_nonce)
-            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 3 + 32, 32)
+            .account(ctx.accounts.blackjack_game.key(), 8 + 32 * 2 + 32, 32)
             // Player hand size
             .plaintext_u8(ctx.accounts.blackjack_game.player_hand_size)
             // Dealer hand size
@@ -1347,14 +1347,14 @@ pub struct InitResolveGameCompDef<'info> {
 /// Represents a single blackjack game session.
 ///
 /// This account stores all the game state including encrypted hands, deck information,
-/// and game progress. The deck is stored as three 32-byte encrypted chunks that together
-/// represent all 52 cards in shuffled order. Hands are stored encrypted and only
+/// and game progress. The deck is stored as two 32-byte encrypted chunks (Pack<[u8; 52]>)
+/// that together represent all 52 cards in shuffled order. Hands are stored encrypted and only
 /// decryptable by their respective owners (player) or the MPC network (dealer).
 #[account]
 #[derive(InitSpace)]
 pub struct BlackjackGame {
-    /// Encrypted deck split into 3 chunks for storage efficiency
-    pub deck: [[u8; 32]; 3],
+    /// Encrypted deck split into 2 chunks (Pack<[u8; 52]> = 2 field elements)
+    pub deck: [[u8; 32]; 2],
     /// Player's encrypted hand (only player can decrypt)
     pub player_hand: [u8; 32],
     /// Dealer's encrypted hand (handled by MPC)
