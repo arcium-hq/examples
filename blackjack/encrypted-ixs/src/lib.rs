@@ -6,155 +6,41 @@ mod circuits {
 
     /// Standard 52-card deck represented as indices 0-51
     const INITIAL_DECK: [u8; 52] = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
         48, 49, 50, 51,
     ];
 
-    /// Powers of 64 used for encoding cards into u128 values.
-    /// Each card takes 6 bits (values 0-63), so we can pack multiple cards efficiently.
-    /// This array contains 64^i for i in 0..21, allowing us to encode up to 21 cards per u128.
-    const POWS_OF_SIXTY_FOUR: [u128; 21] = [
-        1,
-        64,
-        4096,
-        262144,
-        16777216,
-        1073741824,
-        68719476736,
-        4398046511104,
-        281474976710656,
-        18014398509481984,
-        1152921504606846976,
-        73786976294838206464,
-        4722366482869645213696,
-        302231454903657293676544,
-        19342813113834066795298816,
-        1237940039285380274899124224,
-        79228162514264337593543950336,
-        5070602400912917605986812821504,
-        324518553658426726783156020576256,
-        20769187434139310514121985316880384,
-        1329227995784915872903807060280344576,
-    ];
-
-    /// Represents a full 52-card deck encoded into three u128 values for efficiency.
-    ///
-    /// Each card is represented by 6 bits (0-63 range), allowing us to pack:
-    /// - Cards 0-20 in card_one (21 cards × 6 bits = 126 bits < 128 bits)
-    /// - Cards 21-41 in card_two (21 cards × 6 bits = 126 bits < 128 bits)  
-    /// - Cards 42-51 in card_three (10 cards × 6 bits = 60 bits < 128 bits)
-    pub struct Deck {
-        pub card_one: u128,
-        pub card_two: u128,
-        pub card_three: u128,
-    }
-
-    impl Deck {
-        /// Converts a 52-card array into the packed Deck representation.
-        /// Uses base-64 encoding where each card index is treated as a digit in base 64.
-        pub fn from_array(array: [u8; 52]) -> Deck {
-            let mut card_one = 0;
-            for i in 0..21 {
-                card_one += POWS_OF_SIXTY_FOUR[i] * array[i] as u128;
-            }
-
-            let mut card_two = 0;
-            for i in 21..42 {
-                card_two += POWS_OF_SIXTY_FOUR[i - 21] * array[i] as u128;
-            }
-
-            let mut card_three = 0;
-            for i in 42..52 {
-                card_three += POWS_OF_SIXTY_FOUR[i - 42] * array[i] as u128;
-            }
-
-            Deck {
-                card_one,
-                card_two,
-                card_three,
-            }
-        }
-
-        /// Converts the packed Deck representation back to a 52-card array.
-        /// Reverses the base-64 encoding by extracting 6 bits at a time.
-        fn to_array(&self) -> [u8; 52] {
-            let mut card_one = self.card_one;
-            let mut card_two = self.card_two;
-            let mut card_three = self.card_three;
-
-            let mut bytes = [0u8; 52];
-            for i in 0..21 {
-                bytes[i] = (card_one % 64) as u8;
-                bytes[i + 21] = (card_two % 64) as u8;
-                card_one >>= 6;
-                card_two >>= 6;
-            }
-
-            for i in 42..52 {
-                bytes[i] = (card_three % 64) as u8;
-                card_three >>= 6;
-            }
-
-            bytes
-        }
-    }
-
-    pub struct Hand {
-        pub cards: u128,
-    }
-
-    impl Hand {
-        pub fn from_array(array: [u8; 11]) -> Hand {
-            let mut cards = 0;
-            for i in 0..11 {
-                cards += POWS_OF_SIXTY_FOUR[i] * array[i] as u128;
-            }
-
-            Hand { cards }
-        }
-
-        fn to_array(&self) -> [u8; 11] {
-            let mut cards = self.cards;
-
-            let mut bytes = [0u8; 11];
-            for i in 0..11 {
-                bytes[i] = (cards % 64) as u8;
-                cards >>= 6;
-            }
-
-            bytes
-        }
-    }
+    type Deck = Pack<[u8; 52]>;
+    type Hand = Pack<[u8; 11]>;
 
     #[instruction]
     pub fn shuffle_and_deal_cards(
-        mxe: Mxe,
-        mxe_again: Mxe,
         client: Shared,
         client_again: Shared,
     ) -> (
-        Enc<Mxe, Deck>,    // 16 + 32 x 3
+        Enc<Mxe, Deck>,    // 16 + 32 x 2
         Enc<Mxe, Hand>,    // 16 + 32
         Enc<Shared, Hand>, // 32 + 16 + 32
         Enc<Shared, u8>,   // 32 + 16 + 32
     ) {
-        let mut initial_deck = INITIAL_DECK;
+        let mut initial_deck: [u8; 52] = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
 
-        let deck = mxe.from_arcis(Deck::from_array(initial_deck));
+        let deck_packed: Deck = Pack::new(initial_deck);
+        let deck = Mxe::get().from_arcis(deck_packed);
 
-        let mut dealer_cards = [53; 11];
+        let mut dealer_cards = [53u8; 11];
         dealer_cards[0] = initial_deck[1];
         dealer_cards[1] = initial_deck[3];
 
-        let dealer_hand = mxe_again.from_arcis(Hand::from_array(dealer_cards));
+        let dealer_hand = Mxe::get().from_arcis(Pack::new(dealer_cards));
 
-        let mut player_cards = [53; 11];
+        let mut player_cards = [53u8; 11];
         player_cards[0] = initial_deck[0];
         player_cards[1] = initial_deck[2];
 
-        let player_hand = client.from_arcis(Hand::from_array(player_cards));
+        let player_hand = client.from_arcis(Pack::new(player_cards));
 
         (
             deck,
@@ -171,9 +57,9 @@ mod circuits {
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Shared, Hand>, bool) {
-        let deck = deck_ctxt.to_arcis().to_array();
+        let deck = deck_ctxt.to_arcis().unpack();
 
-        let mut player_hand = player_hand_ctxt.to_arcis().to_array();
+        let mut player_hand = player_hand_ctxt.to_arcis().unpack();
 
         let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
 
@@ -191,9 +77,7 @@ mod circuits {
         player_hand[player_hand_size as usize] = new_card;
 
         (
-            player_hand_ctxt
-                .owner
-                .from_arcis(Hand::from_array(player_hand)),
+            player_hand_ctxt.owner.from_arcis(Pack::new(player_hand)),
             is_bust.reveal(),
         )
     }
@@ -201,7 +85,7 @@ mod circuits {
     // Returns true if the player has busted
     #[instruction]
     pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
-        let player_hand = player_hand_ctxt.to_arcis().to_array();
+        let player_hand = player_hand_ctxt.to_arcis().unpack();
         let value = calculate_hand_value(&player_hand, player_hand_size);
         (value > 21).reveal()
     }
@@ -214,10 +98,9 @@ mod circuits {
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Shared, Hand>, bool) {
-        let deck = deck_ctxt.to_arcis();
-        let deck_array = deck.to_array();
+        let deck_array = deck_ctxt.to_arcis().unpack();
 
-        let mut player_hand = player_hand_ctxt.to_arcis().to_array();
+        let mut player_hand = player_hand_ctxt.to_arcis().unpack();
 
         let player_hand_value = calculate_hand_value(&player_hand, player_hand_size);
 
@@ -235,9 +118,7 @@ mod circuits {
         player_hand[player_hand_size as usize] = new_card;
 
         (
-            player_hand_ctxt
-                .owner
-                .from_arcis(Hand::from_array(player_hand)),
+            player_hand_ctxt.owner.from_arcis(Pack::new(player_hand)),
             is_bust.reveal(),
         )
     }
@@ -251,9 +132,8 @@ mod circuits {
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Mxe, Hand>, Enc<Shared, Hand>, u8) {
-        let deck = deck_ctxt.to_arcis();
-        let deck_array = deck.to_array();
-        let mut dealer = dealer_hand_ctxt.to_arcis().to_array();
+        let deck_array = deck_ctxt.to_arcis().unpack();
+        let mut dealer = dealer_hand_ctxt.to_arcis().unpack();
         let mut size = dealer_hand_size as usize;
 
         for _ in 0..7 {
@@ -266,8 +146,8 @@ mod circuits {
         }
 
         (
-            dealer_hand_ctxt.owner.from_arcis(Hand::from_array(dealer)),
-            client.from_arcis(Hand::from_array(dealer)),
+            dealer_hand_ctxt.owner.from_arcis(Pack::new(dealer)),
+            client.from_arcis(Pack::new(dealer)),
             (size as u8).reveal(),
         )
     }
@@ -337,8 +217,8 @@ mod circuits {
         player_hand_length: u8,
         dealer_hand_length: u8,
     ) -> u8 {
-        let player_hand = player_hand.to_arcis().to_array();
-        let dealer_hand = dealer_hand.to_arcis().to_array();
+        let player_hand = player_hand.to_arcis().unpack();
+        let dealer_hand = dealer_hand.to_arcis().unpack();
 
         // Calculate final hand values
         let player_value = calculate_hand_value(&player_hand, player_hand_length);

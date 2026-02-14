@@ -48,107 +48,51 @@ The system works through three key mechanisms: network-generated randomness crea
 - Each card can be represented as `u8` (values 0-51)
 - 52 cards = 52 `u8` values
 - After encryption: each `u8` becomes a 32-byte ciphertext
-- **Total size**: 52 × 32 bytes = **1,664 bytes**
+- **Total size**: 52 x 32 bytes = **1,664 bytes**
 
 **The Problem**: Solana's transaction size limit is **1,232 bytes**, but our encrypted deck is 1,664 bytes. Whether returning the generated deck from initialization or passing it in transactions to deal more cards, the deck won't fit in a single transaction.
 
-### Deriving the Compression Solution
+### The Solution: `Pack<T>`
 
-**Analysis**: Do we really need 8 bits per card?
+Arcis provides `Pack<T>`, a built-in type that compresses byte arrays into fewer field elements for encryption. Instead of encrypting each card individually, `Pack` packs multiple bytes into a single field element.
 
-- Cards range from 0 to 51 (52 total cards)
-- 51 < 64 = 2^6
-- We only need **6 bits** to represent any card (0-63 range, we use 0-51)
+**How it works**:
 
-**The Math**:
+- Each field element holds up to 26 bytes (at 8 bits per byte)
+- `Pack<[u8; 52]>` = 52 bytes / 26 bytes per element = **2 field elements**
+- `Pack<[u8; 11]>` = 11 bytes / 26 bytes per element = **1 field element**
 
-- 52 cards × 6 bits per card = **312 bits total**
-- A `u128` can store 128 bits
-- 312 bits ÷ 128 bits = 2.4... → need **3 `u128` values**
-- First two `u128`s: 21 cards each (21 × 6 = 126 bits)
-- Third `u128`: 10 cards (10 × 6 = 60 bits)
+**Usage in the circuit**:
+
+```rust
+type Deck = Pack<[u8; 52]>;
+type Hand = Pack<[u8; 11]>;
+
+let deck_packed: Deck = Pack::new(initial_deck);
+let deck = Mxe::get().from_arcis(deck_packed);
+```
 
 **After encryption**:
 
-- 3 `u128` values → 3 × 32 bytes = **96 bytes**
-- **Savings**: 1,664 bytes → 96 bytes (94% reduction!)
+- 2 field elements -> 2 x 32 bytes = **64 bytes**
+- **Savings**: 1,664 bytes -> 64 bytes (96% reduction)
 
-### Base-64 Encoding Explained
-
-**Why 6 bits = "base-64"?**
-
-Normal data uses base-256 (8 bits): each position can be 0-255.
-
-We're using base-64 (6 bits): each position can be 0-63.
-
-**Encoding formula**:
-
-```
-value = card[0]×64^0 + card[1]×64^1 + card[2]×64^2 + ... + card[20]×64^20
-```
-
-**Example** - Encoding first 3 cards [2, 13, 51]:
-
-```
-card_one = 2×1 + 13×64 + 51×4096
-         = 2 + 832 + 208,896
-         = 209,730
-```
-
-This single `u128` (value 209,730) represents 3 cards compressed together.
-
-**Decoding formula**:
+Accessing individual cards requires unpacking first:
 
 ```rust
-card[i] = (value / 64^i) % 64
-```
-
-**Example** - Decoding card[1] from 209,730:
-
-```
-card[1] = (209,730 / 64) % 64
-        = 3,276 % 64
-        = 13  ✓
-```
-
-### Implementation: The Powers Lookup Table
-
-```rust
-const POWS_OF_SIXTY_FOUR: [u128; 21] = [
-    1, 64, 4096, 262144, 16777216, ...  // 64^0, 64^1, 64^2, 64^3, ...
-];
-```
-
-Pre-computing powers of 64 makes encoding/decoding efficient in MPC.
-
-**Encoding** (from array to compressed):
-
-```rust
-let mut card_one: u128 = 0;
-for i in 0..21 {
-    card_one += POWS_OF_SIXTY_FOUR[i] * cards[i] as u128;
-}
-```
-
-**Decoding** (from compressed to array):
-
-```rust
-let mut temp = card_one;
-for i in 0..21 {
-    cards[i] = (temp % 64) as u8;
-    temp = temp / 64;
-}
+let deck_array = deck_ctxt.to_arcis().unpack();
+let card = deck_array[index];
 ```
 
 ### Account Storage Structure
 
-On-chain storage uses serialized byte arrays. The `Enc<Shared, u128>` values from MPC instructions are serialized to `[u8; 32]` format for account storage:
+On-chain storage uses serialized byte arrays. Encrypted `Pack` values are stored as `[u8; 32]` ciphertexts:
 
 ```rust
 pub struct BlackjackGame {
-    pub deck: [[u8; 32]; 3],      // 3 encrypted u128s (52 cards compressed)
-    pub player_hand: [u8; 32],    // 1 encrypted u128 (max 11 cards compressed)
-    pub dealer_hand: [u8; 32],    // 1 encrypted u128 (max 11 cards compressed)
+    pub deck: [[u8; 32]; 2],      // Pack<[u8; 52]> = 2 field elements
+    pub player_hand: [u8; 32],    // Pack<[u8; 11]> = 1 field element
+    pub dealer_hand: [u8; 32],    // Pack<[u8; 11]> = 1 field element
     pub deck_nonce: u128,         // Nonce for deck encryption
     pub client_nonce: u128,       // Nonce for player hand
     pub dealer_nonce: u128,       // Nonce for dealer hand
@@ -160,39 +104,35 @@ pub struct BlackjackGame {
 
 **Why separate nonces?** Each encrypted value needs its own nonce for security.
 
-**Why track hand sizes?** The compressed `u128` can hold up to 11 cards, but we need to know how many are actually present (could be 2, 3, 10, etc.).
+**Why track hand sizes?** The packed hand can hold up to 11 cards, but we need to know how many are actually present (could be 2, 3, 10, etc.).
 
 ### The Result
 
-**Without compression**:
+**Without packing**:
 
 - Deck: 52 encrypted values (1,664 bytes)
 - Player hand: 11 encrypted values (352 bytes)
 - Dealer hand: 11 encrypted values (352 bytes)
-- **Total**: 2,368 bytes ❌ (won't fit in Solana transaction or account efficiently)
+- **Total**: 2,368 bytes (won't fit in Solana transaction or account efficiently)
 
-**With compression**:
+**With `Pack<T>`**:
 
-- Deck: 3 encrypted values (96 bytes)
+- Deck: 2 encrypted values (64 bytes)
 - Player hand: 1 encrypted value (32 bytes)
 - Dealer hand: 1 encrypted value (32 bytes)
-- **Total**: 160 bytes ✓
+- **Total**: 128 bytes
 
 **Additional benefits**:
 
-- Fewer MPC operations (5 encryptions vs 74)
+- Fewer MPC operations (4 encryptions vs 74)
 - Faster computation (less encrypted data to process)
 - Lower costs (fewer computation units)
+- No manual encoding/decoding logic needed
 
 > For more optimization techniques, see [Best Practices](https://docs.arcium.com/developers/arcis/best-practices).
 
 ### When to Use This Pattern
 
-Apply compression when:
-
-- You have many small values (cards, pixels, flags, etc.)
-- Values fit in less than 8 bits
-- Transaction size is a constraint
-- Values are processed together (e.g., entire deck shuffled at once)
+Use `Pack<T>` when you have arrays of small values that are processed together. Arcis handles the packing and unpacking automatically — define a type alias, and the framework manages compression.
 
 Examples: game pieces, map tiles, bit flags, small integers, inventory items.

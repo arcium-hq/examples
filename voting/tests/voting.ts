@@ -114,16 +114,13 @@ describe("Voting", () => {
 
     // Create multiple polls
     for (const POLL_ID of POLL_IDS) {
-      const pollNonce = randomBytes(16);
-
       const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const pollSig = await program.methods
         .createNewPoll(
           pollComputationOffset,
           POLL_ID,
-          `Poll ${POLL_ID}: $SOL to 500?`,
-          new anchor.BN(deserializeLE(pollNonce).toString())
+          `Poll ${POLL_ID}: $SOL to 500?`
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
