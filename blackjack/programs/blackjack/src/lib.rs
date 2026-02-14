@@ -32,15 +32,12 @@ pub mod blackjack {
     ///
     /// # Arguments
     /// * `game_id` - Unique identifier for this game session
-    /// * `mxe_nonce` - Cryptographic nonce for MXE operations
     /// * `client_pubkey` - Player's encryption public key for receiving encrypted cards
     /// * `client_nonce` - Player's cryptographic nonce for encryption operations
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
         computation_offset: u64,
         game_id: u64,
-        mxe_nonce: u128,
-        mxe_again_nonce: u128,
         client_pubkey: [u8; 32],
         client_nonce: u128,
         client_again_nonce: u128,
@@ -62,8 +59,6 @@ pub mod blackjack {
 
         // Queue the shuffle and deal cards computation
         let args = ArgBuilder::new()
-            .plaintext_u128(mxe_nonce)
-            .plaintext_u128(mxe_again_nonce)
             .x25519_pubkey(client_pubkey)
             .plaintext_u128(client_nonce)
             .x25519_pubkey(client_pubkey)

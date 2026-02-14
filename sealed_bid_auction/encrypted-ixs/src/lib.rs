@@ -22,14 +22,14 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn init_auction_state(mxe: Mxe) -> Enc<Mxe, AuctionState> {
+    pub fn init_auction_state() -> Enc<Mxe, AuctionState> {
         let initial_state = AuctionState {
             highest_bid: 0,
             highest_bidder: SerializedSolanaPublicKey { lo: 0, hi: 0 },
             second_highest_bid: 0,
             bid_count: 0,
         };
-        mxe.from_arcis(initial_state)
+        Mxe::get().from_arcis(initial_state)
     }
 
     #[instruction]

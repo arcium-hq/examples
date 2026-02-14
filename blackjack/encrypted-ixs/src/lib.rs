@@ -16,8 +16,6 @@ mod circuits {
 
     #[instruction]
     pub fn shuffle_and_deal_cards(
-        mxe: Mxe,
-        mxe_again: Mxe,
         client: Shared,
         client_again: Shared,
     ) -> (
@@ -30,13 +28,13 @@ mod circuits {
         ArcisRNG::shuffle(&mut initial_deck);
 
         let deck_packed: Deck = Pack::new(initial_deck);
-        let deck = mxe.from_arcis(deck_packed);
+        let deck = Mxe::get().from_arcis(deck_packed);
 
         let mut dealer_cards = [53u8; 11];
         dealer_cards[0] = initial_deck[1];
         dealer_cards[1] = initial_deck[3];
 
-        let dealer_hand = mxe_again.from_arcis(Pack::new(dealer_cards));
+        let dealer_hand = Mxe::get().from_arcis(Pack::new(dealer_cards));
 
         let mut player_cards = [53u8; 11];
         player_cards[0] = initial_deck[0];

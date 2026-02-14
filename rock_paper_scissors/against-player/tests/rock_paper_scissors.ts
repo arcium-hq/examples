@@ -111,7 +111,6 @@ describe("RockPaperScissors", () => {
 
     // Initialize a new game
     const gameId = 1;
-    const nonce = randomBytes(16);
 
     const initComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -121,8 +120,7 @@ describe("RockPaperScissors", () => {
         initComputationOffset,
         new anchor.BN(gameId),
         playerA.publicKey,
-        playerB.publicKey,
-        new anchor.BN(deserializeLE(nonce).toString())
+        playerB.publicKey
       )
       .accounts({
         computationAccount: getComputationAccAddress(
@@ -383,8 +381,6 @@ describe("RockPaperScissors", () => {
 
     // Initialize a new game
     const gameId2 = new anchor.BN(Date.now());
-    const nonce2 = randomBytes(16);
-    const nonceValue2 = new anchor.BN(deserializeLE(nonce2).toString());
 
     const initComputationOffset2 = new anchor.BN(randomBytes(8), "hex");
 
@@ -394,8 +390,7 @@ describe("RockPaperScissors", () => {
         initComputationOffset2,
         gameId2,
         playerA.publicKey,
-        playerB.publicKey,
-        nonceValue2
+        playerB.publicKey
       )
       .accounts({
         computationAccount: getComputationAccAddress(
@@ -541,7 +536,6 @@ describe("RockPaperScissors", () => {
       const scenarioGameId = new anchor.BN(
         Date.now() + Math.floor(Math.random() * 1000)
       );
-      const scenarioNonce = randomBytes(16);
 
       const initComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
 
@@ -551,8 +545,7 @@ describe("RockPaperScissors", () => {
           initComputationOffset3,
           scenarioGameId,
           playerA.publicKey,
-          playerB.publicKey,
-          new anchor.BN(deserializeLE(scenarioNonce).toString())
+          playerB.publicKey
         )
         .accounts({
           computationAccount: getComputationAccAddress(
@@ -784,7 +777,6 @@ describe("RockPaperScissors", () => {
     const gameId3 = new anchor.BN(
       Date.now() + Math.floor(Math.random() * 1000)
     );
-    const nonce3 = randomBytes(16);
 
     const initComputationOffset4 = new anchor.BN(randomBytes(8), "hex");
 
@@ -794,8 +786,7 @@ describe("RockPaperScissors", () => {
         initComputationOffset4,
         gameId3,
         playerA.publicKey,
-        playerB.publicKey,
-        new anchor.BN(deserializeLE(nonce3).toString())
+        playerB.publicKey
       )
       .accounts({
         computationAccount: getComputationAccAddress(

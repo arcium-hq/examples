@@ -149,8 +149,6 @@ describe("Blackjack", () => {
     const dealerClientNonce = randomBytes(16);
 
     const gameId = BigInt(Math.floor(Math.random() * 1000000));
-    const mxeNonce = randomBytes(16);
-    const mxeAgainNonce = randomBytes(16);
 
     const computationOffsetInit = new anchor.BN(randomBytes(8));
 
@@ -174,8 +172,6 @@ describe("Blackjack", () => {
       .initializeBlackjackGame(
         computationOffsetInit,
         new anchor.BN(gameId.toString()),
-        new anchor.BN(deserializeLE(mxeNonce).toString()),
-        new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(clientNonce).toString()),
         new anchor.BN(deserializeLE(dealerClientNonce).toString())
