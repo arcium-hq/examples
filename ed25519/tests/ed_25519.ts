@@ -11,7 +11,6 @@ import {
   getArciumAccountBaseSeed,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -22,6 +21,8 @@ import {
   getExecutingPoolAccAddress,
   getComputationAccAddress,
   getClusterAccAddress,
+  getLookupTableAddress,
+  getArciumProgram,
   x25519,
 } from "@arcium-hq/client";
 import { circuits } from "../build/circuits";
@@ -51,6 +52,7 @@ describe("Ed25519", () => {
   };
 
   const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("sign and verify with MPC Ed25519", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -62,23 +64,13 @@ describe("Ed25519", () => {
     console.log("MXE x25519 pubkey:", mxePublicKey);
 
     console.log("Initializing computation definitions");
-    const initSMSig = await initSignMessageCompDef(
-      program,
-      owner,
-      false,
-      false
-    );
+    const initSMSig = await initSignMessageCompDef(program, owner);
     console.log(
       "Sign message computation definition initialized with signature",
       initSMSig
     );
 
-    const initVSSig = await initVerifySignatureCompDef(
-      program,
-      owner,
-      false,
-      false
-    );
+    const initVSSig = await initVerifySignatureCompDef(program, owner);
     console.log(
       "Verify signature computation definition initialized with signature",
       initVSSig
@@ -97,7 +89,7 @@ describe("Ed25519", () => {
           arciumEnv.arciumClusterOffset,
           computationOffsetSignMessage
         ),
-        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
         executingPool: getExecutingPoolAccAddress(
@@ -108,7 +100,7 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("sign_message")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -208,7 +200,7 @@ describe("Ed25519", () => {
           arciumEnv.arciumClusterOffset,
           computationOffsetVerifySignature
         ),
-        clusterAccount: getClusterAccAddress(arciumEnv.arciumClusterOffset),
+        clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
         mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
         executingPool: getExecutingPoolAccAddress(
@@ -219,7 +211,7 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("verify_signature")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, commitment: "confirmed" });
+      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -243,9 +235,7 @@ describe("Ed25519", () => {
 
   async function initSignMessageCompDef(
     program: Program<Ed25519>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -259,50 +249,44 @@ describe("Ed25519", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initSignMessageCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log("\nInit sign message computation definition transaction", sig);
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/sign_message.arcis");
+    const rawCircuit = fs.readFileSync("build/sign_message.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "sign_message",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "sign_message",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 
   async function initVerifySignatureCompDef(
     program: Program<Ed25519>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -316,45 +300,41 @@ describe("Ed25519", () => {
 
     console.log("Comp def pda is ", compDefPDA);
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initVerifySignatureCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
-      .rpc();
+      .rpc({
+        preflightCommitment: "confirmed",
+        commitment: "confirmed",
+      });
     console.log(
       "\nInit verify signature computation definition transaction",
       sig
     );
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/verify_signature.arcis");
+    const rawCircuit = fs.readFileSync("build/verify_signature.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "verify_signature",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "verify_signature",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 });

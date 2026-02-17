@@ -20,9 +20,9 @@ mod circuits {
     /// Creates a VoteStats structure with zero counts for both yes and no votes.
     /// The counters remain encrypted and can only be updated through MPC operations.
     #[instruction]
-    pub fn init_vote_stats(mxe: Mxe) -> Enc<Mxe, VoteStats> {
+    pub fn init_vote_stats() -> Enc<Mxe, VoteStats> {
         let vote_stats = VoteStats { yes: 0, no: 0 };
-        mxe.from_arcis(vote_stats)
+        Mxe::get().from_arcis(vote_stats)
     }
 
     /// Processes an encrypted vote and updates the running tallies.

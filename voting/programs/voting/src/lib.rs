@@ -28,13 +28,11 @@ pub mod voting {
     /// # Arguments
     /// * `id` - Unique identifier for this poll
     /// * `question` - The poll question voters will respond to
-    /// * `nonce` - Cryptographic nonce for initializing encrypted vote counters
     pub fn create_new_poll(
         ctx: Context<CreateNewPoll>,
         computation_offset: u64,
         id: u32,
         question: String,
-        nonce: u128,
     ) -> Result<()> {
         msg!("Creating a new poll");
 
@@ -43,10 +41,9 @@ pub mod voting {
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
         ctx.accounts.poll_acc.authority = ctx.accounts.payer.key();
-        ctx.accounts.poll_acc.nonce = nonce;
         ctx.accounts.poll_acc.vote_state = [[0; 32]; 2];
 
-        let args = ArgBuilder::new().plaintext_u128(nonce).build();
+        let args = ArgBuilder::new().build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -55,7 +52,6 @@ pub mod voting {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![InitVoteStatsCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -156,7 +152,6 @@ pub mod voting {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![VoteCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -281,7 +276,6 @@ pub mod voting {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![RevealResultCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -420,6 +414,12 @@ pub struct InitVoteStatsCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -549,6 +549,12 @@ pub struct InitVoteCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -655,6 +661,12 @@ pub struct InitRevealResultCompDef<'info> {
     /// CHECK: comp_def_account, checked by arcium program.
     /// Can't check it here as it's not initialized yet.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }

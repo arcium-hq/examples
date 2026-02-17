@@ -57,7 +57,6 @@ pub mod sealed_bid_auction {
         auction_type: AuctionType,
         min_bid: u64,
         end_time: i64,
-        nonce: u128,
     ) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         auction.bump = ctx.bumps.auction;
@@ -67,18 +66,16 @@ pub mod sealed_bid_auction {
         auction.min_bid = min_bid;
         auction.end_time = end_time;
         auction.bid_count = 0;
-        auction.state_nonce = nonce;
         auction.encrypted_state = [[0u8; 32]; 5];
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        let args = ArgBuilder::new().plaintext_u128(nonce).build();
+        let args = ArgBuilder::new().build();
 
         queue_computation(
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![InitAuctionStateCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -171,7 +168,6 @@ pub mod sealed_bid_auction {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![PlaceBidCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -269,7 +265,6 @@ pub mod sealed_bid_auction {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![DetermineWinnerFirstPriceCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -297,9 +292,12 @@ pub mod sealed_bid_auction {
             Ok(DetermineWinnerFirstPriceOutput {
                 field_0:
                     DetermineWinnerFirstPriceOutputStruct0 {
-                        field_0: winner_lo,
-                        field_1: winner_hi,
-                        field_2: payment_amount,
+                        field_0:
+                            DetermineWinnerFirstPriceOutputStruct00 {
+                                field_0: winner_lo,
+                                field_1: winner_hi,
+                            },
+                        field_1: payment_amount,
                     },
             }) => (winner_lo, winner_hi, payment_amount),
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
@@ -356,7 +354,6 @@ pub mod sealed_bid_auction {
             ctx.accounts,
             computation_offset,
             args,
-            None,
             vec![DetermineWinnerVickreyCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
@@ -384,9 +381,12 @@ pub mod sealed_bid_auction {
             Ok(DetermineWinnerVickreyOutput {
                 field_0:
                     DetermineWinnerVickreyOutputStruct0 {
-                        field_0: winner_lo,
-                        field_1: winner_hi,
-                        field_2: payment_amount,
+                        field_0:
+                            DetermineWinnerVickreyOutputStruct00 {
+                                field_0: winner_lo,
+                                field_1: winner_hi,
+                            },
+                        field_1: payment_amount,
                     },
             }) => (winner_lo, winner_hi, payment_amount),
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
@@ -697,6 +697,12 @@ pub struct InitAuctionStateCompDef<'info> {
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -711,6 +717,12 @@ pub struct InitPlaceBidCompDef<'info> {
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -725,6 +737,12 @@ pub struct InitDetermineWinnerFirstPriceCompDef<'info> {
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }
@@ -739,6 +757,12 @@ pub struct InitDetermineWinnerVickreyCompDef<'info> {
     #[account(mut)]
     /// CHECK: comp_def_account, checked by arcium program.
     pub comp_def_account: UncheckedAccount<'info>,
+    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
     pub system_program: Program<'info, System>,
 }

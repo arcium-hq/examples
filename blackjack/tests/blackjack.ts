@@ -9,7 +9,6 @@ import {
   getCompDefAccOffset,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -21,19 +20,12 @@ import {
   getArciumAccountBaseSeed,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-
-/**
- * Gets the cluster account address using the cluster offset from environment.
- */
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
-
 // Helper function to calculate Blackjack hand value
 function calculateHandValue(cards: number[]): {
   value: number;
@@ -71,27 +63,15 @@ function calculateHandValue(cards: number[]): {
   return { value, isSoft };
 }
 
-// Updated decompressHand to use hand size
-function decompressHand(
-  compressedHandValue: bigint,
-  handSize: number
-): number[] {
-  let currentHandValue = compressedHandValue;
+// Unpacks a Pack<[u8; 11]> hand from field elements.
+// Pack stores u8 values at 8-bit boundaries within each field element (26 bytes per element).
+function unpackHand(packed: bigint[], handSize: number): number[] {
+  const fieldElement = packed[0];
   const cards: number[] = [];
-  const numCardSlots = 11; // Max possible slots in u128 encoding
-
-  for (let i = 0; i < numCardSlots; i++) {
-    const card = currentHandValue % BigInt(64); // Get the last 6 bits
-    cards.push(Number(card));
-    currentHandValue >>= BigInt(6); // Shift right by 6 bits
+  for (let i = 0; i < handSize; i++) {
+    cards.push(Number((fieldElement >> BigInt(8 * i)) & 0xffn));
   }
-
-  // Return only the actual cards based on handSize, reversing because they were pushed LSB first
-  // Filter out potential padding/unused card slots (> 51)
-  return cards
-    .slice(0, handSize)
-    .filter((card) => card <= 51)
-    .reverse();
+  return cards;
 }
 
 describe("Blackjack", () => {
@@ -123,7 +103,8 @@ describe("Blackjack", () => {
     return event;
   };
 
-  const clusterAccount = getClusterAccount();
+  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("Should play a full blackjack game with state awareness", async () => {
     console.log("Owner address:", owner.publicKey.toBase58());
@@ -131,22 +112,22 @@ describe("Blackjack", () => {
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
     await Promise.all([
-      initShuffleAndDealCardsCompDef(program as any, owner, false, false).then(
-        (sig) => console.log("Shuffle/Deal CompDef Init Sig:", sig)
+      initShuffleAndDealCardsCompDef(program as any, owner).then((sig) =>
+        console.log("Shuffle/Deal CompDef Init Sig:", sig)
       ),
-      initPlayerHitCompDef(program as any, owner, false, false).then((sig) =>
+      initPlayerHitCompDef(program as any, owner).then((sig) =>
         console.log("Player Hit CompDef Init Sig:", sig)
       ),
-      initPlayerStandCompDef(program as any, owner, false, false).then((sig) =>
+      initPlayerStandCompDef(program as any, owner).then((sig) =>
         console.log("Player Stand CompDef Init Sig:", sig)
       ),
-      initPlayerDoubleDownCompDef(program as any, owner, false, false).then(
-        (sig) => console.log("Player DoubleDown CompDef Init Sig:", sig)
+      initPlayerDoubleDownCompDef(program as any, owner).then((sig) =>
+        console.log("Player DoubleDown CompDef Init Sig:", sig)
       ),
-      initDealerPlayCompDef(program as any, owner, false, false).then((sig) =>
+      initDealerPlayCompDef(program as any, owner).then((sig) =>
         console.log("Dealer Play CompDef Init Sig:", sig)
       ),
-      initResolveGameCompDef(program as any, owner, false, false).then((sig) =>
+      initResolveGameCompDef(program as any, owner).then((sig) =>
         console.log("Resolve Game CompDef Init Sig:", sig)
       ),
     ]);
@@ -168,8 +149,6 @@ describe("Blackjack", () => {
     const dealerClientNonce = randomBytes(16);
 
     const gameId = BigInt(Math.floor(Math.random() * 1000000));
-    const mxeNonce = randomBytes(16);
-    const mxeAgainNonce = randomBytes(16);
 
     const computationOffsetInit = new anchor.BN(randomBytes(8));
 
@@ -193,21 +172,21 @@ describe("Blackjack", () => {
       .initializeBlackjackGame(
         computationOffsetInit,
         new anchor.BN(gameId.toString()),
-        new anchor.BN(deserializeLE(mxeNonce).toString()),
-        new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(clientNonce).toString()),
         new anchor.BN(deserializeLE(dealerClientNonce).toString())
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          getArciumEnv().arciumClusterOffset,
+          arciumEnv.arciumClusterOffset,
           computationOffsetInit
         ),
         clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(
+          arciumEnv.arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(
@@ -245,18 +224,16 @@ describe("Blackjack", () => {
     );
 
     console.log("Current client nonce:", currentClientNonce);
-    let compressedPlayerHand = cipher.decrypt(
+    let packedPlayerHand = cipher.decrypt(
       [cardsShuffledAndDealtEvent.playerHand],
       currentClientNonce
     );
-    let playerHand = decompressHand(
-      compressedPlayerHand[0],
-      gameState.playerHandSize
-    );
+    let playerHand = unpackHand(packedPlayerHand, gameState.playerHandSize);
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
-      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${playerIsSoft ? " Soft" : ""
+      `Initial Player Hand: ${playerHand.join(", ")} (Value: ${playerValue}${
+        playerIsSoft ? " Soft" : ""
       })`
     );
 
@@ -268,7 +245,7 @@ describe("Blackjack", () => {
       [cardsShuffledAndDealtEvent.dealerFaceUpCard],
       currentDealerClientNonce
     );
-    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % BigInt(64));
+    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0]);
     console.log(`Dealer Face Up Card Index: ${dealerFaceUpCard}`);
 
     // --- Player's Turn Loop ---
@@ -307,13 +284,15 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              getArciumEnv().arciumClusterOffset,
+              arciumEnv.arciumClusterOffset,
               playerHitComputationOffset
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+            mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(
+              arciumEnv.arciumClusterOffset
+            ),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_hit")).readUInt32LE()
@@ -352,14 +331,11 @@ describe("Blackjack", () => {
             currentClientNonce = Uint8Array.from(
               playerHitEvent.clientNonce.toArray("le", 16)
             );
-            compressedPlayerHand = cipher.decrypt(
+            packedPlayerHand = cipher.decrypt(
               [playerHitEvent.playerHand],
               currentClientNonce
             );
-            playerHand = decompressHand(
-              compressedPlayerHand[0],
-              gameState.playerHandSize
-            );
+            playerHand = unpackHand(packedPlayerHand, gameState.playerHandSize);
             ({ value: playerValue, isSoft: playerIsSoft } =
               calculateHandValue(playerHand));
             console.log(
@@ -397,13 +373,15 @@ describe("Blackjack", () => {
           )
           .accountsPartial({
             computationAccount: getComputationAccAddress(
-              getArciumEnv().arciumClusterOffset,
+              arciumEnv.arciumClusterOffset,
               playerStandComputationOffset
             ),
             clusterAccount: clusterAccount,
             mxeAccount: getMXEAccAddress(program.programId),
-            mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-            executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+            mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+            executingPool: getExecutingPoolAccAddress(
+              arciumEnv.arciumClusterOffset
+            ),
             compDefAccount: getCompDefAccAddress(
               program.programId,
               Buffer.from(getCompDefAccOffset("player_stand")).readUInt32LE()
@@ -475,13 +453,15 @@ describe("Blackjack", () => {
         )
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            getArciumEnv().arciumClusterOffset,
+            arciumEnv.arciumClusterOffset,
             dealerPlayComputationOffset
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(
+            arciumEnv.arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("dealer_play")).readUInt32LE()
@@ -510,12 +490,12 @@ describe("Blackjack", () => {
       const finalDealerNonce = Uint8Array.from(
         dealerPlayEvent.clientNonce.toArray("le", 16)
       );
-      const decryptedDealerHand = cipher.decrypt(
+      const packedDealerHand = cipher.decrypt(
         [dealerPlayEvent.dealerHand],
         finalDealerNonce
       );
-      const dealerHand = decompressHand(
-        decryptedDealerHand[0],
+      const dealerHand = unpackHand(
+        packedDealerHand,
         dealerPlayEvent.dealerHandSize
       );
       const { value: dealerValue } = calculateHandValue(dealerHand);
@@ -544,13 +524,15 @@ describe("Blackjack", () => {
         .resolveGame(resolveComputationOffset, new anchor.BN(gameId.toString()))
         .accountsPartial({
           computationAccount: getComputationAccAddress(
-            getArciumEnv().arciumClusterOffset,
+            arciumEnv.arciumClusterOffset,
             resolveComputationOffset
           ),
           clusterAccount: clusterAccount,
           mxeAccount: getMXEAccAddress(program.programId),
-          mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-          executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+          mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(
+            arciumEnv.arciumClusterOffset
+          ),
           compDefAccount: getCompDefAccAddress(
             program.programId,
             Buffer.from(getCompDefAccOffset("resolve_game")).readUInt32LE()
@@ -583,7 +565,8 @@ describe("Blackjack", () => {
       expect(gameState.gameState).to.deep.equal({ resolved: {} });
     } else {
       console.warn(
-        `Skipping Resolve Game step. Current state: ${Object.keys(gameState.gameState)[0]
+        `Skipping Resolve Game step. Current state: ${
+          Object.keys(gameState.gameState)[0]
         }`
       );
     }
@@ -591,9 +574,7 @@ describe("Blackjack", () => {
 
   async function initShuffleAndDealCardsCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -615,49 +596,39 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initShuffleAndDealCardsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
+    const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "shuffle_and_deal_cards",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "shuffle_and_deal_cards",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Shuffle/Deal CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Shuffle/Deal CompDef finalized.");
-    }
     return sig;
   }
 
   async function initPlayerHitCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -677,49 +648,39 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerHitCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/player_hit.arcis");
+    const rawCircuit = fs.readFileSync("build/player_hit.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "player_hit",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "player_hit",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Player Hit CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Player Hit CompDef finalized.");
-    }
     return sig;
   }
 
   async function initPlayerStandCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -739,49 +700,39 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerStandCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/player_stand.arcis");
+    const rawCircuit = fs.readFileSync("build/player_stand.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "player_stand",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "player_stand",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Player Stand CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Player Stand CompDef finalized.");
-    }
     return sig;
   }
 
   async function initPlayerDoubleDownCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -801,49 +752,39 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayerDoubleDownCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
+    const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "player_double_down",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "player_double_down",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Player DoubleDown CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Player DoubleDown CompDef finalized.");
-    }
     return sig;
   }
 
   async function initDealerPlayCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -863,49 +804,39 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initDealerPlayCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
+    const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "dealer_play",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "dealer_play",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Dealer Play CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Dealer Play CompDef finalized.");
-    }
     return sig;
   }
 
   async function initResolveGameCompDef(
     program: Program<Blackjack>,
-    owner: Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -925,41 +856,33 @@ describe("Blackjack", () => {
       // Not initialized, proceed
     }
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initResolveGameCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
+    const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "resolve_game",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "resolve_game",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      console.log("Finalizing Resolve Game CompDef...");
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-      finalizeTx.sign(owner);
-      await provider.sendAndConfirm(finalizeTx, [owner], {
-        commitment: "confirmed",
-      });
-      console.log("Resolve Game CompDef finalized.");
-    }
     return sig;
   }
 });

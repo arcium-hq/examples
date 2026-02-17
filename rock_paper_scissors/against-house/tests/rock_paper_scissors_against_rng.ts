@@ -10,7 +10,6 @@ import {
   getArciumAccountBaseSeed,
   getArciumProgramId,
   uploadCircuit,
-  buildFinalizeCompDefTx,
   RescueCipher,
   deserializeLE,
   getMXEAccAddress,
@@ -21,17 +20,11 @@ import {
   getComputationAccAddress,
   getMXEPublicKey,
   getClusterAccAddress,
+  getLookupTableAddress,
+  getArciumProgram,
 } from "@arcium-hq/client";
 import * as fs from "fs";
 import * as os from "os";
-
-/**
- * Gets the cluster account address using the cluster offset from environment.
- */
-function getClusterAccount(): PublicKey {
-  const arciumEnv = getArciumEnv();
-  return getClusterAccAddress(arciumEnv.arciumClusterOffset);
-}
 
 describe("RockPaperScissorsAgainstRng", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
@@ -54,7 +47,8 @@ describe("RockPaperScissorsAgainstRng", () => {
     return event;
   };
 
-  const clusterAccount = getClusterAccount();
+  const arciumEnv = getArciumEnv();
+  const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("play rps against rng", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
@@ -67,7 +61,7 @@ describe("RockPaperScissorsAgainstRng", () => {
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
     console.log("Initializing play rps computation definition");
-    const initRpsSig = await initPlayRpsCompDef(program, owner, false, false);
+    const initRpsSig = await initPlayRpsCompDef(program, owner);
     console.log(
       "Play rps computation definition initialized with signature",
       initRpsSig
@@ -97,19 +91,21 @@ describe("RockPaperScissorsAgainstRng", () => {
       )
       .accountsPartial({
         computationAccount: getComputationAccAddress(
-          getArciumEnv().arciumClusterOffset,
+          arciumEnv.arciumClusterOffset,
           computationOffset
         ),
         clusterAccount: clusterAccount,
         mxeAccount: getMXEAccAddress(program.programId),
-        mempoolAccount: getMempoolAccAddress(getArciumEnv().arciumClusterOffset),
-        executingPool: getExecutingPoolAccAddress(getArciumEnv().arciumClusterOffset),
+        mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+        executingPool: getExecutingPoolAccAddress(
+          arciumEnv.arciumClusterOffset
+        ),
         compDefAccount: getCompDefAccAddress(
           program.programId,
           Buffer.from(getCompDefAccOffset("play_rps")).readUInt32LE()
         ),
       })
-      .rpc({ commitment: "confirmed" });
+      .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
@@ -127,9 +123,7 @@ describe("RockPaperScissorsAgainstRng", () => {
 
   async function initPlayRpsCompDef(
     program: Program<RockPaperScissorsAgainstRng>,
-    owner: anchor.web3.Keypair,
-    uploadRawCircuit: boolean,
-    offchainSource: boolean
+    owner: anchor.web3.Keypair
   ): Promise<string> {
     const baseSeedCompDefAcc = getArciumAccountBaseSeed(
       "ComputationDefinitionAccount"
@@ -143,44 +137,38 @@ describe("RockPaperScissorsAgainstRng", () => {
 
     console.log("Comp def pda is ", compDefPDA.toBase58());
 
+    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
+    const mxeAccount = getMXEAccAddress(program.programId);
+    const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+    const lutAddress = getLookupTableAddress(
+      program.programId,
+      mxeAcc.lutOffsetSlot
+    );
+
     const sig = await program.methods
       .initPlayRpsCompDef()
       .accounts({
         compDefAccount: compDefPDA,
         payer: owner.publicKey,
-        mxeAccount: getMXEAccAddress(program.programId),
+        mxeAccount,
+        addressLookupTable: lutAddress,
       })
       .signers([owner])
       .rpc({
+        preflightCommitment: "confirmed",
         commitment: "confirmed",
       });
     console.log("Init play rps computation definition transaction", sig);
 
-    if (uploadRawCircuit) {
-      const rawCircuit = fs.readFileSync("build/play_rps.arcis");
+    const rawCircuit = fs.readFileSync("build/play_rps.arcis");
+    await uploadCircuit(
+      provider as anchor.AnchorProvider,
+      "play_rps",
+      program.programId,
+      rawCircuit,
+      true
+    );
 
-      await uploadCircuit(
-        provider as anchor.AnchorProvider,
-        "play_rps",
-        program.programId,
-        rawCircuit,
-        true
-      );
-    } else if (!offchainSource) {
-      const finalizeTx = await buildFinalizeCompDefTx(
-        provider as anchor.AnchorProvider,
-        Buffer.from(offset).readUInt32LE(),
-        program.programId
-      );
-
-      const latestBlockhash = await provider.connection.getLatestBlockhash();
-      finalizeTx.recentBlockhash = latestBlockhash.blockhash;
-      finalizeTx.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      finalizeTx.sign(owner);
-
-      await provider.sendAndConfirm(finalizeTx);
-    }
     return sig;
   }
 });

@@ -1,16 +1,16 @@
 #!/bin/bash
 # sync-version.sh - Update all Arcium version references across examples
 # Usage: ./scripts/sync-version.sh <version>
-# Example: ./scripts/sync-version.sh 0.6.3
+# Example: ./scripts/sync-version.sh 0.6.6
 
 set -eo pipefail
 
-VERSION=${1:-0.6.3}
+VERSION=${1:-0.6.6}
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Validate version format
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: Version must be in format X.Y.Z (e.g., 0.6.3)"
+  echo "Error: Version must be in format X.Y.Z (e.g., 0.6.6)"
   exit 1
 fi
 
