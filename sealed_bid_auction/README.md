@@ -44,7 +44,7 @@ The test suite demonstrates complete auction flows for both first-price and Vick
 
 ## Technical Implementation
 
-Bids are encrypted using X25519 key exchange with the MXE public key before submission. The auction state stores five encrypted values on-chain: highest bid, highest bidder (split into two u128s), second-highest bid, and bid count.
+Bids are encrypted using X25519 key exchange with the MXE public key before submission. The auction state stores five encrypted values on-chain: highest bid, highest bidder (as `SerializedSolanaPublicKey`), second-highest bid, and bid count.
 
 Key properties:
 
@@ -73,14 +73,13 @@ Sealed-bid auction demonstrates storing encrypted comparison state in Anchor acc
 ```rust
 pub struct AuctionState {
     pub highest_bid: u64,
-    pub highest_bidder_lo: u128,  // Lower 128 bits of winner pubkey
-    pub highest_bidder_hi: u128,  // Upper 128 bits of winner pubkey
+    pub highest_bidder: SerializedSolanaPublicKey,  // Winner pubkey (lo/hi u128 pair)
     pub second_highest_bid: u64,  // Required for Vickrey auctions
     pub bid_count: u8,
 }
 ```
 
-**Why split the bidder identity?** Solana public keys are 32 bytes, but Arcis encrypts each primitive separately. Splitting into two u128s (16 bytes each) allows efficient encrypted storage and comparison.
+**Why `SerializedSolanaPublicKey`?** Solana public keys are 32 bytes, but Arcis field elements are smaller. `SerializedSolanaPublicKey` is a built-in type that handles the lo/hi u128 splitting automatically.
 
 **On-chain storage**: The encrypted state is stored as `[[u8; 32]; 5]` - five 32-byte ciphertexts representing each field.
 
@@ -102,8 +101,7 @@ pub fn place_bid(
         // New highest bid - shift current highest to second place
         state.second_highest_bid = state.highest_bid;
         state.highest_bid = bid.amount;
-        state.highest_bidder_lo = bid.bidder_lo;
-        state.highest_bidder_hi = bid.bidder_hi;
+        state.highest_bidder = bid.bidder;
     } else if bid.amount > state.second_highest_bid {
         // New second-highest bid
         state.second_highest_bid = bid.amount;
@@ -126,8 +124,7 @@ This example supports two auction mechanisms with different economic properties:
 pub fn determine_winner_first_price(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
     let state = state_ctxt.to_arcis();
     AuctionResult {
-        winner_lo: state.highest_bidder_lo,
-        winner_hi: state.highest_bidder_hi,
+        winner: state.highest_bidder,
         payment_amount: state.highest_bid,  // Pay your bid
     }.reveal()
 }
@@ -139,8 +136,7 @@ pub fn determine_winner_first_price(state_ctxt: Enc<Mxe, AuctionState>) -> Aucti
 pub fn determine_winner_vickrey(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
     let state = state_ctxt.to_arcis();
     AuctionResult {
-        winner_lo: state.highest_bidder_lo,
-        winner_hi: state.highest_bidder_hi,
+        winner: state.highest_bidder,
         payment_amount: state.second_highest_bid,  // Pay second-highest
     }.reveal()
 }

@@ -28,7 +28,7 @@ New to Arcium? Start with Coinflip and progress through the tiers in order. For 
 
 ### Advanced
 
-**[Blackjack](./blackjack/)** - Hidden deck state with base-64 compression (94% size reduction).
+**[Blackjack](./blackjack/)** - Hidden deck state with `Pack<T>` for efficient encrypted storage.
 
 **[Ed25519 Signatures](./ed25519/)** - Distributed key management. Private keys never exist in single location.
 

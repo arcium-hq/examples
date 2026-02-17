@@ -11,13 +11,13 @@ mod circuits {
     }
 
     #[instruction]
-    pub fn init_game(mxe: Mxe) -> Enc<Mxe, GameMoves> {
+    pub fn init_game() -> Enc<Mxe, GameMoves> {
         let game_moves = GameMoves {
             player_a_move: 3, // Moves are 0-2, so 3 is invalid
             player_b_move: 3, // Moves are 0-2, so 3 is invalid
         };
 
-        mxe.from_arcis(game_moves)
+        Mxe::get().from_arcis(game_moves)
     }
 
     pub struct PlayersMove {

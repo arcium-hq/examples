@@ -23,15 +23,13 @@ pub mod rock_paper_scissors {
         id: u64,
         player_a: Pubkey,
         player_b: Pubkey,
-        nonce: u128,
     ) -> Result<()> {
         let game = &mut ctx.accounts.rps_game;
         game.id = id;
         game.player_a = player_a;
         game.player_b = player_b;
-        game.nonce = nonce;
 
-        let args = ArgBuilder::new().plaintext_u128(nonce).build();
+        let args = ArgBuilder::new().build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 

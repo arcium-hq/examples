@@ -26,7 +26,6 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-
 // Helper function to calculate Blackjack hand value
 function calculateHandValue(cards: number[]): {
   value: number;
@@ -64,27 +63,15 @@ function calculateHandValue(cards: number[]): {
   return { value, isSoft };
 }
 
-// Updated decompressHand to use hand size
-function decompressHand(
-  compressedHandValue: bigint,
-  handSize: number
-): number[] {
-  let currentHandValue = compressedHandValue;
+// Unpacks a Pack<[u8; 11]> hand from field elements.
+// Pack stores u8 values at 8-bit boundaries within each field element (26 bytes per element).
+function unpackHand(packed: bigint[], handSize: number): number[] {
+  const fieldElement = packed[0];
   const cards: number[] = [];
-  const numCardSlots = 11; // Max possible slots in u128 encoding
-
-  for (let i = 0; i < numCardSlots; i++) {
-    const card = currentHandValue % BigInt(64); // Get the last 6 bits
-    cards.push(Number(card));
-    currentHandValue >>= BigInt(6); // Shift right by 6 bits
+  for (let i = 0; i < handSize; i++) {
+    cards.push(Number((fieldElement >> BigInt(8 * i)) & 0xffn));
   }
-
-  // Return only the actual cards based on handSize, reversing because they were pushed LSB first
-  // Filter out potential padding/unused card slots (> 51)
-  return cards
-    .slice(0, handSize)
-    .filter((card) => card <= 51)
-    .reverse();
+  return cards;
 }
 
 describe("Blackjack", () => {
@@ -162,8 +149,6 @@ describe("Blackjack", () => {
     const dealerClientNonce = randomBytes(16);
 
     const gameId = BigInt(Math.floor(Math.random() * 1000000));
-    const mxeNonce = randomBytes(16);
-    const mxeAgainNonce = randomBytes(16);
 
     const computationOffsetInit = new anchor.BN(randomBytes(8));
 
@@ -187,8 +172,6 @@ describe("Blackjack", () => {
       .initializeBlackjackGame(
         computationOffsetInit,
         new anchor.BN(gameId.toString()),
-        new anchor.BN(deserializeLE(mxeNonce).toString()),
-        new anchor.BN(deserializeLE(mxeAgainNonce).toString()),
         Array.from(publicKey),
         new anchor.BN(deserializeLE(clientNonce).toString()),
         new anchor.BN(deserializeLE(dealerClientNonce).toString())
@@ -241,14 +224,11 @@ describe("Blackjack", () => {
     );
 
     console.log("Current client nonce:", currentClientNonce);
-    let compressedPlayerHand = cipher.decrypt(
+    let packedPlayerHand = cipher.decrypt(
       [cardsShuffledAndDealtEvent.playerHand],
       currentClientNonce
     );
-    let playerHand = decompressHand(
-      compressedPlayerHand[0],
-      gameState.playerHandSize
-    );
+    let playerHand = unpackHand(packedPlayerHand, gameState.playerHandSize);
     let { value: playerValue, isSoft: playerIsSoft } =
       calculateHandValue(playerHand);
     console.log(
@@ -265,7 +245,7 @@ describe("Blackjack", () => {
       [cardsShuffledAndDealtEvent.dealerFaceUpCard],
       currentDealerClientNonce
     );
-    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0] % BigInt(64));
+    let dealerFaceUpCard = Number(dealerFaceUpCardEncrypted[0]);
     console.log(`Dealer Face Up Card Index: ${dealerFaceUpCard}`);
 
     // --- Player's Turn Loop ---
@@ -349,14 +329,11 @@ describe("Blackjack", () => {
             currentClientNonce = Uint8Array.from(
               playerHitEvent.clientNonce.toArray("le", 16)
             );
-            compressedPlayerHand = cipher.decrypt(
+            packedPlayerHand = cipher.decrypt(
               [playerHitEvent.playerHand],
               currentClientNonce
             );
-            playerHand = decompressHand(
-              compressedPlayerHand[0],
-              gameState.playerHandSize
-            );
+            playerHand = unpackHand(packedPlayerHand, gameState.playerHandSize);
             ({ value: playerValue, isSoft: playerIsSoft } =
               calculateHandValue(playerHand));
             console.log(
@@ -496,12 +473,12 @@ describe("Blackjack", () => {
       const finalDealerNonce = Uint8Array.from(
         dealerPlayEvent.clientNonce.toArray("le", 16)
       );
-      const decryptedDealerHand = cipher.decrypt(
+      const packedDealerHand = cipher.decrypt(
         [dealerPlayEvent.dealerHand],
         finalDealerNonce
       );
-      const dealerHand = decompressHand(
-        decryptedDealerHand[0],
+      const dealerHand = unpackHand(
+        packedDealerHand,
         dealerPlayEvent.dealerHandSize
       );
       const { value: dealerValue } = calculateHandValue(dealerHand);

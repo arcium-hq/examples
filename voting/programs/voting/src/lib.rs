@@ -26,13 +26,11 @@ pub mod voting {
     /// # Arguments
     /// * `id` - Unique identifier for this poll
     /// * `question` - The poll question voters will respond to
-    /// * `nonce` - Cryptographic nonce for initializing encrypted vote counters
     pub fn create_new_poll(
         ctx: Context<CreateNewPoll>,
         computation_offset: u64,
         id: u32,
         question: String,
-        nonce: u128,
     ) -> Result<()> {
         msg!("Creating a new poll");
 
@@ -41,10 +39,9 @@ pub mod voting {
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
         ctx.accounts.poll_acc.authority = ctx.accounts.payer.key();
-        ctx.accounts.poll_acc.nonce = nonce;
         ctx.accounts.poll_acc.vote_state = [[0; 32]; 2];
 
-        let args = ArgBuilder::new().plaintext_u128(nonce).build();
+        let args = ArgBuilder::new().build();
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
