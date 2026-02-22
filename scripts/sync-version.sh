@@ -68,6 +68,14 @@ for EXAMPLE in $EXAMPLES; do
   fi
 done
 
+# 4. Update setup-arcium version in CI workflows
+echo "Updating CI workflows..."
+for WORKFLOW in "$REPO_ROOT"/.github/workflows/*.yaml; do
+  if [ -f "$WORKFLOW" ]; then
+    sed -i '' -E "s|setup-arcium@v[0-9]+\.[0-9]+\.[0-9]+|setup-arcium@v$VERSION|g" "$WORKFLOW"
+  fi
+done
+
 echo ""
 echo "Version updates complete. Now regenerating yarn.lock files..."
 echo ""
