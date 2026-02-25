@@ -8,6 +8,10 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_FIRST_PRICE: u32 =
     comp_def_offset("determine_winner_first_price");
 const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine_winner_vickrey");
 
+// Auction account byte offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16 = 77
+const ENCRYPTED_STATE_OFFSET: u32 = 77;
+const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
+
 declare_id!("CHFR2eD8dmZ5NM7UbwM7nWFVTfWPpdtKfv6H4Bgtha3e");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
@@ -146,10 +150,6 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        // Account offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16 = 77
-        const ENCRYPTED_STATE_OFFSET: u32 = 77;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
-
         let args = ArgBuilder::new()
             .x25519_pubkey(bidder_pubkey)
             .plaintext_u128(nonce)
@@ -246,11 +246,9 @@ pub mod sealed_bid_auction {
             auction.auction_type == AuctionType::FirstPrice,
             ErrorCode::WrongAuctionType
         );
+        require!(auction.bid_count > 0, ErrorCode::NoBids);
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
             .plaintext_u128(auction.state_nonce)
@@ -335,11 +333,9 @@ pub mod sealed_bid_auction {
             auction.auction_type == AuctionType::Vickrey,
             ErrorCode::WrongAuctionType
         );
+        require!(auction.bid_count > 0, ErrorCode::NoBids);
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
             .plaintext_u128(auction.state_nonce)
@@ -816,4 +812,6 @@ pub enum ErrorCode {
     AuctionNotEnded,
     #[msg("Bid count overflow")]
     BidCountOverflow,
+    #[msg("No bids placed")]
+    NoBids,
 }

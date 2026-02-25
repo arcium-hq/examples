@@ -9,7 +9,7 @@ const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
 const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
 const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
-declare_id!("7fJeDSDS5dnCYQWAA4K6FjVyew3c2fH5Ba2cQ9KGcjoo");
+declare_id!("Ku4ygyvbN7UbezR3eNGBJMM5iGdM5dPtb23czFuenMK");
 
 #[arcium_program]
 pub mod blackjack {
@@ -47,11 +47,6 @@ pub mod blackjack {
         blackjack_game.bump = ctx.bumps.blackjack_game;
         blackjack_game.game_id = game_id;
         blackjack_game.player_pubkey = ctx.accounts.payer.key();
-        blackjack_game.player_hand = [0; 32];
-        blackjack_game.dealer_hand = [0; 32];
-        blackjack_game.deck_nonce = 0;
-        blackjack_game.client_nonce = 0;
-        blackjack_game.dealer_nonce = 0;
         blackjack_game.player_enc_pubkey = client_pubkey;
         blackjack_game.game_state = GameState::Initial;
         blackjack_game.player_hand_size = 0;
@@ -254,7 +249,7 @@ pub mod blackjack {
         blackjack_game.player_hand_size += 1;
 
         if is_bust {
-            blackjack_game.game_state = GameState::DealerTurn;
+            blackjack_game.game_state = GameState::Resolving;
             emit!(PlayerBustEvent {
                 client_nonce,
                 game_id: blackjack_game.game_id,
@@ -362,7 +357,7 @@ pub mod blackjack {
         blackjack_game.player_has_stood = true;
 
         if is_bust {
-            blackjack_game.game_state = GameState::DealerTurn;
+            blackjack_game.game_state = GameState::Resolving;
             emit!(PlayerBustEvent {
                 client_nonce,
                 game_id: blackjack_game.game_id,
@@ -445,7 +440,7 @@ pub mod blackjack {
 
         if is_bust {
             // Player bust edge case
-            blackjack_game.game_state = GameState::DealerTurn;
+            blackjack_game.game_state = GameState::Resolving;
             emit!(PlayerBustEvent {
                 client_nonce: blackjack_game.client_nonce,
                 game_id: blackjack_game.game_id,
@@ -453,7 +448,6 @@ pub mod blackjack {
         } else {
             blackjack_game.game_state = GameState::DealerTurn;
             emit!(PlayerStandEvent {
-                is_bust,
                 game_id: blackjack_game.game_id
             });
         }
@@ -617,40 +611,20 @@ pub mod blackjack {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        if result == 0 {
-            // Player busts (dealer wins)
-            emit!(ResultEvent {
-                winner: "Dealer".to_string(),
-                game_id: ctx.accounts.blackjack_game.game_id,
-            });
-        } else if result == 1 {
-            // Dealer busts (player wins)
-            emit!(ResultEvent {
-                winner: "Player".to_string(),
-                game_id: ctx.accounts.blackjack_game.game_id,
-            });
-        } else if result == 2 {
-            // Player wins
-            emit!(ResultEvent {
-                winner: "Player".to_string(),
-                game_id: ctx.accounts.blackjack_game.game_id,
-            });
-        } else if result == 3 {
-            // Dealer wins
-            emit!(ResultEvent {
-                winner: "Dealer".to_string(),
-                game_id: ctx.accounts.blackjack_game.game_id,
-            });
-        } else {
-            // Push (tie)
-            emit!(ResultEvent {
-                winner: "Tie".to_string(),
-                game_id: ctx.accounts.blackjack_game.game_id,
-            });
-        }
+        let winner = match result {
+            0 | 3 => "Dealer",
+            1 | 2 => "Player",
+            _ => "Tie",
+        };
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
+        blackjack_game.game_result = result;
         blackjack_game.game_state = GameState::Resolved;
+
+        emit!(ResultEvent {
+            winner: winner.to_string(),
+            game_id: blackjack_game.game_id,
+        });
 
         Ok(())
     }
@@ -837,7 +811,7 @@ pub struct PlayerHit<'info> {
         bump = blackjack_game.bump,
         constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
+    pub blackjack_game: Box<Account<'info, BlackjackGame>>,
 }
 
 #[callback_accounts("player_hit")]
@@ -953,7 +927,7 @@ pub struct PlayerDoubleDown<'info> {
         bump = blackjack_game.bump,
         constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
+    pub blackjack_game: Box<Account<'info, BlackjackGame>>,
 }
 
 #[callback_accounts("player_double_down")]
@@ -1069,7 +1043,7 @@ pub struct PlayerStand<'info> {
         bump = blackjack_game.bump,
         constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
+    pub blackjack_game: Box<Account<'info, BlackjackGame>>,
 }
 
 #[callback_accounts("player_stand")]
@@ -1185,7 +1159,7 @@ pub struct DealerPlay<'info> {
         bump = blackjack_game.bump,
         constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
+    pub blackjack_game: Box<Account<'info, BlackjackGame>>,
 }
 
 #[callback_accounts("dealer_play")]
@@ -1301,7 +1275,7 @@ pub struct ResolveGame<'info> {
         bump = blackjack_game.bump,
         constraint = blackjack_game.player_pubkey == payer.key() @ ErrorCode::NotAuthorized,
     )]
-    pub blackjack_game: Account<'info, BlackjackGame>,
+    pub blackjack_game: Box<Account<'info, BlackjackGame>>,
 }
 
 #[callback_accounts("resolve_game")]
@@ -1429,7 +1403,6 @@ pub struct PlayerDoubleDownEvent {
 
 #[event]
 pub struct PlayerStandEvent {
-    pub is_bust: bool,
     pub game_id: u64,
 }
 

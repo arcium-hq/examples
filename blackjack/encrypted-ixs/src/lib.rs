@@ -61,20 +61,10 @@ mod circuits {
 
         let mut player_hand = player_hand_ctxt.to_arcis().unpack();
 
-        let can_draw = (player_hand_size as usize) < 11;
-        if can_draw {
-            let card_index = (player_hand_size + dealer_hand_size) as usize;
-            let new_card = deck[card_index];
-            player_hand[player_hand_size as usize] = new_card;
-        }
+        let card_index = (player_hand_size + dealer_hand_size) as usize;
+        player_hand[player_hand_size as usize] = deck[card_index];
 
-        let hand_len = if can_draw {
-            player_hand_size + 1
-        } else {
-            player_hand_size
-        };
-
-        let is_bust = calculate_hand_value(&player_hand, hand_len) > 21;
+        let is_bust = calculate_hand_value(&player_hand, player_hand_size + 1) > 21;
 
         (
             player_hand_ctxt.owner.from_arcis(Pack::new(player_hand)),
@@ -102,20 +92,10 @@ mod circuits {
 
         let mut player_hand = player_hand_ctxt.to_arcis().unpack();
 
-        let can_draw = (player_hand_size as usize) < 11;
-        if can_draw {
-            let card_index = (player_hand_size + dealer_hand_size) as usize;
-            let new_card = deck_array[card_index];
-            player_hand[player_hand_size as usize] = new_card;
-        }
+        let card_index = (player_hand_size + dealer_hand_size) as usize;
+        player_hand[player_hand_size as usize] = deck_array[card_index];
 
-        let hand_len = if can_draw {
-            player_hand_size + 1
-        } else {
-            player_hand_size
-        };
-
-        let is_bust = calculate_hand_value(&player_hand, hand_len) > 21;
+        let is_bust = calculate_hand_value(&player_hand, player_hand_size + 1) > 21;
 
         (
             player_hand_ctxt.owner.from_arcis(Pack::new(player_hand)),

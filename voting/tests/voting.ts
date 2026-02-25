@@ -234,6 +234,64 @@ describe("Voting", () => {
       );
     }
 
+    // Test double-vote prevention: attempt to vote again on the first poll
+    console.log("\n--- Testing double-vote prevention ---");
+    const DOUBLE_VOTE_POLL_ID = POLL_IDS[0];
+    const doubleVoteNonce = randomBytes(16);
+    const doubleVoteCiphertext = cipher.encrypt([BigInt(true)], doubleVoteNonce);
+
+    const doubleVotePollIdBuffer = Buffer.alloc(4);
+    doubleVotePollIdBuffer.writeUInt32LE(DOUBLE_VOTE_POLL_ID);
+    const [doubleVotePollPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("poll"), owner.publicKey.toBuffer(), doubleVotePollIdBuffer],
+      program.programId
+    );
+    const [doubleVoteVoterRecordPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("voter"), doubleVotePollPDA.toBuffer(), owner.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const doubleVoteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+    try {
+      await program.methods
+        .vote(
+          doubleVoteComputationOffset,
+          DOUBLE_VOTE_POLL_ID,
+          Array.from(doubleVoteCiphertext[0]),
+          Array.from(publicKey),
+          new anchor.BN(deserializeLE(doubleVoteNonce).toString())
+        )
+        .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            arciumEnv.arciumClusterOffset,
+            doubleVoteComputationOffset
+          ),
+          clusterAccount: clusterAccount,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(
+            arciumEnv.arciumClusterOffset
+          ),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
+          ),
+          authority: owner.publicKey,
+          pollAcc: doubleVotePollPDA,
+          voterRecord: doubleVoteVoterRecordPDA,
+        })
+        .rpc({
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
+
+      expect.fail("Double vote should have been rejected");
+    } catch (error) {
+      console.log("Double vote correctly rejected:", error.message);
+      expect(error.message).to.include("AlreadyVoted");
+    }
+
     // Reveal results for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];

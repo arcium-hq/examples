@@ -189,21 +189,11 @@ pub mod voting {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
-        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
-        ctx.accounts.poll_acc.nonce = o.nonce;
-
+        // Check VoterRecord BEFORE writing state to prevent double-counting
+        // from racing callbacks
         let voter_record_info = ctx.accounts.voter_record.to_account_info();
         let voter = &ctx.accounts.voter;
         let poll = &ctx.accounts.poll_acc;
-
-        if !voter_record_info.data_is_empty() {
-            return Ok(());
-        }
-
-        require!(
-            *voter_record_info.owner == anchor_lang::system_program::ID,
-            ErrorCode::InvalidVoterRecord
-        );
 
         let (expected_pda, bump) = Pubkey::find_program_address(
             &[b"voter", poll.key().as_ref(), voter.key().as_ref()],
@@ -214,6 +204,18 @@ pub mod voting {
             ErrorCode::InvalidVoterRecord
         );
 
+        if !voter_record_info.data_is_empty() {
+            msg!("vote_callback: VoterRecord already initialized, skipping");
+            return Ok(());
+        }
+
+        // Safe to write state — VoterRecord is uninitialized, so this is
+        // the first callback for this voter
+        ctx.accounts.poll_acc.vote_state = o.ciphertexts;
+        ctx.accounts.poll_acc.nonce = o.nonce;
+
+        voter_record_info.assign(&crate::ID);
+
         let space = 8 + VoterRecord::INIT_SPACE;
         voter_record_info.resize(space)?;
 
@@ -223,13 +225,10 @@ pub mod voting {
             data[8] = bump;
         }
 
-        voter_record_info.assign(&crate::ID);
-
         let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
 
         emit!(VoteEvent {
-            timestamp: current_timestamp,
+            timestamp: clock.unix_timestamp,
         });
 
         Ok(())
@@ -492,7 +491,7 @@ pub struct Vote<'info> {
         bump = poll_acc.bump,
         has_one = authority
     )]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub poll_acc: Box<Account<'info, PollAccount>>,
     /// CHECK: VoterRecord PDA - checked manually in vote().
     /// Pre-funded here, initialized atomically in vote_callback().
     /// This ensures voter isn't locked out if callback fails.

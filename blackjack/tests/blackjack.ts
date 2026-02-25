@@ -109,6 +109,12 @@ describe("Blackjack", () => {
   it("Should play a full blackjack game with state awareness", async () => {
     console.log("Owner address:", owner.publicKey.toBase58());
 
+    // Wait for MXE account to be ready before initializing comp defs
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
     await Promise.all([
@@ -137,10 +143,6 @@ describe("Blackjack", () => {
     // --- Setup Game Cryptography ---
     const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
-    const mxePublicKey = await getMXEPublicKeyWithRetry(
-      provider as anchor.AnchorProvider,
-      program.programId
-    );
 
     console.log("MXE x25519 pubkey is", mxePublicKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
@@ -353,7 +355,7 @@ describe("Blackjack", () => {
           } else {
             console.log("Received PlayerBustEvent.");
             playerBusted = true;
-            expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+            expect(gameState.gameState).to.deep.equal({ resolving: {} });
             console.log("Player BUSTED!");
           }
         } catch (e) {
@@ -413,12 +415,9 @@ describe("Blackjack", () => {
 
         gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
 
-        if ("isBust" in standEvent) {
-          // PlayerStandEvent
-          console.log(
-            `Received PlayerStandEvent. Is Bust reported? ${standEvent.isBust}`
-          );
-          expect(standEvent.isBust).to.be.false;
+        if (!("clientNonce" in standEvent)) {
+          // PlayerStandEvent (no clientNonce field, unlike PlayerBustEvent)
+          console.log("Received PlayerStandEvent.");
           playerStood = true;
           expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
           console.log("Player stands. Proceeding to Dealer's Turn.");
@@ -426,7 +425,7 @@ describe("Blackjack", () => {
           // PlayerBustEvent - player busted during stand calculation
           console.log("Received PlayerBustEvent during stand.");
           playerBusted = true;
-          expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+          expect(gameState.gameState).to.deep.equal({ resolving: {} });
           console.log("Player BUSTED during stand!");
         }
       }
@@ -439,7 +438,7 @@ describe("Blackjack", () => {
 
     // --- Dealer's Turn ---
     gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-    if (gameState.gameState.hasOwnProperty("dealerTurn") && !playerBusted) {
+    if (gameState.gameState.hasOwnProperty("dealerTurn")) {
       console.log("Dealer's Turn...");
       const dealerPlayComputationOffset = new anchor.BN(randomBytes(8));
       const dealerPlayNonce = randomBytes(16);
@@ -504,18 +503,10 @@ describe("Blackjack", () => {
       );
       gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
       expect(gameState.gameState).to.deep.equal({ resolving: {} });
-    } else if (playerBusted) {
-      console.log("Player busted, skipping Dealer's Turn.");
-      console.log(
-        "Manually considering state as Resolving for test flow after player bust."
-      );
     }
 
     gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-    if (
-      gameState.gameState.hasOwnProperty("resolving") ||
-      (playerBusted && gameState.gameState.hasOwnProperty("dealerTurn"))
-    ) {
+    if (gameState.gameState.hasOwnProperty("resolving")) {
       console.log("Resolving Game...");
       const resolveComputationOffset = new anchor.BN(randomBytes(8));
       const resultEventPromise = awaitEvent("resultEvent");
