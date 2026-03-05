@@ -157,6 +157,8 @@ describe("Voting", () => {
 
     // Cast votes for each poll with different outcomes
     const voteOutcomes = [true, false, true]; // Different outcomes for each poll
+    let firstPollPDA: PublicKey;
+    let firstVoterRecordPDA: PublicKey;
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const vote = BigInt(voteOutcomes[i]);
@@ -181,6 +183,11 @@ describe("Voting", () => {
         [Buffer.from("voter"), pollPDA.toBuffer(), owner.publicKey.toBuffer()],
         program.programId
       );
+
+      if (i === 0) {
+        firstPollPDA = pollPDA;
+        firstVoterRecordPDA = voterRecordPDA;
+      }
 
       const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -234,21 +241,11 @@ describe("Voting", () => {
     }
 
     // Test double-vote prevention: attempt to vote again on the first poll
+    // Reuse firstPollPDA and firstVoterRecordPDA derived during the voting loop
     console.log("\n--- Testing double-vote prevention ---");
     const DOUBLE_VOTE_POLL_ID = POLL_IDS[0];
     const doubleVoteNonce = randomBytes(16);
     const doubleVoteCiphertext = cipher.encrypt([BigInt(true)], doubleVoteNonce);
-
-    const doubleVotePollIdBuffer = Buffer.alloc(4);
-    doubleVotePollIdBuffer.writeUInt32LE(DOUBLE_VOTE_POLL_ID);
-    const [doubleVotePollPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("poll"), owner.publicKey.toBuffer(), doubleVotePollIdBuffer],
-      program.programId
-    );
-    const [doubleVoteVoterRecordPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("voter"), doubleVotePollPDA.toBuffer(), owner.publicKey.toBuffer()],
-      program.programId
-    );
 
     const doubleVoteComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -277,8 +274,8 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
           ),
           authority: owner.publicKey,
-          pollAcc: doubleVotePollPDA,
-          voterRecord: doubleVoteVoterRecordPDA,
+          pollAcc: firstPollPDA,
+          voterRecord: firstVoterRecordPDA,
         })
         .rpc({
           preflightCommitment: "confirmed",

@@ -88,12 +88,12 @@ mod circuits {
         player_hand_size: u8,
         dealer_hand_size: u8,
     ) -> (Enc<Shared, Hand>, bool) {
-        let deck_array = deck_ctxt.to_arcis().unpack();
+        let deck = deck_ctxt.to_arcis().unpack();
 
         let mut player_hand = player_hand_ctxt.to_arcis().unpack();
 
         let card_index = (player_hand_size + dealer_hand_size) as usize;
-        player_hand[player_hand_size as usize] = deck_array[card_index];
+        player_hand[player_hand_size as usize] = deck[card_index];
 
         let is_bust = calculate_hand_value(&player_hand, player_hand_size + 1) > 21;
 
