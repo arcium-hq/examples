@@ -49,6 +49,7 @@ Key properties:
 - **Ballot secrecy**: Individual votes remain encrypted throughout the tallying process
 - **Distributed computation**: Arcium nodes jointly compute aggregate tallies
 - **Result accuracy**: Aggregate totals are computed correctly despite processing only encrypted data
+- **Double-vote prevention**: A `VoterRecord` PDA (seeded by poll + voter keys) is initialized via Anchor's `init` constraint in the `vote` instruction — a second vote from the same voter fails because the account already exists
 
 ## Implementation Details
 
@@ -140,20 +141,9 @@ pub fn vote_callback(
         Err(_) => return Err(ErrorCode::AbortedComputation.into()),
     };
 
-    // Prevent double-voting: check if VoterRecord PDA is already initialized
-    let voter_record_info = ctx.accounts.voter_record.to_account_info();
-    if !voter_record_info.data_is_empty() {
-        return Ok(());
-    }
-
-    // ... (PDA ownership and derivation validation)
-
     // Save new encrypted tallies + new nonce
     ctx.accounts.poll_acc.vote_state = o.ciphertexts;
     ctx.accounts.poll_acc.nonce = o.nonce;
-
-    // Initialize VoterRecord PDA to mark this voter as having voted
-    // ... (VoterRecord initialization code)
     Ok(())
 }
 ```

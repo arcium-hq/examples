@@ -439,7 +439,6 @@ pub mod blackjack {
         blackjack_game.player_has_stood = true;
 
         if is_bust {
-            // Player bust edge case
             blackjack_game.game_state = GameState::Resolving;
             emit!(PlayerBustEvent {
                 client_nonce: blackjack_game.client_nonce,
@@ -614,7 +613,8 @@ pub mod blackjack {
         let winner = match result {
             0 | 3 => "Dealer",
             1 | 2 => "Player",
-            _ => "Tie",
+            4 => "Tie",
+            _ => return Err(ErrorCode::InvalidGameResult.into()),
         };
 
         let blackjack_game = &mut ctx.accounts.blackjack_game;
@@ -1440,4 +1440,6 @@ pub enum ErrorCode {
     ClusterNotSet,
     #[msg("Not authorized to perform this action")]
     NotAuthorized,
+    #[msg("Unexpected game result value from computation")]
+    InvalidGameResult,
 }

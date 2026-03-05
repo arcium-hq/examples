@@ -116,7 +116,6 @@ mod circuits {
         let mut dealer = dealer_hand_ctxt.to_arcis().unpack();
         let mut size = dealer_hand_size as usize;
 
-        // Dealer can draw at most 9 additional cards (starting from 2, capped at 11).
         for _ in 0..9 {
             let val = calculate_hand_value(&dealer, size as u8);
             if val < 17 && size < 11 {

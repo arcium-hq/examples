@@ -177,7 +177,6 @@ describe("Voting", () => {
         program.programId
       );
 
-      // Derive voter_record PDA
       const [voterRecordPDA] = PublicKey.findProgramAddressSync(
         [Buffer.from("voter"), pollPDA.toBuffer(), owner.publicKey.toBuffer()],
         program.programId
@@ -289,7 +288,9 @@ describe("Voting", () => {
       expect.fail("Double vote should have been rejected");
     } catch (error) {
       console.log("Double vote correctly rejected:", error.message);
-      expect(error.message).to.include("AlreadyVoted");
+      expect(error.message).to.satisfy(
+        (msg: string) => msg.includes("already in use") || msg.includes("0x0")
+      );
     }
 
     // Reveal results for each poll

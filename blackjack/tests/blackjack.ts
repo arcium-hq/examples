@@ -407,7 +407,6 @@ describe("Blackjack", () => {
           finalizeStandSig
         );
 
-        // Handle both stand and bust events (player might bust during stand calculation)
         const standEvent = await Promise.race([
           playerStandEventPromise,
           playerBustOnStandEventPromise,
@@ -416,13 +415,11 @@ describe("Blackjack", () => {
         gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
 
         if (!("clientNonce" in standEvent)) {
-          // PlayerStandEvent (no clientNonce field, unlike PlayerBustEvent)
           console.log("Received PlayerStandEvent.");
           playerStood = true;
           expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
           console.log("Player stands. Proceeding to Dealer's Turn.");
         } else {
-          // PlayerBustEvent - player busted during stand calculation
           console.log("Received PlayerBustEvent during stand.");
           playerBusted = true;
           expect(gameState.gameState).to.deep.equal({ resolving: {} });

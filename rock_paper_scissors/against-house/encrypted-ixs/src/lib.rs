@@ -13,9 +13,6 @@ mod circuits {
     pub fn play_rps(player_move_ctxt: Enc<Shared, PlayerMove>) -> u8 {
         let player_move = player_move_ctxt.to_arcis();
 
-        // Sample a near-uniform house move in {0,1,2} using rejection sampling over 2 random bits.
-        // 00 -> 0, 01 -> 1, 10 -> 2, 11 -> reject and resample.
-        // Fixed iterations bound runtime; the fallback introduces negligible bias (<= (1/4)^16).
         let mut house_move: u8 = 0;
         let mut selected = false;
 
@@ -23,7 +20,6 @@ mod circuits {
             let b0 = ArcisRNG::bool();
             let b1 = ArcisRNG::bool();
 
-            // Map (b0,b1) to 0..3 uniformly.
             let candidate: u8 = if b0 {
                 if b1 {
                     3
