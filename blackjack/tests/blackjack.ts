@@ -117,28 +117,19 @@ describe("Blackjack", () => {
 
     // --- Initialize Computation Definitions ---
     console.log("Initializing computation definitions...");
-    await Promise.all([
-      initShuffleAndDealCardsCompDef(program as any, owner).then((sig) =>
-        console.log("Shuffle/Deal CompDef Init Sig:", sig)
-      ),
-      initPlayerHitCompDef(program as any, owner).then((sig) =>
-        console.log("Player Hit CompDef Init Sig:", sig)
-      ),
-      initPlayerStandCompDef(program as any, owner).then((sig) =>
-        console.log("Player Stand CompDef Init Sig:", sig)
-      ),
-      initPlayerDoubleDownCompDef(program as any, owner).then((sig) =>
-        console.log("Player DoubleDown CompDef Init Sig:", sig)
-      ),
-      initDealerPlayCompDef(program as any, owner).then((sig) =>
-        console.log("Dealer Play CompDef Init Sig:", sig)
-      ),
-      initResolveGameCompDef(program as any, owner).then((sig) =>
-        console.log("Resolve Game CompDef Init Sig:", sig)
-      ),
-    ]);
+    const inits = [
+      { name: "Shuffle/Deal", fn: initShuffleAndDealCardsCompDef },
+      { name: "Player Hit", fn: initPlayerHitCompDef },
+      { name: "Player Stand", fn: initPlayerStandCompDef },
+      { name: "Player DoubleDown", fn: initPlayerDoubleDownCompDef },
+      { name: "Dealer Play", fn: initDealerPlayCompDef },
+      { name: "Resolve Game", fn: initResolveGameCompDef },
+    ];
+    for (const { name, fn } of inits) {
+      const sig = await fn(program as any, owner);
+      console.log(`${name} CompDef Init Sig:`, sig);
+    }
     console.log("All computation definitions initialized.");
-    await new Promise((res) => setTimeout(res, 2000));
 
     // --- Setup Game Cryptography ---
     const privateKey = x25519.utils.randomSecretKey();
@@ -198,7 +189,10 @@ describe("Blackjack", () => {
         blackjackGame: blackjackGamePDA,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
     console.log("Initialize game TX Signature:", initGameSig);
 
     console.log("Waiting for shuffle/deal computation finalization...");
@@ -303,7 +297,10 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+          .rpc({
+            skipPreflight: true,
+            commitment: "confirmed",
+          });
         console.log("Player Hit TX Signature:", playerHitSig);
 
         console.log("Waiting for player hit computation finalization...");
@@ -392,7 +389,10 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+          .rpc({
+            skipPreflight: true,
+            commitment: "confirmed",
+          });
         console.log("Player Stand TX Signature:", playerStandSig);
 
         console.log("Waiting for player stand computation finalization...");
@@ -465,7 +465,10 @@ describe("Blackjack", () => {
           blackjackGame: blackjackGamePDA,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log("Dealer Play TX Signature:", dealerPlaySig);
 
       console.log("Waiting for dealer play computation finalization...");
@@ -529,7 +532,10 @@ describe("Blackjack", () => {
           payer: owner.publicKey,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log("Resolve Game TX Signature:", resolveSig);
 
       console.log("Waiting for resolve game computation finalization...");
@@ -600,7 +606,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
     await uploadCircuit(
@@ -652,7 +661,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_hit.arcis");
     await uploadCircuit(
@@ -704,7 +716,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_stand.arcis");
     await uploadCircuit(
@@ -756,7 +771,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
     await uploadCircuit(
@@ -808,7 +826,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
     await uploadCircuit(
@@ -860,7 +881,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
     await uploadCircuit(

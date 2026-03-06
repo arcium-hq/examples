@@ -432,7 +432,7 @@ pub struct Vote<'info> {
         seeds = [b"voter", poll_acc.key().as_ref(), payer.key().as_ref()],
         bump,
     )]
-    pub voter_record: Account<'info, VoterRecord>,
+    pub voter_record: Box<Account<'info, VoterRecord>>,
 }
 
 #[callback_accounts("vote")]

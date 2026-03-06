@@ -435,7 +435,7 @@ pub struct CreateAuction<'info> {
         seeds = [b"auction", authority.key().as_ref()],
         bump,
     )]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -496,7 +496,7 @@ pub struct PlaceBid<'info> {
     #[account(mut)]
     pub bidder: Signer<'info>,
     #[account(mut)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -568,7 +568,7 @@ pub struct DetermineWinnerFirstPrice<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority @ ErrorCode::Unauthorized)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -629,7 +629,7 @@ pub struct DetermineWinnerVickrey<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority @ ErrorCode::Unauthorized)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,

@@ -57,16 +57,22 @@ describe("Voting", () => {
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
   const awaitEvent = async <E extends keyof Event>(
-    eventName: E
+    eventName: E,
+    timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[E]>((res) => {
+    let timeoutId: NodeJS.Timeout;
+    const event = await new Promise<Event[E]>((res, rej) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        clearTimeout(timeoutId);
         res(event);
       });
+      timeoutId = setTimeout(() => {
+        program.removeEventListener(listenerId);
+        rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     await program.removeEventListener(listenerId);
-
     return event;
   };
 
@@ -140,7 +146,6 @@ describe("Voting", () => {
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
 
@@ -220,7 +225,6 @@ describe("Voting", () => {
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
       console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
@@ -245,7 +249,10 @@ describe("Voting", () => {
     console.log("\n--- Testing double-vote prevention ---");
     const DOUBLE_VOTE_POLL_ID = POLL_IDS[0];
     const doubleVoteNonce = randomBytes(16);
-    const doubleVoteCiphertext = cipher.encrypt([BigInt(true)], doubleVoteNonce);
+    const doubleVoteCiphertext = cipher.encrypt(
+      [BigInt(true)],
+      doubleVoteNonce
+    );
 
     const doubleVoteComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -319,7 +326,6 @@ describe("Voting", () => {
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
       console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);

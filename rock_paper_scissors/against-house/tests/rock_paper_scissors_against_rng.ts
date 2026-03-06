@@ -34,16 +34,22 @@ describe("RockPaperScissorsAgainstRng", () => {
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
   const awaitEvent = async <E extends keyof Event>(
-    eventName: E
+    eventName: E,
+    timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[E]>((res) => {
+    let timeoutId: NodeJS.Timeout;
+    const event = await new Promise<Event[E]>((res, rej) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        clearTimeout(timeoutId);
         res(event);
       });
+      timeoutId = setTimeout(() => {
+        program.removeEventListener(listenerId);
+        rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     await program.removeEventListener(listenerId);
-
     return event;
   };
 
@@ -105,7 +111,10 @@ describe("RockPaperScissorsAgainstRng", () => {
           Buffer.from(getCompDefAccOffset("play_rps")).readUInt32LE()
         ),
       })
-      .rpc({ preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
     console.log("Queue sig is ", queueSig);
 
     const finalizeSig = await awaitComputationFinalization(
