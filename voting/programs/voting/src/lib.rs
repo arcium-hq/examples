@@ -374,7 +374,7 @@ pub struct Vote<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
         address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)

@@ -142,7 +142,7 @@ describe("SealedBidAuction", () => {
           createComputationOffset,
           { firstPrice: {} }, // AuctionType::FirstPrice
           new anchor.BN(100), // min_bid: 100 lamports
-          new anchor.BN(Math.floor(Date.now() / 1000) + 10) // end_time: 10 seconds from now
+          new anchor.BN(Math.floor(Date.now() / 1000) + 60) // end_time: 60 seconds from now
         )
         .accountsPartial({
           authority: owner.publicKey,
@@ -247,7 +247,7 @@ describe("SealedBidAuction", () => {
 
       // Step 3: Close auction
       console.log("\nStep 3: Waiting for auction to end...");
-      await new Promise((resolve) => setTimeout(resolve, 12000));
+      await new Promise((resolve) => setTimeout(resolve, 65000));
       console.log("Closing auction...");
       const auctionClosedPromise = awaitEvent("auctionClosedEvent");
 
@@ -374,7 +374,7 @@ describe("SealedBidAuction", () => {
           createComputationOffset,
           { vickrey: {} }, // AuctionType::Vickrey
           new anchor.BN(50), // min_bid: 50 lamports
-          new anchor.BN(Math.floor(Date.now() / 1000) + 10) // end_time: 10 seconds from now
+          new anchor.BN(Math.floor(Date.now() / 1000) + 60) // end_time: 60 seconds from now
         )
         .accountsPartial({
           authority: vickreyAuthority.publicKey,
@@ -535,7 +535,7 @@ describe("SealedBidAuction", () => {
 
       // Step 4: Close auction
       console.log("\nStep 4: Waiting for auction to end...");
-      await new Promise((resolve) => setTimeout(resolve, 12000));
+      await new Promise((resolve) => setTimeout(resolve, 65000));
       console.log("Closing Vickrey auction...");
       const auctionClosedPromise = awaitEvent("auctionClosedEvent");
 
