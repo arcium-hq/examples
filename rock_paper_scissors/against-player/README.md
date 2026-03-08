@@ -80,28 +80,28 @@ GameMoves { player_a_move: 3, player_b_move: 3 }  // Both "empty"
 **Phase 2 - Player submits move** (inside MPC):
 ```rust
 pub fn player_move(
-    players_move: Enc<Shared, PlayersMove>,
-    game: Enc<Mxe, GameMoves>,
+    players_move_ctxt: Enc<Shared, PlayersMove>,
+    game_ctxt: Enc<Mxe, GameMoves>,
 ) -> Enc<Mxe, GameMoves> {
-    let input = players_move.to_arcis();
-    let mut game = game.to_arcis();
+    let players_move = players_move_ctxt.to_arcis();
+    let mut game_moves = game_ctxt.to_arcis();
 
     // Validate: player hasn't moved yet (3 = invalid move, used as "empty" marker)
-    if input.player == 0 && game.player_a_move == 3 && input.player_move < 3 {
-        game.player_a_move = input.player_move;  // Update encrypted state
+    if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3 {
+        game_moves.player_a_move = players_move.player_move;  // Update encrypted state
     }
     // Similar logic for player B...
 
-    game.owner.from_arcis(game)  // Return updated encrypted moves
+    game_ctxt.owner.from_arcis(game_moves)  // Return updated encrypted moves
 }
 ```
 
 **Phase 3 - Comparison** (only after both submitted):
 ```rust
-pub fn compare_moves(game: Enc<Mxe, GameMoves>) -> u8 {
-    let moves = game.to_arcis();
+pub fn compare_moves(game_ctxt: Enc<Mxe, GameMoves>) -> u8 {
+    let game_moves = game_ctxt.to_arcis();
 
-    if moves.player_a_move == 3 || moves.player_b_move == 3 {
+    if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
         return 3;  // Error: incomplete game
     }
 
