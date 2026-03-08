@@ -60,7 +60,7 @@ pub mod sealed_bid_auction {
         computation_offset: u64,
         auction_type: AuctionType,
         min_bid: u64,
-        end_time: i64,
+        duration: i64,
     ) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         auction.bump = ctx.bumps.auction;
@@ -68,7 +68,8 @@ pub mod sealed_bid_auction {
         auction.auction_type = auction_type;
         auction.status = AuctionStatus::Open;
         auction.min_bid = min_bid;
-        auction.end_time = end_time;
+        let clock = Clock::get()?;
+        auction.end_time = clock.unix_timestamp + duration;
         auction.bid_count = 0;
         auction.encrypted_state = [[0u8; 32]; 5];
 

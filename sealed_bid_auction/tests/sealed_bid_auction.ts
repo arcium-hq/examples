@@ -51,17 +51,39 @@ describe("SealedBidAuction", () => {
   const provider = anchor.getProvider();
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
+
+  async function getValidatorTimestamp(
+    connection: anchor.web3.Connection
+  ): Promise<number> {
+    const slot = await connection.getSlot("confirmed");
+    const blockTime = await connection.getBlockTime(slot);
+    if (blockTime === null) {
+      throw new Error("Could not fetch block time from validator");
+    }
+    return blockTime;
+  }
+
   const awaitEvent = async <E extends keyof Event>(
     eventName: E,
+    auctionKey?: PublicKey,
     timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
     let timeoutId: NodeJS.Timeout;
     const event = await new Promise<Event[E]>((res, rej) => {
-      listenerId = program.addEventListener(eventName, (event) => {
-        clearTimeout(timeoutId);
-        res(event);
-      });
+      listenerId = program.addEventListener(
+        eventName,
+        (event: Record<string, unknown>) => {
+          if (
+            auctionKey &&
+            event.auction instanceof PublicKey &&
+            !event.auction.equals(auctionKey)
+          )
+            return;
+          clearTimeout(timeoutId);
+          res(event as Event[E]);
+        }
+      );
       timeoutId = setTimeout(() => {
         program.removeEventListener(listenerId);
         rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
@@ -129,7 +151,6 @@ describe("SealedBidAuction", () => {
 
       // Step 1: Create First-Price Auction
       console.log("Step 1: Creating first-price auction...");
-      const auctionCreatedPromise = awaitEvent("auctionCreatedEvent");
       const createComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const [auctionPDA] = PublicKey.findProgramAddressSync(
@@ -137,12 +158,17 @@ describe("SealedBidAuction", () => {
         program.programId
       );
 
+      const auctionCreatedPromise = awaitEvent(
+        "auctionCreatedEvent",
+        auctionPDA
+      );
+
       const createSig = await program.methods
         .createAuction(
           createComputationOffset,
           { firstPrice: {} }, // AuctionType::FirstPrice
           new anchor.BN(100), // min_bid: 100 lamports
-          new anchor.BN(Math.floor(Date.now() / 1000) + 60) // end_time: 60 seconds from now
+          new anchor.BN(120) // duration: 120 seconds
         )
         .accountsPartial({
           authority: owner.publicKey,
@@ -189,7 +215,7 @@ describe("SealedBidAuction", () => {
 
       // Step 2: Place a bid
       console.log("\nStep 2: Placing bid of 500 lamports...");
-      const bidPlacedPromise = awaitEvent("bidPlacedEvent");
+      const bidPlacedPromise = awaitEvent("bidPlacedEvent", auctionPDA);
       const bidComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const bidAmount = BigInt(500);
@@ -247,9 +273,19 @@ describe("SealedBidAuction", () => {
 
       // Step 3: Close auction
       console.log("\nStep 3: Waiting for auction to end...");
-      await new Promise((resolve) => setTimeout(resolve, 65000));
+      const auctionAccount = await program.account.auction.fetch(auctionPDA);
+      const endTime = auctionAccount.endTime.toNumber();
+      while (true) {
+        const currentTime = await getValidatorTimestamp(provider.connection);
+        if (currentTime >= endTime) break;
+        const remaining = endTime - currentTime;
+        console.log(
+          `   Validator clock: ${currentTime}, end_time: ${endTime}, waiting ${remaining}s...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
       console.log("Closing auction...");
-      const auctionClosedPromise = awaitEvent("auctionClosedEvent");
+      const auctionClosedPromise = awaitEvent("auctionClosedEvent", auctionPDA);
 
       const closeSig = await program.methods
         .closeAuction()
@@ -266,7 +302,10 @@ describe("SealedBidAuction", () => {
 
       // Step 4: Determine winner (first-price)
       console.log("\nStep 4: Determining winner (first-price)...");
-      const auctionResolvedPromise = awaitEvent("auctionResolvedEvent");
+      const auctionResolvedPromise = awaitEvent(
+        "auctionResolvedEvent",
+        auctionPDA
+      );
       const resolveComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const resolveSig = await program.methods
@@ -361,7 +400,6 @@ describe("SealedBidAuction", () => {
 
       // Step 1: Create Vickrey Auction
       console.log("Step 1: Creating Vickrey auction...");
-      const auctionCreatedPromise = awaitEvent("auctionCreatedEvent");
       const createComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const [vickreyAuctionPDA] = PublicKey.findProgramAddressSync(
@@ -369,12 +407,17 @@ describe("SealedBidAuction", () => {
         program.programId
       );
 
+      const auctionCreatedPromise = awaitEvent(
+        "auctionCreatedEvent",
+        vickreyAuctionPDA
+      );
+
       const createSig = await program.methods
         .createAuction(
           createComputationOffset,
           { vickrey: {} }, // AuctionType::Vickrey
           new anchor.BN(50), // min_bid: 50 lamports
-          new anchor.BN(Math.floor(Date.now() / 1000) + 60) // end_time: 60 seconds from now
+          new anchor.BN(120) // duration: 120 seconds
         )
         .accountsPartial({
           authority: vickreyAuthority.publicKey,
@@ -420,7 +463,7 @@ describe("SealedBidAuction", () => {
 
       // Step 2: Place first bid (1000 lamports)
       console.log("\nStep 2: Placing first bid of 1000 lamports...");
-      const bidPlaced1Promise = awaitEvent("bidPlacedEvent");
+      const bidPlaced1Promise = awaitEvent("bidPlacedEvent", vickreyAuctionPDA);
       const bid1ComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const bid1Amount = BigInt(1000);
@@ -474,7 +517,7 @@ describe("SealedBidAuction", () => {
 
       // Step 3: Place second bid (700 lamports) - this becomes second-highest
       console.log("\nStep 3: Placing second bid of 700 lamports...");
-      const bidPlaced2Promise = awaitEvent("bidPlacedEvent");
+      const bidPlaced2Promise = awaitEvent("bidPlacedEvent", vickreyAuctionPDA);
       const bid2ComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       // Use same bidder but different bid amount
@@ -535,9 +578,24 @@ describe("SealedBidAuction", () => {
 
       // Step 4: Close auction
       console.log("\nStep 4: Waiting for auction to end...");
-      await new Promise((resolve) => setTimeout(resolve, 65000));
+      const vickreyAuctionAccount = await program.account.auction.fetch(
+        vickreyAuctionPDA
+      );
+      const vickreyEndTime = vickreyAuctionAccount.endTime.toNumber();
+      while (true) {
+        const currentTime = await getValidatorTimestamp(provider.connection);
+        if (currentTime >= vickreyEndTime) break;
+        const remaining = vickreyEndTime - currentTime;
+        console.log(
+          `   Validator clock: ${currentTime}, end_time: ${vickreyEndTime}, waiting ${remaining}s...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
       console.log("Closing Vickrey auction...");
-      const auctionClosedPromise = awaitEvent("auctionClosedEvent");
+      const auctionClosedPromise = awaitEvent(
+        "auctionClosedEvent",
+        vickreyAuctionPDA
+      );
 
       const closeSig = await program.methods
         .closeAuction()
@@ -555,7 +613,10 @@ describe("SealedBidAuction", () => {
 
       // Step 5: Determine winner (Vickrey)
       console.log("\nStep 5: Determining winner (Vickrey)...");
-      const auctionResolvedPromise = awaitEvent("auctionResolvedEvent");
+      const auctionResolvedPromise = awaitEvent(
+        "auctionResolvedEvent",
+        vickreyAuctionPDA
+      );
       const resolveComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
       const resolveSig = await program.methods
