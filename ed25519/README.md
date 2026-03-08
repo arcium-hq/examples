@@ -44,12 +44,12 @@ Each MPC node holds a share of the private key and executes a distributed signin
 
 ```rust
 pub fn verify_signature(
-    verifying_key_compressed_enc: Enc<Shared, CompressedVerifyingKey>,
+    verifying_key_enc: Enc<Shared, Pack<VerifyingKey>>,
     message: [u8; 5],
     signature: [u8; 64],
     observer: Shared,
 ) -> Enc<Shared, bool> {
-    let verifying_key = VerifyingKey::from_compressed(verifying_key_compressed_enc.to_arcis());
+    let verifying_key = verifying_key_enc.to_arcis().unpack();
     let signature = ArcisEd25519Signature::from_bytes(signature);
     let is_valid = verifying_key.verify(&message, &signature);
     observer.from_arcis(is_valid)
