@@ -78,9 +78,9 @@ pub fn share_patient_data(
 pub struct PatientData {
     patient_id: u64,
     age: u8,
-    gender: u8,
+    gender: bool,
     blood_type: u8,
-    weight: u64,
+    weight: u16,
     height: u16,
     allergies: [bool; 5],
 }
