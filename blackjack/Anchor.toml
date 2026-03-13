@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-blackjack = "7fJeDSDS5dnCYQWAA4K6FjVyew3c2fH5Ba2cQ9KGcjoo"
+blackjack = "Ku4ygyvbN7UbezR3eNGBJMM5iGdM5dPtb23czFuenMK"
 
 [registry]
 url = "https://api.apr.dev"
@@ -20,3 +20,5 @@ test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
 
 [test]
 startup_wait = 20000
+shutdown_wait = 2000
+upgradeable = false
