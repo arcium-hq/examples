@@ -36,16 +36,22 @@ describe("ShareMedicalRecords", () => {
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
   const awaitEvent = async <E extends keyof Event>(
-    eventName: E
+    eventName: E,
+    timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[E]>((res) => {
+    let timeoutId: NodeJS.Timeout;
+    const event = await new Promise<Event[E]>((res, rej) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        clearTimeout(timeoutId);
         res(event);
       });
+      timeoutId = setTimeout(() => {
+        program.removeEventListener(listenerId);
+        rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     await program.removeEventListener(listenerId);
-
     return event;
   };
 

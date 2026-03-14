@@ -49,6 +49,7 @@ Key properties:
 - **Ballot secrecy**: Individual votes remain encrypted throughout the tallying process
 - **Distributed computation**: Arcium nodes jointly compute aggregate tallies
 - **Result accuracy**: Aggregate totals are computed correctly despite processing only encrypted data
+- **Double-vote prevention**: A `VoterRecord` PDA (seeded by poll + voter keys) is initialized via Anchor's `init` constraint in the `vote` instruction — a second vote from the same voter fails because the account already exists
 
 ## Implementation Details
 

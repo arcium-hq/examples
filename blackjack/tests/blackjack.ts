@@ -109,38 +109,31 @@ describe("Blackjack", () => {
   it("Should play a full blackjack game with state awareness", async () => {
     console.log("Owner address:", owner.publicKey.toBase58());
 
-    // --- Initialize Computation Definitions ---
-    console.log("Initializing computation definitions...");
-    await Promise.all([
-      initShuffleAndDealCardsCompDef(program as any, owner).then((sig) =>
-        console.log("Shuffle/Deal CompDef Init Sig:", sig)
-      ),
-      initPlayerHitCompDef(program as any, owner).then((sig) =>
-        console.log("Player Hit CompDef Init Sig:", sig)
-      ),
-      initPlayerStandCompDef(program as any, owner).then((sig) =>
-        console.log("Player Stand CompDef Init Sig:", sig)
-      ),
-      initPlayerDoubleDownCompDef(program as any, owner).then((sig) =>
-        console.log("Player DoubleDown CompDef Init Sig:", sig)
-      ),
-      initDealerPlayCompDef(program as any, owner).then((sig) =>
-        console.log("Dealer Play CompDef Init Sig:", sig)
-      ),
-      initResolveGameCompDef(program as any, owner).then((sig) =>
-        console.log("Resolve Game CompDef Init Sig:", sig)
-      ),
-    ]);
-    console.log("All computation definitions initialized.");
-    await new Promise((res) => setTimeout(res, 2000));
-
-    // --- Setup Game Cryptography ---
-    const privateKey = x25519.utils.randomSecretKey();
-    const publicKey = x25519.getPublicKey(privateKey);
+    // Wait for MXE account to be ready before initializing comp defs
     const mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId
     );
+
+    // --- Initialize Computation Definitions ---
+    console.log("Initializing computation definitions...");
+    const inits = [
+      { name: "Shuffle/Deal", fn: initShuffleAndDealCardsCompDef },
+      { name: "Player Hit", fn: initPlayerHitCompDef },
+      { name: "Player Stand", fn: initPlayerStandCompDef },
+      { name: "Player DoubleDown", fn: initPlayerDoubleDownCompDef },
+      { name: "Dealer Play", fn: initDealerPlayCompDef },
+      { name: "Resolve Game", fn: initResolveGameCompDef },
+    ];
+    for (const { name, fn } of inits) {
+      const sig = await fn(program as any, owner);
+      console.log(`${name} CompDef Init Sig:`, sig);
+    }
+    console.log("All computation definitions initialized.");
+
+    // --- Setup Game Cryptography ---
+    const privateKey = x25519.utils.randomSecretKey();
+    const publicKey = x25519.getPublicKey(privateKey);
 
     console.log("MXE x25519 pubkey is", mxePublicKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
@@ -196,7 +189,10 @@ describe("Blackjack", () => {
         blackjackGame: blackjackGamePDA,
       })
       .signers([owner])
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
     console.log("Initialize game TX Signature:", initGameSig);
 
     console.log("Waiting for shuffle/deal computation finalization...");
@@ -265,7 +261,9 @@ describe("Blackjack", () => {
 
       // Basic Strategy: Hit on 16 or less, Stand on 17 or more. Hit soft 17.
       let action: "hit" | "stand" = "stand";
-      if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
+      if (gameState.playerHandSize >= 11) {
+        action = "stand";
+      } else if (playerValue < 17 || (playerValue === 17 && playerIsSoft)) {
         action = "hit";
       }
 
@@ -299,7 +297,10 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+          .rpc({
+            skipPreflight: true,
+            commitment: "confirmed",
+          });
         console.log("Player Hit TX Signature:", playerHitSig);
 
         console.log("Waiting for player hit computation finalization...");
@@ -343,15 +344,15 @@ describe("Blackjack", () => {
             );
 
             if (playerValue > 21) {
-              console.error(
-                "ERROR: Bust detected after PlayerHitEvent, expected PlayerBustEvent!"
-              );
-              playerBusted = true;
+              expect(
+                playerValue,
+                "Bust detected after PlayerHitEvent, expected PlayerBustEvent"
+              ).to.be.at.most(21);
             }
           } else {
             console.log("Received PlayerBustEvent.");
             playerBusted = true;
-            expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+            expect(gameState.gameState).to.deep.equal({ resolving: {} });
             console.log("Player BUSTED!");
           }
         } catch (e) {
@@ -362,6 +363,7 @@ describe("Blackjack", () => {
         console.log("Player decides to STAND.");
         const playerStandComputationOffset = new anchor.BN(randomBytes(8));
         const playerStandEventPromise = awaitEvent("playerStandEvent");
+        const playerBustOnStandEventPromise = awaitEvent("playerBustEvent");
 
         const playerStandSig = await program.methods
           .playerStand(
@@ -387,7 +389,10 @@ describe("Blackjack", () => {
             payer: owner.publicKey,
           })
           .signers([owner])
-          .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+          .rpc({
+            skipPreflight: true,
+            commitment: "confirmed",
+          });
         console.log("Player Stand TX Signature:", playerStandSig);
 
         console.log("Waiting for player stand computation finalization...");
@@ -402,16 +407,24 @@ describe("Blackjack", () => {
           finalizeStandSig
         );
 
-        const playerStandEvent = await playerStandEventPromise;
-        console.log(
-          `Received PlayerStandEvent. Is Bust reported? ${playerStandEvent.isBust}`
-        );
-        expect(playerStandEvent.isBust).to.be.false;
+        const standEvent = await Promise.race([
+          playerStandEventPromise,
+          playerBustOnStandEventPromise,
+        ]);
 
-        playerStood = true;
         gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-        expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
-        console.log("Player stands. Proceeding to Dealer's Turn.");
+
+        if (!("clientNonce" in standEvent)) {
+          console.log("Received PlayerStandEvent.");
+          playerStood = true;
+          expect(gameState.gameState).to.deep.equal({ dealerTurn: {} });
+          console.log("Player stands. Proceeding to Dealer's Turn.");
+        } else {
+          console.log("Received PlayerBustEvent during stand.");
+          playerBusted = true;
+          expect(gameState.gameState).to.deep.equal({ resolving: {} });
+          console.log("Player BUSTED during stand!");
+        }
       }
 
       if (!playerBusted && !playerStood) {
@@ -452,7 +465,10 @@ describe("Blackjack", () => {
           blackjackGame: blackjackGamePDA,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log("Dealer Play TX Signature:", dealerPlaySig);
 
       console.log("Waiting for dealer play computation finalization...");
@@ -487,18 +503,10 @@ describe("Blackjack", () => {
       );
       gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
       expect(gameState.gameState).to.deep.equal({ resolving: {} });
-    } else if (playerBusted) {
-      console.log("Player busted, skipping Dealer's Turn.");
-      console.log(
-        "Manually considering state as Resolving for test flow after player bust."
-      );
     }
 
     gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
-    if (
-      gameState.gameState.hasOwnProperty("resolving") ||
-      (playerBusted && gameState.gameState.hasOwnProperty("dealerTurn"))
-    ) {
+    if (gameState.gameState.hasOwnProperty("resolving")) {
       console.log("Resolving Game...");
       const resolveComputationOffset = new anchor.BN(randomBytes(8));
       const resultEventPromise = awaitEvent("resultEvent");
@@ -524,7 +532,10 @@ describe("Blackjack", () => {
           payer: owner.publicKey,
         })
         .signers([owner])
-        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+        .rpc({
+          skipPreflight: true,
+          commitment: "confirmed",
+        });
       console.log("Resolve Game TX Signature:", resolveSig);
 
       console.log("Waiting for resolve game computation finalization...");
@@ -595,7 +606,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/shuffle_and_deal_cards.arcis");
     await uploadCircuit(
@@ -647,7 +661,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_hit.arcis");
     await uploadCircuit(
@@ -699,7 +716,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_stand.arcis");
     await uploadCircuit(
@@ -751,7 +771,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/player_double_down.arcis");
     await uploadCircuit(
@@ -803,7 +826,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/dealer_play.arcis");
     await uploadCircuit(
@@ -855,7 +881,10 @@ describe("Blackjack", () => {
         mxeAccount,
         addressLookupTable: lutAddress,
       })
-      .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     const rawCircuit = fs.readFileSync("build/resolve_game.arcis");
     await uploadCircuit(

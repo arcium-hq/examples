@@ -13,7 +13,7 @@ mod circuits {
         pub highest_bid: u64,
         pub highest_bidder: SerializedSolanaPublicKey,
         pub second_highest_bid: u64,
-        pub bid_count: u8,
+        pub bid_count: u16,
     }
 
     pub struct AuctionResult {

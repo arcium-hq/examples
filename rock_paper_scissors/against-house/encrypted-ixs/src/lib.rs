@@ -13,20 +13,31 @@ mod circuits {
     pub fn play_rps(player_move_ctxt: Enc<Shared, PlayerMove>) -> u8 {
         let player_move = player_move_ctxt.to_arcis();
 
-        let first_bit = ArcisRNG::bool();
-        let second_bit = ArcisRNG::bool();
+        let mut house_move: u8 = 0;
+        let mut selected = false;
 
-        let house_move = if first_bit {
-            if second_bit {
-                0
+        for _ in 0..16 {
+            let b0 = ArcisRNG::bool();
+            let b1 = ArcisRNG::bool();
+
+            let candidate: u8 = if b0 {
+                if b1 {
+                    3
+                } else {
+                    2
+                }
+            } else if b1 {
+                1
             } else {
-                2
-            }
-        } else if second_bit {
-            1
-        } else {
-            0
-        };
+                0
+            };
+
+            let candidate_valid = candidate < 3;
+            let take = (!selected) & candidate_valid;
+
+            house_move = if take { candidate } else { house_move };
+            selected = selected | candidate_valid;
+        }
 
         // 0 - tie, 1 - player wins, 2 - house wins, 3 - invalid move
         let result = if player_move.player_move > 2 {

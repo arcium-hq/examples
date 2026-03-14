@@ -8,6 +8,10 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_FIRST_PRICE: u32 =
     comp_def_offset("determine_winner_first_price");
 const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine_winner_vickrey");
 
+// Auction account byte offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16 = 77
+const ENCRYPTED_STATE_OFFSET: u32 = 77;
+const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
+
 declare_id!("CHFR2eD8dmZ5NM7UbwM7nWFVTfWPpdtKfv6H4Bgtha3e");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
@@ -56,7 +60,7 @@ pub mod sealed_bid_auction {
         computation_offset: u64,
         auction_type: AuctionType,
         min_bid: u64,
-        end_time: i64,
+        duration: i64,
     ) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         auction.bump = ctx.bumps.auction;
@@ -64,7 +68,8 @@ pub mod sealed_bid_auction {
         auction.auction_type = auction_type;
         auction.status = AuctionStatus::Open;
         auction.min_bid = min_bid;
-        auction.end_time = end_time;
+        let clock = Clock::get()?;
+        auction.end_time = clock.unix_timestamp + duration;
         auction.bid_count = 0;
         auction.encrypted_state = [[0u8; 32]; 5];
 
@@ -139,12 +144,12 @@ pub mod sealed_bid_auction {
             auction.status == AuctionStatus::Open,
             ErrorCode::AuctionNotOpen
         );
+        require!(
+            Clock::get()?.unix_timestamp < auction.end_time,
+            ErrorCode::AuctionEnded
+        );
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-        // Account offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16 = 76
-        const ENCRYPTED_STATE_OFFSET: u32 = 76;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
             .x25519_pubkey(bidder_pubkey)
@@ -196,7 +201,10 @@ pub mod sealed_bid_auction {
         let auction = &mut ctx.accounts.auction;
         auction.encrypted_state = o.ciphertexts;
         auction.state_nonce = o.nonce;
-        auction.bid_count += 1;
+        auction.bid_count = auction
+            .bid_count
+            .checked_add(1)
+            .ok_or(ErrorCode::BidCountOverflow)?;
 
         emit!(BidPlacedEvent {
             auction: auction_key,
@@ -211,6 +219,10 @@ pub mod sealed_bid_auction {
         require!(
             auction.status == AuctionStatus::Open,
             ErrorCode::AuctionNotOpen
+        );
+        require!(
+            Clock::get()?.unix_timestamp >= auction.end_time,
+            ErrorCode::AuctionNotEnded
         );
         auction.status = AuctionStatus::Closed;
 
@@ -235,11 +247,9 @@ pub mod sealed_bid_auction {
             auction.auction_type == AuctionType::FirstPrice,
             ErrorCode::WrongAuctionType
         );
+        require!(auction.bid_count > 0, ErrorCode::NoBids);
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
             .plaintext_u128(auction.state_nonce)
@@ -324,11 +334,9 @@ pub mod sealed_bid_auction {
             auction.auction_type == AuctionType::Vickrey,
             ErrorCode::WrongAuctionType
         );
+        require!(auction.bid_count > 0, ErrorCode::NoBids);
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-        const ENCRYPTED_STATE_OFFSET: u32 = 8 + 1 + 32 + 1 + 1 + 8 + 8 + 1 + 16;
-        const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
         let args = ArgBuilder::new()
             .plaintext_u128(auction.state_nonce)
@@ -410,7 +418,7 @@ pub struct Auction {
     pub status: AuctionStatus,
     pub min_bid: u64,
     pub end_time: i64,
-    pub bid_count: u8,
+    pub bid_count: u16,
     pub state_nonce: u128,
     pub encrypted_state: [[u8; 32]; 5],
 }
@@ -428,7 +436,7 @@ pub struct CreateAuction<'info> {
         seeds = [b"auction", authority.key().as_ref()],
         bump,
     )]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -489,7 +497,7 @@ pub struct PlaceBid<'info> {
     #[account(mut)]
     pub bidder: Signer<'info>,
     #[account(mut)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -561,7 +569,7 @@ pub struct DetermineWinnerFirstPrice<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority @ ErrorCode::Unauthorized)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -622,7 +630,7 @@ pub struct DetermineWinnerVickrey<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(mut, has_one = authority @ ErrorCode::Unauthorized)]
-    pub auction: Account<'info, Auction>,
+    pub auction: Box<Account<'info, Auction>>,
     #[account(
         init_if_needed,
         space = 9,
@@ -768,13 +776,13 @@ pub struct AuctionCreatedEvent {
 #[event]
 pub struct BidPlacedEvent {
     pub auction: Pubkey,
-    pub bid_count: u8,
+    pub bid_count: u16,
 }
 
 #[event]
 pub struct AuctionClosedEvent {
     pub auction: Pubkey,
-    pub bid_count: u8,
+    pub bid_count: u16,
 }
 
 #[event]
@@ -799,4 +807,12 @@ pub enum ErrorCode {
     WrongAuctionType,
     #[msg("Unauthorized")]
     Unauthorized,
+    #[msg("Auction has ended")]
+    AuctionEnded,
+    #[msg("Auction has not ended yet")]
+    AuctionNotEnded,
+    #[msg("Bid count overflow")]
+    BidCountOverflow,
+    #[msg("No bids placed")]
+    NoBids,
 }
