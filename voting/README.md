@@ -78,7 +78,7 @@ pub struct PollAccount {
 }
 ```
 
-**What's stored**: Two encrypted `u64` counters (yes_count, no_count) as raw ciphertexts.
+**What's stored**: Two encrypted `u64` counters (yes, no) as raw ciphertexts.
 
 ### Reading Encrypted Account Data
 
@@ -99,8 +99,8 @@ Argument::Account(
 ```
 Byte 0-7:   Anchor discriminator
 Byte 8:     bump
-Byte 9-40:  yes_count ciphertext (Enc<Mxe, u64>)
-Byte 41-72: no_count ciphertext (Enc<Mxe, u64>)
+Byte 9-40:  yes ciphertext (Enc<Mxe, u64>)
+Byte 41-72: no ciphertext (Enc<Mxe, u64>)
 Byte 73+:   other fields...
 ```
 
@@ -117,9 +117,9 @@ pub fn vote(
     let mut votes = votes.to_arcis(); // Decrypt tallies in MPC
 
     if input.vote {
-        votes.yes_count += 1;  // Increment happens inside MPC
+        votes.yes += 1;  // Increment happens inside MPC
     } else {
-        votes.no_count += 1;
+        votes.no += 1;
     }
 
     votes.owner.from_arcis(votes)  // Re-encrypt updated tallies
@@ -157,7 +157,7 @@ The program restricts result revelation to the poll authority:
 ```rust
 pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
     let votes = votes.to_arcis();
-    (votes.yes_count > votes.no_count).reveal()  // Only reveal comparison
+    (votes.yes > votes.no).reveal()  // Only reveal comparison
 }
 ```
 
