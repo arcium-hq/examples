@@ -20,7 +20,7 @@ The requirement is determining the auction winner and payment amount without rev
 
 The protocol maintains bid privacy while providing accurate winner determination:
 
-1. **Auction creation**: Authority creates an auction specifying the type (first-price or Vickrey), minimum bid, and end time
+1. **Auction creation**: Authority creates an auction specifying the type (first-price or Vickrey), minimum bid, and duration (end time is computed on-chain)
 2. **Bid encryption**: Bidders encrypt their bid amounts locally before submission using the MXE public key
 3. **Encrypted comparison**: Arcium nodes compare new bids against the encrypted auction state without decrypting
 4. **State update**: Highest and second-highest bids are tracked in encrypted form on-chain
@@ -81,7 +81,7 @@ pub struct AuctionState {
 
 **Why `SerializedSolanaPublicKey`?** Solana public keys are 32 bytes, but Arcis field elements are smaller. `SerializedSolanaPublicKey` is a built-in type that handles the lo/hi u128 splitting automatically.
 
-**On-chain storage**: The encrypted state is stored as `[[u8; 32]; 5]` - five 32-byte ciphertexts representing each field.
+**On-chain storage**: The encrypted state is stored as `[[u8; 32]; 5]` - five 32-byte ciphertexts (the bidder pubkey occupies two elements as a lo/hi u128 pair).
 
 > Learn more about [Arcis Types](https://docs.arcium.com/developers/arcis/types) for encrypted value handling.
 

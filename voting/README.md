@@ -71,10 +71,12 @@ Voting demonstrates storing encrypted counters directly in Anchor accounts:
 ```rust
 #[account]
 pub struct PollAccount {
+    pub bump: u8,                   // PDA bump seed
     pub vote_state: [[u8; 32]; 2],  // Two 32-byte ciphertexts
-    pub nonce: u128,                // Cryptographic nonce
+    pub id: u32,                    // Poll identifier
     pub authority: Pubkey,          // Who can reveal results
-    // ... other fields
+    pub nonce: u128,                // Cryptographic nonce
+    pub question: String,           // The poll question
 }
 ```
 
@@ -87,11 +89,14 @@ Arx nodes need precise byte locations to read encrypted data from accounts and d
 To specify encrypted account data, provide exact byte offsets:
 
 ```rust
-Argument::Account(
-    ctx.accounts.poll_acc.key(),
-    8 + 1,  // Skip: Anchor discriminator (8 bytes) + bump (1 byte)
-    64,     // Read: 2 ciphertexts × 32 bytes = 64 bytes
-)
+ArgBuilder::new()
+    // ...
+    .account(
+        ctx.accounts.poll_acc.key(),
+        8 + 1,      // Skip: Anchor discriminator (8 bytes) + bump (1 byte)
+        32 * 2,      // Read: 2 ciphertexts × 32 bytes = 64 bytes
+    )
+    .build();
 ```
 
 **Memory layout**:
@@ -110,19 +115,19 @@ Byte 73+:   other fields...
 
 ```rust
 pub fn vote(
-    input: Enc<Shared, UserVote>,    // Voter's encrypted choice
-    votes: Enc<Mxe, VoteStats>,      // Current encrypted tallies
+    vote_ctxt: Enc<Shared, UserVote>,          // Voter's encrypted choice
+    vote_stats_ctxt: Enc<Mxe, VoteStats>,      // Current encrypted tallies
 ) -> Enc<Mxe, VoteStats> {
-    let input = input.to_arcis();     // Decrypt in MPC (never exposed)
-    let mut votes = votes.to_arcis(); // Decrypt tallies in MPC
+    let user_vote = vote_ctxt.to_arcis();           // Decrypt in MPC (never exposed)
+    let mut vote_stats = vote_stats_ctxt.to_arcis(); // Decrypt tallies in MPC
 
-    if input.vote {
-        votes.yes += 1;  // Increment happens inside MPC
+    if user_vote.vote {
+        vote_stats.yes += 1;  // Increment happens inside MPC
     } else {
-        votes.no += 1;
+        vote_stats.no += 1;
     }
 
-    votes.owner.from_arcis(votes)  // Re-encrypt updated tallies
+    vote_stats_ctxt.owner.from_arcis(vote_stats)  // Re-encrypt updated tallies
 }
 ```
 

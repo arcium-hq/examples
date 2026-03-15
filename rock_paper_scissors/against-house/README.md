@@ -43,5 +43,6 @@ Both moves are compared inside MPC on encrypted values.
 Key properties:
 
 - **Cryptographic randomness**: Arcium nodes contribute entropy; no single node or subset can predict or bias the outcome
+- **Uniform distribution**: The house move uses rejection sampling (2-bit candidates, discarding invalid value `3`) to ensure each move has exactly 1/3 probability -- standard 2-bit mapping would bias one outcome to 50%
 - **Fair comparison**: Both moves processed in encrypted form throughout game resolution
 - **Integrity**: The MPC protocol ensures correct game resolution even with a dishonest majority—neither the house nor the player can manipulate the outcome as long as at least one node is honest

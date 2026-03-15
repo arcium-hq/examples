@@ -10,14 +10,13 @@ Traditional random number generation has a fundamental trust problem: whoever ge
 
 ## How It Works
 
-The coinflip follows this flow:
+The coinflip executes in a single MPC computation:
 
-1. **Player commitment**: The player's choice (heads/tails) is encrypted and submitted to the network
-2. **Random generation**: Arcium nodes work together to generate a random boolean outcome
-3. **Encrypted comparison**: The system compares the encrypted choice against the encrypted random result
-4. **Result disclosure**: Only the win/loss outcome is revealed
+1. **Player submission**: The player's choice (heads/tails) is encrypted and submitted
+2. **MPC execution**: Inside one computation, Arcium nodes generate a random boolean, compare it against the encrypted choice, and produce the result
+3. **Result disclosure**: Only the win/loss outcome is revealed -- neither the player's choice nor the coin toss value is exposed
 
-The comparison occurs on encrypted values throughout the computation.
+The random generation, comparison, and result all happen atomically within MPC.
 
 ## Running the Example
 

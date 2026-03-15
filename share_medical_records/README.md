@@ -2,7 +2,7 @@
 
 Share your medical records with a new doctor and here's the problem: the platform operator, system administrators, database engineers, and cloud infrastructure provider all have access. You can't control who sees what.
 
-This example demonstrates patient-controlled selective disclosure where you specify exactly which medical information each provider can access.
+This example demonstrates patient-controlled data sharing through re-encryption, where encrypted records are transferred from one key to another without intermediate plaintext exposure.
 
 ## What's wrong with healthcare data sharing today?
 
