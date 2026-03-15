@@ -38,16 +38,22 @@ describe("Ed25519", () => {
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
   const awaitEvent = async <E extends keyof Event>(
-    eventName: E
+    eventName: E,
+    timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[E]>((res) => {
+    let timeoutId: NodeJS.Timeout;
+    const event = await new Promise<Event[E]>((res, rej) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        clearTimeout(timeoutId);
         res(event);
       });
+      timeoutId = setTimeout(() => {
+        program.removeEventListener(listenerId);
+        rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     await program.removeEventListener(listenerId);
-
     return event;
   };
 
@@ -56,6 +62,12 @@ describe("Ed25519", () => {
 
   it("sign and verify with MPC Ed25519", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
+
+    const mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider as anchor.AnchorProvider,
+      program.programId
+    );
+    console.log("MXE x25519 pubkey:", mxePublicKey);
 
     console.log("Initializing computation definitions");
     const initSMSig = await initSignMessageCompDef(program, owner);
@@ -69,13 +81,6 @@ describe("Ed25519", () => {
       "Verify signature computation definition initialized with signature",
       initVSSig
     );
-
-    const mxePublicKey = await getMXEPublicKeyWithRetry(
-      provider as anchor.AnchorProvider,
-      program.programId
-    );
-
-    console.log("MXE x25519 pubkey:", mxePublicKey);
 
     console.log("\nSigning message with MPC Ed25519");
     let message = new TextEncoder().encode("hello");
@@ -101,7 +106,10 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("sign_message")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -212,7 +220,10 @@ describe("Ed25519", () => {
           Buffer.from(getCompDefAccOffset("verify_signature")).readUInt32LE()
         ),
       })
-      .rpc({ skipPreflight: true, preflightCommitment: "confirmed", commitment: "confirmed" });
+      .rpc({
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
 
     await awaitComputationFinalization(
       provider as anchor.AnchorProvider,
@@ -346,7 +357,6 @@ async function getMXEPublicKeyWithRetry(
   maxRetries: number = 20,
   retryDelayMs: number = 500
 ): Promise<Uint8Array> {
-  console.log("");
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const mxePublicKey = await getMXEPublicKey(provider, programId);

@@ -75,7 +75,7 @@ pub struct AuctionState {
     pub highest_bid: u64,
     pub highest_bidder: SerializedSolanaPublicKey,  // Winner pubkey (lo/hi u128 pair)
     pub second_highest_bid: u64,  // Required for Vickrey auctions
-    pub bid_count: u8,
+    pub bid_count: u16,
 }
 ```
 
@@ -156,3 +156,9 @@ Apply sealed-bid auctions when:
 **Example applications**: NFT auctions, ad bidding systems, procurement contracts, treasury bond auctions, spectrum license sales.
 
 This pattern extends to any scenario requiring private comparison and selection: hiring decisions, grant allocations, or matching markets where selection criteria should remain confidential.
+
+## Known Limitations
+
+**`min_bid` not enforced against encrypted bids.** The `min_bid` field is stored on-chain but never checked -- on-chain validation is impossible (the bid is encrypted), and circuit-side validation would require passing `min_bid` as a plaintext argument. For production, pass `min_bid` into the circuit and compare before updating state.
+
+**No per-bidder deduplication.** A bidder can submit multiple bids. This is non-exploitable: in Vickrey mode, duplicate bids can only increase the second-highest price (hurting the bidder). In first-price mode, the bidder always pays their highest bid regardless. The `bid_count` field reflects total bids, not unique bidders.

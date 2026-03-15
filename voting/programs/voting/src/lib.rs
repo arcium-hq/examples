@@ -120,6 +120,8 @@ pub mod voting {
             )
             .build();
 
+        ctx.accounts.voter_record.bump = ctx.bumps.voter_record;
+
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -157,10 +159,9 @@ pub mod voting {
         ctx.accounts.poll_acc.nonce = o.nonce;
 
         let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
 
         emit!(VoteEvent {
-            timestamp: current_timestamp,
+            timestamp: clock.unix_timestamp,
         });
 
         Ok(())
@@ -373,7 +374,7 @@ pub struct Vote<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
         address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
@@ -423,7 +424,15 @@ pub struct Vote<'info> {
         bump = poll_acc.bump,
         has_one = authority
     )]
-    pub poll_acc: Account<'info, PollAccount>,
+    pub poll_acc: Box<Account<'info, PollAccount>>,
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + VoterRecord::INIT_SPACE,
+        seeds = [b"voter", poll_acc.key().as_ref(), payer.key().as_ref()],
+        bump,
+    )]
+    pub voter_record: Box<Account<'info, VoterRecord>>,
 }
 
 #[callback_accounts("vote")]
@@ -604,6 +613,14 @@ pub struct PollAccount {
     /// The poll question (max 50 characters)
     #[max_len(50)]
     pub question: String,
+}
+
+/// Per-poll voter deduplication record.
+#[account]
+#[derive(InitSpace)]
+pub struct VoterRecord {
+    /// PDA bump seed
+    pub bump: u8,
 }
 
 #[error_code]

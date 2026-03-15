@@ -57,16 +57,22 @@ describe("Voting", () => {
 
   type Event = anchor.IdlEvents<(typeof program)["idl"]>;
   const awaitEvent = async <E extends keyof Event>(
-    eventName: E
+    eventName: E,
+    timeoutMs = 120000
   ): Promise<Event[E]> => {
     let listenerId: number;
-    const event = await new Promise<Event[E]>((res) => {
+    let timeoutId: NodeJS.Timeout;
+    const event = await new Promise<Event[E]>((res, rej) => {
       listenerId = program.addEventListener(eventName, (event) => {
+        clearTimeout(timeoutId);
         res(event);
       });
+      timeoutId = setTimeout(() => {
+        program.removeEventListener(listenerId);
+        rej(new Error(`Event ${eventName} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
     });
     await program.removeEventListener(listenerId);
-
     return event;
   };
 
@@ -140,7 +146,6 @@ describe("Voting", () => {
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
 
@@ -157,6 +162,8 @@ describe("Voting", () => {
 
     // Cast votes for each poll with different outcomes
     const voteOutcomes = [true, false, true]; // Different outcomes for each poll
+    let firstPollPDA: PublicKey;
+    let firstVoterRecordPDA: PublicKey;
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const vote = BigInt(voteOutcomes[i]);
@@ -168,6 +175,24 @@ describe("Voting", () => {
       const voteEventPromise = awaitEvent("voteEvent");
 
       console.log(`Voting for poll ${POLL_ID}`);
+
+      // Derive poll PDA (poll_id uses little-endian u32)
+      const pollIdBuffer = Buffer.alloc(4);
+      pollIdBuffer.writeUInt32LE(POLL_ID);
+      const [pollPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("poll"), owner.publicKey.toBuffer(), pollIdBuffer],
+        program.programId
+      );
+
+      const [voterRecordPDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("voter"), pollPDA.toBuffer(), owner.publicKey.toBuffer()],
+        program.programId
+      );
+
+      if (i === 0) {
+        firstPollPDA = pollPDA;
+        firstVoterRecordPDA = voterRecordPDA;
+      }
 
       const voteComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -195,10 +220,11 @@ describe("Voting", () => {
             Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
           ),
           authority: owner.publicKey,
+          pollAcc: pollPDA,
+          voterRecord: voterRecordPDA,
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
       console.log(`Queue vote for poll ${POLL_ID} sig is `, queueVoteSig);
@@ -215,6 +241,59 @@ describe("Voting", () => {
       console.log(
         `Vote casted for poll ${POLL_ID} at timestamp `,
         voteEvent.timestamp.toString()
+      );
+    }
+
+    // Test double-vote prevention: attempt to vote again on the first poll
+    // Reuse firstPollPDA and firstVoterRecordPDA derived during the voting loop
+    console.log("\n--- Testing double-vote prevention ---");
+    const DOUBLE_VOTE_POLL_ID = POLL_IDS[0];
+    const doubleVoteNonce = randomBytes(16);
+    const doubleVoteCiphertext = cipher.encrypt(
+      [BigInt(true)],
+      doubleVoteNonce
+    );
+
+    const doubleVoteComputationOffset = new anchor.BN(randomBytes(8), "hex");
+
+    try {
+      await program.methods
+        .vote(
+          doubleVoteComputationOffset,
+          DOUBLE_VOTE_POLL_ID,
+          Array.from(doubleVoteCiphertext[0]),
+          Array.from(publicKey),
+          new anchor.BN(deserializeLE(doubleVoteNonce).toString())
+        )
+        .accountsPartial({
+          computationAccount: getComputationAccAddress(
+            arciumEnv.arciumClusterOffset,
+            doubleVoteComputationOffset
+          ),
+          clusterAccount: clusterAccount,
+          mxeAccount: getMXEAccAddress(program.programId),
+          mempoolAccount: getMempoolAccAddress(arciumEnv.arciumClusterOffset),
+          executingPool: getExecutingPoolAccAddress(
+            arciumEnv.arciumClusterOffset
+          ),
+          compDefAccount: getCompDefAccAddress(
+            program.programId,
+            Buffer.from(getCompDefAccOffset("vote")).readUInt32LE()
+          ),
+          authority: owner.publicKey,
+          pollAcc: firstPollPDA,
+          voterRecord: firstVoterRecordPDA,
+        })
+        .rpc({
+          preflightCommitment: "confirmed",
+          commitment: "confirmed",
+        });
+
+      expect.fail("Double vote should have been rejected");
+    } catch (error) {
+      console.log("Double vote correctly rejected:", error.message);
+      expect(error.message).to.satisfy(
+        (msg: string) => msg.includes("already in use") || msg.includes("0x0")
       );
     }
 
@@ -247,7 +326,6 @@ describe("Voting", () => {
         })
         .rpc({
           skipPreflight: true,
-          preflightCommitment: "confirmed",
           commitment: "confirmed",
         });
       console.log(`Reveal queue for poll ${POLL_ID} sig is `, revealQueueSig);
