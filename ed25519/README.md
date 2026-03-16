@@ -1,33 +1,16 @@
-# Ed25519 Signatures - Confidential Key Management
+# Ed25519 Signatures - Distributed Key Management
 
-This example demonstrates Ed25519 signing and verification using distributed key management through multi-party computation. The private key is split across multiple nodes and never exists in a single location.
+Ed25519 signing and verification using MPC. The private key is split across multiple nodes and never exists in a single location.
 
 ## How It Works
 
-**Message Signing**: A message is sent to the Arcium network where MPC nodes collectively generate a valid Ed25519 signature using their key shares. The signature can be verified by anyone using the public key.
+**Signing**: A message is sent to the Arcium network where MPC nodes collectively produce a valid Ed25519 signature using their key shares. The signature can be verified by anyone with the public key.
 
-**Signature Verification with Confidential Public Key**: The verifying key (public key) is provided in encrypted form, and the signature is verified within MPC. Only the verification result (valid/invalid) is revealed to a designated observer.
+**Verification with confidential public key**: The verifying key is provided encrypted, and verification runs inside MPC. Only the result (valid/invalid) is revealed to a designated observer.
 
-## Running the Example
-
-```bash
-# Install dependencies
-yarn install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
-```
-
-The test suite demonstrates both signing and verification flows with the MPC-managed key.
-
-## Technical Implementation
+## Implementation
 
 ### MPC Signing
-
-Arcium's `MXESigningKey` enables signing through distributed key shares:
 
 ```rust
 pub fn sign_message(message: [u8; 5]) -> ArcisEd25519Signature {
@@ -36,9 +19,9 @@ pub fn sign_message(message: [u8; 5]) -> ArcisEd25519Signature {
 }
 ```
 
-Each MPC node holds a share of the private key and executes a distributed signing protocol to produce a standard Ed25519 signature without reconstructing the complete key.
+Each MPC node holds a key share and executes a distributed signing protocol to produce a standard Ed25519 signature without reconstructing the complete key.
 
-> See [Arcis Primitives](https://docs.arcium.com/developers/arcis/primitives) for the full cryptographic API.
+> [Arcis Primitives](https://docs.arcium.com/developers/arcis/primitives)
 
 ### Confidential Public Key Verification
 
@@ -56,4 +39,4 @@ pub fn verify_signature(
 }
 ```
 
-In some scenarios, revealing which public key is being verified could leak sensitive information (identity, organizational affiliations). This pattern enables verification without public key disclosure.
+Revealing which public key is being verified could leak identity or organizational affiliations. This pattern enables verification without public key disclosure.
