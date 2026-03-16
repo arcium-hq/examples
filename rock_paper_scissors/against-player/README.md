@@ -46,11 +46,14 @@ pub fn player_move(
 pub fn compare_moves(game_ctxt: Enc<Mxe, GameMoves>) -> u8 {
     let game_moves = game_ctxt.to_arcis();
 
-    if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
-        return 3;  // Incomplete game
-    }
+    let result = if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
+        3  // Incomplete game
+    } else if game_moves.player_a_move == game_moves.player_b_move {
+        0  // Tie
+    } else {
+        // Rock-Paper-Scissors win logic...
+    };
 
-    // Rock-Paper-Scissors logic...
     result.reveal()  // 0=tie, 1=A wins, 2=B wins
 }
 ```
