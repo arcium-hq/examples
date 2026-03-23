@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arcium-hq/client@0.9.2":
-  version "0.9.2"
-  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.9.2.tgz#a27b0be845f0eb33a46f9d73bfd6e72ad52555f9"
-  integrity sha512-Los9eK3XAVHtp1wq50gMgoLnrFiiFskFBK69XeKNe40WUXaMN00BjVWE4JTFfHNZhwTh97YgT1Eu6RjqifW4wQ==
+"@arcium-hq/client@0.9.3":
+  version "0.9.3"
+  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.9.3.tgz#5a6e1068cb46bef88199a73aed07b14d3d8b264e"
+  integrity sha512-sBZDptu5Vvbch69Cmmh1QamkLM/RPTcwuEHSta+bWyXYN/y8+Dfm6pQK6QtGdQQRm9TBfwgj2O6IhUk/OfLzmQ==
   dependencies:
     "@coral-xyz/anchor" "0.32.1"
     "@noble/curves" "^1.9.5"
@@ -13,9 +13,9 @@
     "@solana/web3.js" "^1.95.4"
 
 "@babel/runtime@^7.25.0":
-  version "7.28.6"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.28.6.tgz#d267a43cb1836dc4d182cce93ae75ba954ef6d2b"
-  integrity sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==
+  version "7.29.2"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.29.2.tgz#9a6e2d05f4b6692e1801cd4fb176ad823930ed5e"
+  integrity sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==
 
 "@coral-xyz/anchor-errors@^0.31.1":
   version "0.31.1"
@@ -867,9 +867,9 @@ require-directory@^2.1.1:
   integrity sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==
 
 rpc-websockets@^9.0.2:
-  version "9.3.5"
-  resolved "https://registry.yarnpkg.com/rpc-websockets/-/rpc-websockets-9.3.5.tgz#9adb87514cb219434d67b7d3f455e5c132aff956"
-  integrity sha512-4mAmr+AEhPYJ9TmDtxF3r3ZcbWy7W8kvZ4PoZYw/Xgp2J7WixjwTgiQZsoTDvch5nimmg3Ay6/0Kuh9oIvVs9A==
+  version "9.3.6"
+  resolved "https://registry.yarnpkg.com/rpc-websockets/-/rpc-websockets-9.3.6.tgz#04409d5535cd44c7b429413f25298696eee3dc8c"
+  integrity sha512-RzuOQDGd+EtR/cBYQAH/0jjaBzhyvXXGROhxigGJPf+q3XKyvtelZCucylzxiq5MaGlfBx1075djTsxFsFDgrA==
   dependencies:
     "@swc/helpers" "^0.5.11"
     "@types/uuid" "^10.0.0"
@@ -1106,9 +1106,9 @@ ws@^7.5.10:
   integrity sha512-+dbF1tHwZpXcbOJdVOkzLDxZP1ailvSxM6ZweXTegylPny803bFhA+vqBYw4s31NSAk4S2Qz+AKXK9a4wkdjcQ==
 
 ws@^8.5.0:
-  version "8.19.0"
-  resolved "https://registry.yarnpkg.com/ws/-/ws-8.19.0.tgz#ddc2bdfa5b9ad860204f5a72a4863a8895fd8c8b"
-  integrity sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==
+  version "8.20.0"
+  resolved "https://registry.yarnpkg.com/ws/-/ws-8.20.0.tgz#4cd9532358eba60bc863aad1623dfb045a4d4af8"
+  integrity sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==
 
 y18n@^5.0.5:
   version "5.0.8"
