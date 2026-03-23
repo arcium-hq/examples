@@ -30,7 +30,7 @@ jobs:
       matrix: ${{fromJson(needs.find-examples.outputs.matrix)}}
     steps:
       - uses: actions/checkout@v5
-      - uses: arcium-hq/setup-arcium@v0.9.2
+      - uses: arcium-hq/setup-arcium@v0.9.3
         with:
           runner-arch-os: x86_64_linux
 
@@ -74,8 +74,6 @@ jobs:
           echo "=== Anchor Validator Log ==="
           cat .anchor/test-ledger/validator.log 2>/dev/null | tail -100 || true
           popd
-
-          pkill -f solana-test-validator
 
           if [ -n "$EXIT_CODE" ]; then
             exit $EXIT_CODE
