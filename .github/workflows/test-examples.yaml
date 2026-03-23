@@ -75,8 +75,6 @@ jobs:
           cat .anchor/test-ledger/validator.log 2>/dev/null | tail -100 || true
           popd
 
-          pkill -f solana-test-validator
-
           if [ -n "$EXIT_CODE" ]; then
             exit $EXIT_CODE
           fi
