@@ -72,7 +72,7 @@ mod circuits {
         )
     }
 
-    // Returns true if the player has busted
+    // Checks the player's current hand value; returns true if already bust (>21)
     #[instruction]
     pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis().unpack();
@@ -80,7 +80,7 @@ mod circuits {
         (value > 21).reveal()
     }
 
-    // Returns true if the player has busted, if not, returns the new card
+    // Deals one card and forces stand; returns (updated hand, is_bust)
     #[instruction]
     pub fn player_double_down(
         deck_ctxt: Enc<Mxe, Deck>,

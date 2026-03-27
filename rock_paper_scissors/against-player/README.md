@@ -1,83 +1,28 @@
 # Rock Paper Scissors - Player vs Player
 
-Player-versus-player asynchronous games require encrypted moves to prevent information advantages. Without cryptographic enforcement, players may observe opponent moves before finalizing their own, or modify submitted moves retroactively.
+On public blockchains, Player 2 can see Player 1's move before submitting their own. Commit-reveal doesn't help -- with only 3 possible moves, all hashes can be precomputed. This example uses encrypted state so neither player can see the other's choice until both are submitted.
 
-This example demonstrates a player-versus-player protocol where both players submit encrypted moves asynchronously - neither can see the other's choice until both are submitted.
+## How It Works
 
-## Why do public blockchains break asynchronous gameplay?
+1. Both players submit encrypted moves on-chain (order doesn't matter)
+2. Game state tracks moves as `Enc<Mxe, GameMoves>` -- network-encrypted, nobody can decrypt
+3. Once both are in, Arcium nodes compare and reveal only the outcome (tie/A wins/B wins)
 
-Blockchains make everything public - which breaks games where information needs to stay hidden. Public blockchain state allows participants to observe transaction data before submitting their own moves, creating information advantages.
+## Implementation
 
-Traditional approaches have limitations: unencrypted storage makes moves visible to all participants immediately, decryption requires someone to view moves sequentially, and trusted referees who decrypt moves can potentially favor specific players.
-
-The requirement is encrypted asynchronous submission where each player finalizes their choice before learning their opponent's move.
-
-## How Encrypted Asynchronous Gameplay Works
-
-The protocol enforces fairness through encrypted move submission and secure comparison:
-
-1. **Player 1 encrypted submission**: First player's move is encrypted and recorded on-chain
-2. **Player 2 encrypted submission**: Second player's move is encrypted and recorded on-chain
-3. **Verification**: System confirms both encrypted moves are submitted
-4. **Encrypted comparison**: Arcium nodes jointly compute the outcome
-5. **Result disclosure**: Only the game outcome (player 1 wins/player 2 wins/tie) is revealed
-
-The comparison occurs on encrypted values throughout. Only the final game outcome is revealed.
-
-## Running the Example
-
-```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
-```
-
-The test suite simulates two-player gameplay with encrypted move submissions, demonstrating the complete protocol from move submission through outcome determination.
-
-## Technical Implementation
-
-Both player moves are encrypted and submitted on-chain. The game outcome is computed using Arcium's confidential instructions, which process encrypted moves without decryption.
-
-Key properties:
-- **Asynchronous encrypted commitment**: Both moves locked in before comparison, despite asynchronous submission
-- **Minimal revelation**: Only the game result is disclosed, not individual moves
-- **Integrity**: The MPC protocol ensures correct game resolution even with a dishonest majority—neither player can manipulate the outcome as long as one node is honest
-
-## Implementation Details
-
-### The Asynchronous Information Hiding Problem
-
-**Conceptual Challenge**: Rock Paper Scissors requires both players to commit to moves without seeing the opponent's choice. Online, players submit asynchronously - Player 1 first, then Player 2. On public blockchains, Player 2 can see Player 1's move before submitting their own.
-
-**Traditional solutions**:
-- **Commit-reveal**: Submit hash of move, then reveal. Problem: With only 3 options (rock/paper/scissors), attackers can precompute all possible hashes and reverse them.
-- **Trusted referee**: Third party collects moves. Problem: Referee can peek or leak.
-- **Time locks**: Strict submission windows. Problem: Network latency, timezone issues.
-
-**The Question**: Can we hide moves on a public blockchain to enable fair asynchronous gameplay?
-
-### The Encrypted State Pattern
+### Encrypted State
 
 ```rust
 pub struct GameMoves {
-    player_a_move: u8,  // 0=Rock, 1=Paper, 2=Scissors, 3=Not submitted yet
+    player_a_move: u8,  // 0=Rock, 1=Paper, 2=Scissors, 3=Not submitted
     player_b_move: u8,
 }
 ```
 
-Stored on-chain as `Enc<Mxe, GameMoves>` - network-encrypted, no one can decrypt.
+Initialized with both moves set to `3` (empty). Each `player_move` call validates the player hasn't already submitted and the move is valid (<3), then updates the encrypted state.
 
-**Phase 1 - Initialization**:
-```rust
-GameMoves { player_a_move: 3, player_b_move: 3 }  // Both "empty"
-```
+### Move Submission (inside MPC)
 
-**Phase 2 - Player submits move** (inside MPC):
 ```rust
 pub fn player_move(
     players_move_ctxt: Enc<Shared, PlayersMove>,
@@ -86,26 +31,29 @@ pub fn player_move(
     let players_move = players_move_ctxt.to_arcis();
     let mut game_moves = game_ctxt.to_arcis();
 
-    // Validate: player hasn't moved yet (3 = invalid move, used as "empty" marker)
     if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3 {
-        game_moves.player_a_move = players_move.player_move;  // Update encrypted state
+        game_moves.player_a_move = players_move.player_move;
     }
-    // Similar logic for player B...
+    // Similar for player B...
 
-    game_ctxt.owner.from_arcis(game_moves)  // Return updated encrypted moves
+    game_ctxt.owner.from_arcis(game_moves)
 }
 ```
 
-**Phase 3 - Comparison** (only after both submitted):
+### Comparison (only after both submitted)
+
 ```rust
 pub fn compare_moves(game_ctxt: Enc<Mxe, GameMoves>) -> u8 {
     let game_moves = game_ctxt.to_arcis();
 
-    if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
-        return 3;  // Error: incomplete game
-    }
+    let result = if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
+        3  // Incomplete game
+    } else if game_moves.player_a_move == game_moves.player_b_move {
+        0  // Tie
+    } else {
+        // Rock-Paper-Scissors win logic...
+    };
 
-    // Determine winner based on Rock-Paper-Scissors logic...
-    result.reveal()  // Only reveal winner (0=tie, 1=A wins, 2=B wins)
+    result.reveal()  // 0=tie, 1=A wins, 2=B wins
 }
 ```

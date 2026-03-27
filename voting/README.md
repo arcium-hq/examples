@@ -1,172 +1,93 @@
 # Voting - Private Ballots, Public Results
 
-Blockchain transparency makes voting dangerous: visible votes enable vote buying (prove your vote, get paid) and coercion. Encrypt the ballots? Whoever holds the decryption key to count them can still see every vote - and potentially sell or leak that data. Traditional encryption just shifts who holds the power.
+Blockchain transparency makes voting dangerous: visible votes enable vote buying and coercion. Encrypt the ballots? Whoever holds the decryption key can still see every vote. This example tallies votes without decrypting individual ballots -- only aggregate results are revealed.
 
-This example demonstrates tallying votes without decrypting individual ballots. Votes stay encrypted throughout - only aggregate results are revealed.
+## How It Works
 
-## Why is blockchain voting hard?
+1. Votes are encrypted on the client before submission
+2. Arcium nodes add each encrypted vote to running tallies without decrypting
+3. Only the poll authority can reveal aggregate results
+4. A `VoterRecord` PDA (seeded by poll + voter) prevents double-voting -- the account is initialized on vote, so a second attempt fails
 
-Transparent blockchain architectures conflict with ballot secrecy requirements:
+## Implementation
 
-1. **Transaction visibility**: All blockchain data is publicly accessible by default
-2. **Ballot privacy**: People may not want peers, family, or colleagues knowing how they voted on sensitive issues - votes need to stay private to prevent social pressure and judgment
-3. **Vote buying**: If you can prove how you voted, someone can pay you to vote a certain way and verify you followed through
-4. **Public tallying**: Everyone needs to be able to check that the final count is correct, without seeing how individual people voted
+### Encrypted State
 
-The requirement is computing aggregate vote tallies without revealing individual ballots, while providing accurate and tamper-resistant final counts.
-
-## How Private Voting Works
-
-The protocol maintains ballot secrecy while providing accurate results:
-
-1. **Ballot encryption**: Votes are encrypted on the client's computer before submission
-2. **On-chain storage**: Encrypted votes are recorded on the blockchain
-3. **Secure distributed tallying**: Arcium nodes collaboratively compute aggregate totals
-4. **Result publication**: Only aggregate vote counts are revealed, not individual choices
-5. **Security guarantee**: Arcium's MPC protocol preserves ballot secrecy even with a dishonest majority—individual votes remain private as long as one node is honest
-
-## Running the Example
-
-```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
-```
-
-The test suite demonstrates poll creation, encrypted ballot submission, secure distributed tallying, and result verification.
-
-## Technical Implementation
-
-Votes are sent as encrypted booleans and stored as encrypted vote counts on-chain (using `Enc<Shared, bool>` in the code). Arcium's confidential instructions enable aggregate computation over encrypted ballots.
-
-Key properties:
-
-- **Ballot secrecy**: Individual votes remain encrypted throughout the tallying process
-- **Distributed computation**: Arcium nodes jointly compute aggregate tallies
-- **Result accuracy**: Aggregate totals are computed correctly despite processing only encrypted data
-- **Double-vote prevention**: A `VoterRecord` PDA (seeded by poll + voter keys) is initialized via Anchor's `init` constraint in the `vote` instruction — a second vote from the same voter fails because the account already exists
-
-## Implementation Details
-
-### The Private Tallying Problem
-
-**Conceptual Challenge**: How do you count votes without seeing individual ballots?
-
-Traditional approaches all fail:
-
-- **Encrypt then decrypt**: Someone holds the decryption key and can see votes
-- **Trusted counter**: Requires trusting the tallying authority
-
-**The Question**: Can we compute "yes_votes + no_votes" on encrypted data without ever decrypting individual votes?
-
-### The Encrypted State Pattern
-
-Voting demonstrates storing encrypted counters directly in Anchor accounts:
+Vote counters live on-chain as raw ciphertexts:
 
 ```rust
-#[account]
 pub struct PollAccount {
-    pub vote_state: [[u8; 32]; 2],  // Two 32-byte ciphertexts
-    pub nonce: u128,                // Cryptographic nonce
-    pub authority: Pubkey,          // Who can reveal results
-    // ... other fields
+    pub bump: u8,
+    pub vote_state: [[u8; 32]; 2],  // [yes_count, no_count]
+    pub id: u32,
+    pub authority: Pubkey,
+    pub nonce: u128,
+    pub question: String,
 }
 ```
 
-**What's stored**: Two encrypted `u64` counters (yes, no) as raw ciphertexts.
+### Byte Offsets
 
-### Reading Encrypted Account Data
-
-Arx nodes need precise byte locations to read encrypted data from accounts and deserialize it into the proper MPC function arguments.
-
-To specify encrypted account data, provide exact byte offsets:
+Arx nodes need precise byte locations to read encrypted data from accounts:
 
 ```rust
-Argument::Account(
+.account(
     ctx.accounts.poll_acc.key(),
-    8 + 1,  // Skip: Anchor discriminator (8 bytes) + bump (1 byte)
-    64,     // Read: 2 ciphertexts × 32 bytes = 64 bytes
+    8 + 1,  // discriminator (8) + bump (1)
+    32 * 2, // 2 ciphertexts x 32 bytes
 )
 ```
-
-**Memory layout**:
 
 ```
 Byte 0-7:   Anchor discriminator
 Byte 8:     bump
-Byte 9-40:  yes ciphertext (Enc<Mxe, u64>)
-Byte 41-72: no ciphertext (Enc<Mxe, u64>)
-Byte 73+:   other fields...
+Byte 9-40:  yes ciphertext
+Byte 41-72: no ciphertext
+Byte 73+:   id, authority, nonce, question
 ```
 
-### The Vote Accumulation Logic
+### Vote Accumulation
 
-**MPC instruction** (runs inside encrypted computation):
+Circuit (runs inside MPC):
 
 ```rust
 pub fn vote(
-    input: Enc<Shared, UserVote>,    // Voter's encrypted choice
-    votes: Enc<Mxe, VoteStats>,      // Current encrypted tallies
+    vote_ctxt: Enc<Shared, UserVote>,
+    vote_stats_ctxt: Enc<Mxe, VoteStats>,
 ) -> Enc<Mxe, VoteStats> {
-    let input = input.to_arcis();     // Decrypt in MPC (never exposed)
-    let mut votes = votes.to_arcis(); // Decrypt tallies in MPC
+    let user_vote = vote_ctxt.to_arcis();
+    let mut vote_stats = vote_stats_ctxt.to_arcis();
 
-    if input.vote {
-        votes.yes += 1;  // Increment happens inside MPC
+    if user_vote.vote {
+        vote_stats.yes += 1;
     } else {
-        votes.no += 1;
+        vote_stats.no += 1;
     }
 
-    votes.owner.from_arcis(votes)  // Re-encrypt updated tallies
+    vote_stats_ctxt.owner.from_arcis(vote_stats)
 }
 ```
 
-**Callback** (runs on-chain after MPC completes):
+Callback (writes updated ciphertexts back to the account):
 
 ```rust
-pub fn vote_callback(
-    ctx: Context<VoteCallback>,
-    output: SignedComputationOutputs<VoteOutput>,
-) -> Result<()> {
-    let o = match output.verify_output(
-        &ctx.accounts.cluster_account,
-        &ctx.accounts.computation_account,
-    ) {
-        Ok(VoteOutput { field_0 }) => field_0,
-        Err(_) => return Err(ErrorCode::AbortedComputation.into()),
-    };
-
-    // Save new encrypted tallies + new nonce
+pub fn vote_callback(ctx: Context<VoteCallback>, output: ...) -> Result<()> {
+    let o = output.verify_output(...)?;
     ctx.accounts.poll_acc.vote_state = o.ciphertexts;
     ctx.accounts.poll_acc.nonce = o.nonce;
     Ok(())
 }
 ```
 
-> Learn more: [Callback Type Generation](https://docs.arcium.com/developers/program/callback-type-generation), [Input/Output Patterns](https://docs.arcium.com/developers/arcis/input-output)
+> [Callback Type Generation](https://docs.arcium.com/developers/program/callback-type-generation), [Input/Output Patterns](https://docs.arcium.com/developers/arcis/input-output)
 
 ### Revealing Results
 
-The program restricts result revelation to the poll authority:
+Only the poll authority can reveal, and only the comparison (not raw counts) is disclosed:
 
 ```rust
-pub fn reveal_result(votes: Enc<Mxe, VoteStats>) -> bool {
-    let votes = votes.to_arcis();
-    (votes.yes > votes.no).reveal()  // Only reveal comparison
+pub fn reveal_result(vote_stats_ctxt: Enc<Mxe, VoteStats>) -> bool {
+    let vote_stats = vote_stats_ctxt.to_arcis();
+    (vote_stats.yes > vote_stats.no).reveal()
 }
 ```
-
-### What This Example Demonstrates
-
-This example shows how to:
-
-- **Store encrypted data in Solana accounts**: Using raw bytes (`[[u8; 32]; 2]`) to persist encrypted values on-chain
-- **Pass encrypted account data to MPC**: Using `Argument::Account()` with precise byte offsets to read encrypted state
-- **Compute on encrypted state over time**: Accumulating encrypted values across multiple transactions (adding new votes to running tallies)
-
-This pattern applies to any scenario requiring private aggregation: voting, surveys, sealed-bid auctions, confidential analytics, and private leaderboards.

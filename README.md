@@ -2,20 +2,30 @@
 
 Applications built on public blockchains face a fundamental limitation: all computation is transparent. These examples demonstrate how to build applications that can compute on encrypted data while preserving privacy.
 
+All examples use Arcium's MPC protocol, which preserves privacy even with a dishonest majority -- data remains confidential as long as one node is honest.
+
 ## Getting Started
 
 For installation instructions and setup, see the [Installation Guide](https://docs.arcium.com/developers/installation).
 
-## Examples
+Each example follows the same build/test flow:
 
-New to Arcium? Start with Coinflip and progress through the tiers in order. For conceptual background, see [Mental Model](https://docs.arcium.com/developers/arcis/mental-model).
+```bash
+yarn install
+arcium build
+arcium test
+```
+
+New to Arcium? Start with Coinflip and progress through the tiers. For conceptual background, see [Mental Model](https://docs.arcium.com/developers/arcis/mental-model).
+
+## Examples
 
 ### Getting Started
 
-**[Coinflip](./coinflip/)** - Generate trustless randomness using `ArcisRNG`. Stateless design, simplest example.
+**[Coinflip](./coinflip/)** - Trustless randomness using `ArcisRNG`. Stateless design, simplest example.
 
-**[Rock Paper Scissors](./rock_paper_scissors/)** - Encrypted asynchronous gameplay with hidden moves.
-- [Player vs Player](./rock_paper_scissors/against-player/) - Two encrypted submissions
+**[Rock Paper Scissors](./rock_paper_scissors/)** - Encrypted gameplay with hidden moves.
+- [Player vs Player](./rock_paper_scissors/against-player/) - Two encrypted submissions, async commitment
 - [Player vs House](./rock_paper_scissors/against-house/) - Provably fair randomized opponent
 
 ### Intermediate
