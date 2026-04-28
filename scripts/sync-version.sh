@@ -1,16 +1,34 @@
 #!/bin/bash
 # sync-version.sh - Update all Arcium version references across examples
 # Usage: ./scripts/sync-version.sh <version>
-# Example: ./scripts/sync-version.sh 0.6.6
+# Example: ./scripts/sync-version.sh 0.9.6
 
 set -eo pipefail
 
-VERSION=${1:-0.6.6}
+usage() {
+  echo "Usage: ./scripts/sync-version.sh <version>"
+  echo "Example: ./scripts/sync-version.sh 0.9.6"
+}
+
+if [ "$#" -ne 1 ]; then
+  usage
+  exit 1
+fi
+
+VERSION="$1"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+sed_in_place() {
+  if sed --version >/dev/null 2>&1; then
+    sed -i "$@"
+  else
+    sed -i "" "$@"
+  fi
+}
 
 # Validate version format
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Error: Version must be in format X.Y.Z (e.g., 0.6.6)"
+  echo "Error: Version must be in format X.Y.Z (e.g., 0.9.6)"
   exit 1
 fi
 
@@ -57,14 +75,14 @@ for EXAMPLE in $EXAMPLES; do
     # Handle arcium-client with both key orderings:
     # - { version = "X.Y.Z", default-features = false }
     # - { default-features = false, version = "X.Y.Z" }
-    sed -i '' -E "s/(arcium-client = \{[^}]*version = \")[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/" "$PROGRAM_CARGO"
-    sed -i '' "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"$VERSION\"/" "$PROGRAM_CARGO"
-    sed -i '' "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"$VERSION\"/" "$PROGRAM_CARGO"
+    sed_in_place -E "s/(arcium-client = \{[^}]*version = \")[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/" "$PROGRAM_CARGO"
+    sed_in_place "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"$VERSION\"/" "$PROGRAM_CARGO"
+    sed_in_place "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"$VERSION\"/" "$PROGRAM_CARGO"
   fi
 
   # 3. Update encrypted-ixs/Cargo.toml - arcis
   if [ -f "$EXAMPLE/encrypted-ixs/Cargo.toml" ]; then
-    sed -i '' "s/arcis = \"[^\"]*\"/arcis = \"$VERSION\"/" "$EXAMPLE/encrypted-ixs/Cargo.toml"
+    sed_in_place "s/arcis = \"[^\"]*\"/arcis = \"$VERSION\"/" "$EXAMPLE/encrypted-ixs/Cargo.toml"
   fi
 done
 
@@ -72,7 +90,7 @@ done
 echo "Updating CI workflows..."
 for WORKFLOW in "$REPO_ROOT"/.github/workflows/*.yaml; do
   if [ -f "$WORKFLOW" ]; then
-    sed -i '' -E "s|setup-arcium@v[0-9]+\.[0-9]+\.[0-9]+|setup-arcium@v$VERSION|g" "$WORKFLOW"
+    sed_in_place -E "s|setup-arcium@v[0-9]+\.[0-9]+\.[0-9]+|setup-arcium@v$VERSION|g" "$WORKFLOW"
   fi
 done
 
