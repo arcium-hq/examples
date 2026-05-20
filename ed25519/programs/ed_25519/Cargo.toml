@@ -20,10 +20,10 @@ custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
-arcium-client = { default-features = false, version = "=0.9.6" }
-arcium-macros = "0.9.6"
-arcium-anchor = "0.9.6"
+anchor-lang = { version = "1.0.2", features = ["init-if-needed"] }
+arcium-client = { default-features = false, version = "=0.10.2" }
+arcium-macros = "0.10.2"
+arcium-anchor = "0.10.2"
 # pin so that we do not have 1.13.*
 unicode-segmentation = { version = "=1.12.0"}
 

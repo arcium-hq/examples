@@ -20,7 +20,7 @@ pub mod blackjack {
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -157,7 +157,7 @@ pub mod blackjack {
         Ok(())
     }
     pub fn init_player_hit_comp_def(ctx: Context<InitPlayerHitCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -269,7 +269,7 @@ pub mod blackjack {
     pub fn init_player_double_down_comp_def(
         ctx: Context<InitPlayerDoubleDownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -375,7 +375,7 @@ pub mod blackjack {
     }
 
     pub fn init_player_stand_comp_def(ctx: Context<InitPlayerStandCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -455,7 +455,7 @@ pub mod blackjack {
     }
 
     pub fn init_dealer_play_comp_def(ctx: Context<InitDealerPlayCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -549,7 +549,7 @@ pub mod blackjack {
     }
 
     pub fn init_resolve_game_comp_def(ctx: Context<InitResolveGameCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
@@ -648,34 +648,34 @@ pub struct InitializeBlackjackGame<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -705,20 +705,20 @@ pub struct ShuffleAndDealCardsCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_AND_DEAL_CARDS)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -765,34 +765,34 @@ pub struct PlayerHit<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -821,20 +821,20 @@ pub struct PlayerHitCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_HIT)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -881,34 +881,34 @@ pub struct PlayerDoubleDown<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -937,20 +937,20 @@ pub struct PlayerDoubleDownCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_DOUBLE_DOWN)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -997,34 +997,34 @@ pub struct PlayerStand<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -1053,20 +1053,20 @@ pub struct PlayerStandCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLAYER_STAND)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1113,34 +1113,34 @@ pub struct DealerPlay<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -1169,20 +1169,20 @@ pub struct DealerPlayCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEALER_PLAY)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1229,34 +1229,34 @@ pub struct ResolveGame<'info> {
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_mempool_pda!(mxe_account)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_execpool_pda!(mxe_account)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_comp_pda!(computation_offset, mxe_account)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(
         mut,
         address = ARCIUM_FEE_POOL_ACCOUNT_ADDRESS,
@@ -1285,20 +1285,20 @@ pub struct ResolveGameCallback<'info> {
     #[account(
         address = derive_comp_def_pda!(COMP_DEF_OFFSET_RESOLVE_GAME)
     )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    pub comp_def_account: Box<Account<'info, ComputationDefinitionAccount>>,
     #[account(
         address = derive_mxe_pda!()
     )]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
     /// CHECK: computation_account, checked by arcium program via constraints in the callback context.
     pub computation_account: UncheckedAccount<'info>,
     #[account(
-        address = derive_cluster_pda!(mxe_account, ErrorCode::ClusterNotSet)
+        address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub cluster_account: Box<Account<'info, Cluster>>,
+    #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(mut)]
     pub blackjack_game: Account<'info, BlackjackGame>,
 }
@@ -1370,6 +1370,7 @@ pub struct BlackjackGame {
 
 #[repr(u8)]
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[borsh(use_discriminant = true)]
 pub enum GameState {
     Initial = 0,
     PlayerTurn = 1,

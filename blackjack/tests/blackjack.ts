@@ -1,5 +1,5 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchor from "@anchor-lang/core";
+import { Program } from "@anchor-lang/core";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Blackjack } from "../target/types/blackjack";
 import { randomBytes } from "crypto";
