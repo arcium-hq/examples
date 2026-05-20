@@ -158,7 +158,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       initComputationOffset,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Init game finalize signature:", initGameFinalizeSig);
 
@@ -234,7 +235,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       playerAMoveComputationOffset,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
@@ -310,7 +312,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       playerBMoveComputationOffset,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
@@ -355,7 +358,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       compareComputationOffset,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Finalize signature:", finalizeSig);
 
@@ -424,7 +428,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       initComputationOffset2,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Init game finalize signature:", initGameFinalizeSig2);
 
@@ -577,7 +582,8 @@ describe("RockPaperScissors", () => {
         provider as anchor.AnchorProvider,
         initComputationOffset3,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("Init game finalize signature:", initGameFinalizeSig);
 
@@ -636,7 +642,8 @@ describe("RockPaperScissors", () => {
         provider as anchor.AnchorProvider,
         playerAMoveComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
@@ -695,7 +702,8 @@ describe("RockPaperScissors", () => {
         provider as anchor.AnchorProvider,
         playerBMoveComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
@@ -742,7 +750,8 @@ describe("RockPaperScissors", () => {
         provider as anchor.AnchorProvider,
         compareComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("Finalize signature:", finalizeSig);
 
@@ -814,7 +823,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       initComputationOffset4,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log(
       "Init game finalize signature for invalid move test:",
@@ -875,7 +885,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       playerAMoveComputationOffset3,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Player A move finalize signature:", playerAMoveFinalizeSig3);
 
@@ -933,7 +944,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       playerBMoveComputationOffset3,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Player B move finalize signature:", playerBMoveFinalizeSig3);
 
@@ -977,7 +989,8 @@ describe("RockPaperScissors", () => {
       provider as anchor.AnchorProvider,
       compareComputationOffset3,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Finalize signature for invalid move test:", finalizeSig3);
 
