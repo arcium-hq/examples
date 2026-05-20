@@ -1370,13 +1370,12 @@ pub struct BlackjackGame {
 
 #[repr(u8)]
 #[derive(InitSpace, AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
-#[borsh(use_discriminant = true)]
 pub enum GameState {
-    Initial = 0,
-    PlayerTurn = 1,
-    DealerTurn = 2,
-    Resolving = 3,
-    Resolved = 4,
+    Initial,
+    PlayerTurn,
+    DealerTurn,
+    Resolving,
+    Resolved,
 }
 
 #[event]
