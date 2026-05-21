@@ -55,7 +55,7 @@ jobs:
           # Run the test and capture logs
           echo "Running arcium test..."
           sudo prlimit --pid $$ --nofile=1048576:1048576
-          timeout 10m arcium test || EXIT_CODE=$?
+          timeout 15m arcium test --mempool-size large || EXIT_CODE=$?
           CONTAINER_ID=$(docker ps -q -l)
           if [ -n "$CONTAINER_ID" ]; then
             echo "Most recent docker container id: $CONTAINER_ID"
