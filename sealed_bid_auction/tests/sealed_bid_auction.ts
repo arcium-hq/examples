@@ -202,7 +202,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         createComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("   Finalize tx:", createFinalizeSig);
 
@@ -263,7 +264,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         bidComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("   Finalize tx:", bidFinalizeSig);
 
@@ -341,7 +343,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         resolveComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("   Finalize tx:", resolveFinalizeSig);
 
@@ -451,7 +454,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         createComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("   Finalize tx:", createFinalizeSig);
 
@@ -509,7 +513,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         bid1ComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
 
       const bidPlaced1Event = await bidPlaced1Promise;
@@ -569,7 +574,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         bid2ComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
 
       const bidPlaced2Event = await bidPlaced2Promise;
@@ -653,7 +659,8 @@ describe("SealedBidAuction", () => {
         provider as anchor.AnchorProvider,
         resolveComputationOffset,
         program.programId,
-        "confirmed"
+        "confirmed",
+      300_000
       );
       console.log("   Finalize tx:", resolveFinalizeSig);
 

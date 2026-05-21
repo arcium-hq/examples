@@ -172,7 +172,8 @@ describe("ShareMedicalRecords", () => {
       provider as anchor.AnchorProvider,
       computationOffset,
       program.programId,
-      "confirmed"
+      "confirmed",
+      300_000
     );
     console.log("Finalize sig is ", finalizeSig);
 
