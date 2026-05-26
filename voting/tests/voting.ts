@@ -80,9 +80,7 @@ describe("Voting", () => {
   const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
   it("can vote on polls!", async () => {
-    // Single poll to keep CI runtime within v0.10.2 MPC throughput budget.
-    // Restore [420, 421, 422] when upstream throughput regression is fixed.
-    const POLL_IDS = [420];
+    const POLL_IDS = [420, 421, 422];
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
     const mxePublicKey = await getMXEPublicKeyWithRetry(

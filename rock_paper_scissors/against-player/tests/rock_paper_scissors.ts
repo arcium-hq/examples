@@ -522,12 +522,15 @@ describe("RockPaperScissors", () => {
     );
     const scenarioCipher = new RescueCipher(scenarioSharedSecret);
 
-    // Multi-scenario loop skipped to keep CI runtime within v0.10.2 MPC
-    // throughput budget. The standalone "Tests the complete Rock Paper
-    // Scissors game flow" above already exercises the full API.
-    // Restore [{player:0,house:0}, {player:0,house:2}, {player:2,house:0}]
-    // when upstream throughput regression is fixed.
-    const games: { player: number; house: number }[] = [];
+    // Play multiple games
+    const games = [
+      { player: 0, house: 0 }, // Rock vs Rock (Tie)
+      { player: 0, house: 2 }, // Rock vs Scissors (Win)
+      { player: 1, house: 0 }, // Paper vs Rock (Win)
+      { player: 2, house: 1 }, // Scissors vs Paper (Win)
+      { player: 2, house: 0 }, // Scissors vs Rock (Loss)
+      { player: 1, house: 2 }, // Paper vs Scissors (Loss)
+    ];
 
     for (const game of games) {
       console.log(
@@ -772,12 +775,7 @@ describe("RockPaperScissors", () => {
       expect(gameEvent.result).to.equal(expectedResult);
     }
 
-    // Step 5: Test invalid move scenario.
-    // Early-return to keep CI runtime within v0.10.2 MPC throughput budget.
-    // Remove this return when upstream throughput regression is fixed so the
-    // invalid-move flow below runs again.
-    return;
-    // eslint-disable-next-line no-unreachable
+    // Step 5: Test invalid move scenario
     console.log("\n--- Testing invalid move scenario ---");
 
     // Initialize a new game for this scenario
