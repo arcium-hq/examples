@@ -34,23 +34,23 @@
   resolved "https://registry.yarnpkg.com/@anchor-lang/errors/-/errors-1.0.2.tgz#eff0c851502229b5db91854a67b976a78471c9fb"
   integrity sha512-OZ9kpdUFdSnPzUeUnkeFYsjJbsgq26Sqv6yUljPVynuMJEADNJKL6ORL8Tb8YSVOPqHxoqggiDAelcVogGjKWg==
 
-"@arcium-hq/client@0.10.3":
-  version "0.10.3"
-  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.10.3.tgz#103d86d63fd81ec92180f37f28f8aae1ea781957"
-  integrity sha512-gcBxTzE4uRLx5axbNGklx6lOJmaaPzGzHOaBqCqIqNQcxHntTKwOCtGo9svkS4ENtOPRacH+sA2XcsMy41TNQg==
+"@arcium-hq/client@0.10.4":
+  version "0.10.4"
+  resolved "https://registry.yarnpkg.com/@arcium-hq/client/-/client-0.10.4.tgz#cf481c5401a06ba851f6e1577f180008026b92ef"
+  integrity sha512-Hf1rnAy8nkDVazKTL9CIjhkB2BIqz3rXmsT9fdlgsyWFQTgba5OD7siWP/MlfZXgmI9Vmcabi0r7gp5zfoiytg==
   dependencies:
     "@anchor-lang/core" "^1.0.2"
     "@noble/curves" "^1.9.5"
     "@noble/hashes" "^1.7.1"
     "@solana/web3.js" "^1.95.4"
 
-"@arcium-hq/reader@0.10.3":
-  version "0.10.3"
-  resolved "https://registry.yarnpkg.com/@arcium-hq/reader/-/reader-0.10.3.tgz#e870b539d7db4f9f381ad7505d07e6a0c3ee98fc"
-  integrity sha512-CacEq+aTl6AxwHOjb+HMCLUnnS96P50HsPVFBBQeKWxZGm02n7oMT8byU8h2T2GET7+Z7OR/mNaCqk5Qm/Os8w==
+"@arcium-hq/reader@0.10.4":
+  version "0.10.4"
+  resolved "https://registry.yarnpkg.com/@arcium-hq/reader/-/reader-0.10.4.tgz#abb36f39a21c4ee1e6b511d64da3b13965556941"
+  integrity sha512-dYOCE6IEZoMk0P5cMIXFgUAf06faAVsHmtD0bjvDD33+v5aDheP6lF1TbGZankowNxDB58Oqwzy+aElx2oN3ag==
   dependencies:
     "@anchor-lang/core" "^1.0.2"
-    "@arcium-hq/client" "0.10.3"
+    "@arcium-hq/client" "0.10.4"
     "@noble/curves" "^1.9.5"
     "@noble/hashes" "^1.7.1"
 
@@ -123,9 +123,9 @@
     superstruct "^2.0.2"
 
 "@swc/helpers@^0.5.11":
-  version "0.5.22"
-  resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.5.22.tgz#914130a189205cef611b75948c93b95adf6cf11b"
-  integrity sha512-/e2Ly3Docn9kYByap6TV4oquJ3wQuz3c+kC74riqtkwU9CwTMeuj6t2rW+bRr4pyOx/CYQM4wr0RgaKQwGEz0A==
+  version "0.5.23"
+  resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.5.23.tgz#19287d0d86d962b111376039a50c792902c9a86a"
+  integrity sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==
   dependencies:
     tslib "^2.8.0"
 

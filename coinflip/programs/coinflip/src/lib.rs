@@ -158,7 +158,7 @@ pub struct FlipCallback<'info> {
     #[account(
         address = derive_cluster_pda!(mxe_account)
     )]
-    pub cluster_account: Account<'info, Cluster>,
+    pub cluster_account: Box<Account<'info, Cluster>>,
     #[account(address = ::arcium_anchor::solana_instructions_sysvar::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: UncheckedAccount<'info>,
