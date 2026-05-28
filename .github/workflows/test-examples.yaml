@@ -47,37 +47,74 @@ jobs:
             ${{ runner.os }}-cargo-${{ matrix.example }}-
 
       - name: Test ${{ matrix.example }}
+        env:
+          # Routed through env (not inlined into the shell) so a maliciously named
+          # example directory in a fork PR can't inject shell commands.
+          EXAMPLE: ${{ matrix.example }}
         run: |
-          pushd ${{ matrix.example }}
+          # Slug for the artifact name (artifact names cannot contain / or .)
+          echo "EXAMPLE_SLUG=$(echo "$EXAMPLE" | sed 's|[./]|_|g')" >> "$GITHUB_ENV"
+
+          pushd "$EXAMPLE"
           yarn install
           arcium build
 
-          # Run the test and capture logs
+          mkdir -p artifacts/diagnostics
+          DIAG=artifacts/diagnostics
+
+          # Toolchain/runtime versions: catches wrong or stale Arx runtime images
+          {
+            echo "=== arcup list ==="; arcup list || true
+            echo "=== arcium --version ==="; arcium --version || true
+            echo "=== solana --version ==="; solana --version || true
+            echo "=== anchor --version ==="; anchor --version || true
+          } > "$DIAG/versions.txt" 2>&1 || true
+
+          # Run the test. tee to a file (GitHub default shell is `bash -eo pipefail`,
+          # so $? after the pipeline is arcium's exit code, not tee's).
           echo "Running arcium test..."
           sudo prlimit --pid $$ --nofile=1048576:1048576
-          timeout 15m arcium test --mempool-size large || EXIT_CODE=$?
+          timeout 15m arcium test --mempool-size large 2>&1 | tee "$DIAG/arcium-test.log" || EXIT_CODE=$?
+
+          # Post-mortem snapshots -> files (uploaded as artifacts, no console truncation)
+          docker ps -a > "$DIAG/docker-ps.txt" 2>&1 || true
+          docker images 'arcium/*' > "$DIAG/docker-images.txt" 2>&1 || true
           CONTAINER_ID=$(docker ps -q -l)
           if [ -n "$CONTAINER_ID" ]; then
-            echo "Most recent docker container id: $CONTAINER_ID"
-            docker logs "$CONTAINER_ID"
-          else
-            echo "No docker container found"
+            docker logs "$CONTAINER_ID" > "$DIAG/last-container.log" 2>&1 || true
           fi
-          echo "=== Docker Containers ==="
-          docker ps -a
-          echo "=== Callback Server Logs ==="
-          cat artifacts/callback_server.log || true
-          echo "=== Docker Compose Logs ==="
-          docker compose -f artifacts/docker-compose-arx-env.yml logs || true
-          echo "=== Anchor Program Logs ==="
-          cat .anchor/program-logs/*.log 2>/dev/null || true
-          echo "=== Anchor Validator Log ==="
-          cat .anchor/test-ledger/validator.log 2>/dev/null | tail -100 || true
+          docker compose -f artifacts/docker-compose-arx-env.yml logs > "$DIAG/docker-compose.log" 2>&1 || true
+          cp -f artifacts/callback_server.log "$DIAG/callback_server.log" 2>/dev/null || true
+          cp -f .anchor/program-logs/*.log "$DIAG/" 2>/dev/null || true
+          tail -200 .anchor/test-ledger/validator.log > "$DIAG/validator.log" 2>/dev/null || true
+
+          # Triage summary: the markers that distinguish "slow" (Case A) from
+          # "callback ran but status stuck" (Case B) at a glance.
+          {
+            echo "=== Finalization timeouts (Case A vs B starts here) ==="
+            grep -nE "did not finalize within" "$DIAG/arcium-test.log" || echo "(none)"
+            echo "=== AlreadyCallbacked / callback errors (points to Case B) ==="
+            grep -niE "alreadycallback|callback.*error|panic" \
+              "$DIAG/callback_server.log" "$DIAG/docker-compose.log" 2>/dev/null || echo "(none)"
+          } > "$DIAG/summary.txt" 2>&1 || true
+
+          # Brief console glance; full logs live in the uploaded artifact
+          echo "=== Triage summary ==="; cat "$DIAG/summary.txt" || true
+          echo "=== Callback Server Logs (tail) ==="; tail -50 "$DIAG/callback_server.log" 2>/dev/null || true
           popd
 
           if [ -n "$EXIT_CODE" ]; then
             exit $EXIT_CODE
           fi
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-${{ env.EXAMPLE_SLUG }}
+          path: ${{ matrix.example }}/artifacts/diagnostics/
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Save cargo registry
         uses: actions/cache/save@v4
