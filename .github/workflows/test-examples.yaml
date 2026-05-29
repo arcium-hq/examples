@@ -70,11 +70,13 @@ jobs:
             echo "=== anchor --version ==="; anchor --version || true
           } > "$DIAG/versions.txt" 2>&1 || true
 
-          # Run the test. tee to a file (GitHub default shell is `bash -eo pipefail`,
-          # so $? after the pipeline is arcium's exit code, not tee's).
+          # Run the test. Redirect (NOT a pipe) so $? is arcium's exit code; a
+          # `| tee` would make $? read tee's status (0) and mask test failures.
+          # --detach leaves localnet/Arx containers up so the post-mortem below
+          # can actually capture node logs (otherwise they're torn down first).
           echo "Running arcium test..."
           sudo prlimit --pid $$ --nofile=1048576:1048576
-          timeout 15m arcium test --mempool-size large 2>&1 | tee "$DIAG/arcium-test.log" || EXIT_CODE=$?
+          timeout 15m arcium test --mempool-size large --detach > "$DIAG/arcium-test.log" 2>&1 || EXIT_CODE=$?
 
           # Post-mortem snapshots -> files (uploaded as artifacts, no console truncation)
           docker ps -a > "$DIAG/docker-ps.txt" 2>&1 || true
@@ -94,12 +96,19 @@ jobs:
             echo "=== Finalization timeouts (Case A vs B starts here) ==="
             grep -nE "did not finalize within" "$DIAG/arcium-test.log" || echo "(none)"
             echo "=== AlreadyCallbacked / callback errors (points to Case B) ==="
-            grep -niE "alreadycallback|callback.*error|panic" \
-              "$DIAG/callback_server.log" "$DIAG/docker-compose.log" 2>/dev/null || echo "(none)"
+            # Scan every captured log: AlreadyCallbacked shows up in the on-chain
+            # program logs, not just the node/callback-server logs.
+            grep -rniE "alreadycallback|callback.*error|panic" "$DIAG"/*.log 2>/dev/null || echo "(none)"
+            echo "=== Queued-but-never-callbacked check ==="
+            echo "Compare QueueComputation vs CallbackComputation counts in program logs:"
+            echo "  QueueComputation:    $(grep -rhc "Instruction: QueueComputation" "$DIAG"/*.log 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo '?')"
+            echo "  CallbackComputation: $(grep -rhc "Instruction: CallbackComputation" "$DIAG"/*.log 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo '?')"
           } > "$DIAG/summary.txt" 2>&1 || true
 
-          # Brief console glance; full logs live in the uploaded artifact
+          # Brief console glance; full logs live in the uploaded artifact.
+          # (Output was redirected, not streamed, so surface a tail here.)
           echo "=== Triage summary ==="; cat "$DIAG/summary.txt" || true
+          echo "=== arcium test (tail) ==="; tail -120 "$DIAG/arcium-test.log" 2>/dev/null || true
           echo "=== Callback Server Logs (tail) ==="; tail -50 "$DIAG/callback_server.log" 2>/dev/null || true
           popd
 
