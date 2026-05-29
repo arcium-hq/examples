@@ -89,6 +89,11 @@ jobs:
           cp -f artifacts/callback_server.log "$DIAG/callback_server.log" 2>/dev/null || true
           cp -f .anchor/program-logs/*.log "$DIAG/" 2>/dev/null || true
           tail -200 .anchor/test-ledger/validator.log > "$DIAG/validator.log" 2>/dev/null || true
+          # Arx node + trusted-dealer logs go to host-mounted dirs (not stdout), so
+          # `docker logs` is empty. These hold the node-side reason a callback was
+          # dropped: bounded-retry exhaustion, on-chain send errors, RPC failures.
+          cp -rf artifacts/arx_node_logs "$DIAG/arx_node_logs" 2>/dev/null || true
+          cp -rf artifacts/trusted_dealer_logs "$DIAG/trusted_dealer_logs" 2>/dev/null || true
 
           # Triage summary: the markers that distinguish "slow" (Case A) from
           # "callback ran but status stuck" (Case B) at a glance.
@@ -103,6 +108,9 @@ jobs:
             echo "Compare QueueComputation vs CallbackComputation counts in program logs:"
             echo "  QueueComputation:    $(grep -rhc "Instruction: QueueComputation" "$DIAG"/*.log 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo '?')"
             echo "  CallbackComputation: $(grep -rhc "Instruction: CallbackComputation" "$DIAG"/*.log 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo '?')"
+            echo "=== Node-side callback delivery failures (the drop mechanism) ==="
+            grep -rhE "Failed to send versioned callback|Processing callback for computation|Attempt [0-9]+/[0-9]+" \
+              "$DIAG/arx_node_logs" 2>/dev/null | tail -25 || echo "(none)"
           } > "$DIAG/summary.txt" 2>&1 || true
 
           # Brief console glance; full logs live in the uploaded artifact.
