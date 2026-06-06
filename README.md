@@ -1,6 +1,6 @@
-# Arcium Examples - Privacy-Preserving Applications
+# Arcium Examples 
 
-Applications built on public blockchains face a fundamental limitation: all computation is transparent. These examples demonstrate how to build applications that can compute on encrypted data while preserving privacy.
+Applications built on public blockchains face a fundamental limitation: all computation is transparent. These examples demonstrate how to build applications that can compute on confidential data.
 
 ## Getting Started
 
