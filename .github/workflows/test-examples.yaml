@@ -8,6 +8,8 @@ on:
 env:
   RUSTFLAGS: "-Dwarnings -A deprecated"
   CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
 
 jobs:
   find-examples:
