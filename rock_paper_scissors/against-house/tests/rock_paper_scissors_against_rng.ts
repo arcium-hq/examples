@@ -121,8 +121,7 @@ describe("RockPaperScissorsAgainstRng", () => {
       provider as anchor.AnchorProvider,
       computationOffset,
       program.programId,
-      "confirmed",
-      300_000
+      "confirmed"
     );
     console.log("Finalize sig is ", finalizeSig);
 

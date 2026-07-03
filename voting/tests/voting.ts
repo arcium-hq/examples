@@ -155,8 +155,7 @@ describe("Voting", () => {
         provider as anchor.AnchorProvider,
         pollComputationOffset,
         program.programId,
-        "confirmed",
-        300_000
+        "confirmed"
       );
       console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
     }
@@ -234,8 +233,7 @@ describe("Voting", () => {
         provider as anchor.AnchorProvider,
         voteComputationOffset,
         program.programId,
-        "confirmed",
-        300_000
+        "confirmed"
       );
       console.log(`Finalize vote for poll ${POLL_ID} sig is `, finalizeSig);
 
@@ -336,8 +334,7 @@ describe("Voting", () => {
         provider as anchor.AnchorProvider,
         revealComputationOffset,
         program.programId,
-        "confirmed",
-        300_000
+        "confirmed"
       );
       console.log(
         `Reveal finalize for poll ${POLL_ID} sig is `,

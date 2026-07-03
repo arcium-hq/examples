@@ -200,8 +200,7 @@ describe("Blackjack", () => {
       provider,
       computationOffsetInit,
       program.programId,
-      "confirmed",
-      300_000
+      "confirmed"
     );
     console.log(
       "Shuffle/deal computation finalized. Signature:",
@@ -309,8 +308,7 @@ describe("Blackjack", () => {
           provider,
           playerHitComputationOffset,
           program.programId,
-          "confirmed",
-          300_000
+          "confirmed"
         );
         console.log(
           "Player Hit computation finalized. Signature:",
@@ -402,8 +400,7 @@ describe("Blackjack", () => {
           provider,
           playerStandComputationOffset,
           program.programId,
-          "confirmed",
-          300_000
+          "confirmed"
         );
         console.log(
           "Player Stand computation finalized. Signature:",
@@ -479,8 +476,7 @@ describe("Blackjack", () => {
         provider,
         dealerPlayComputationOffset,
         program.programId,
-        "confirmed",
-        300_000
+        "confirmed"
       );
       console.log(
         "Dealer Play computation finalized. Signature:",
@@ -547,8 +543,7 @@ describe("Blackjack", () => {
         provider,
         resolveComputationOffset,
         program.programId,
-        "confirmed",
-        300_000
+        "confirmed"
       );
       console.log(
         "Resolve Game computation finalized. Signature:",

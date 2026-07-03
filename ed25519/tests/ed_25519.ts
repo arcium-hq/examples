@@ -126,8 +126,7 @@ describe("Ed25519", () => {
       provider as anchor.AnchorProvider,
       computationOffsetSignMessage,
       program.programId,
-      "confirmed",
-      300_000
+      "confirmed"
     );
 
     const signMessageEvent = await signMessageEventPromise;
@@ -241,8 +240,7 @@ describe("Ed25519", () => {
       provider as anchor.AnchorProvider,
       computationOffsetVerifySignature,
       program.programId,
-      "confirmed",
-      300_000
+      "confirmed"
     );
 
     const verifySignatureEvent = await verifySignatureEventPromise;
