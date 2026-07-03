@@ -1,5 +1,5 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchor from "@anchor-lang/core";
+import { Program } from "@anchor-lang/core";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { Blackjack } from "../target/types/blackjack";
 import { randomBytes } from "crypto";
@@ -69,7 +69,7 @@ function unpackHand(packed: bigint[], handSize: number): number[] {
   const fieldElement = packed[0];
   const cards: number[] = [];
   for (let i = 0; i < handSize; i++) {
-    cards.push(Number((fieldElement >> BigInt(8 * i)) & 0xffn));
+    cards.push(Number((fieldElement >> BigInt(8 * i)) & BigInt(0xff)));
   }
   return cards;
 }
@@ -582,15 +582,16 @@ describe("Blackjack", () => {
 
     console.log("Shuffle/Deal CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Shuffle/Deal CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(
@@ -637,15 +638,16 @@ describe("Blackjack", () => {
     )[0];
     console.log("Player Hit CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Player Hit CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(
@@ -692,15 +694,16 @@ describe("Blackjack", () => {
     )[0];
     console.log("Player Stand CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Player Stand CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(
@@ -747,15 +750,16 @@ describe("Blackjack", () => {
     )[0];
     console.log("Player DoubleDown CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Player DoubleDown CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(
@@ -802,15 +806,16 @@ describe("Blackjack", () => {
     )[0];
     console.log("Dealer Play CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Dealer Play CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(
@@ -857,15 +862,16 @@ describe("Blackjack", () => {
     )[0];
     console.log("Resolve Game CompDef PDA:", compDefPDA.toBase58());
 
-    try {
-      await program.account.computationDefinitionAccount.fetch(compDefPDA);
+    const arciumProgram = getArciumProgram(provider);
+    const compDefAccount =
+      await arciumProgram.account.computationDefinitionAccount.fetchNullable(
+        compDefPDA
+      );
+    if (compDefAccount !== null) {
       console.log("Resolve Game CompDef already initialized.");
       return "Already Initialized";
-    } catch (e) {
-      // Not initialized, proceed
     }
 
-    const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
     const lutAddress = getLookupTableAddress(

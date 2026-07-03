@@ -6,10 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sealed_bid_auction = "CHFR2eD8dmZ5NM7UbwM7nWFVTfWPpdtKfv6H4Bgtha3e"
-
-[registry]
-url = "https://api.apr.dev"
+sealed_bid_auction = "HB2ec1r1gh7jSnKJ4T5Lfo3W2VDoLdtEV2cDq6gEGbxT"
 
 [provider]
 cluster = "localnet"
@@ -17,8 +14,3 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
-
-[test]
-startup_wait = 20000
-shutdown_wait = 2000
-upgradeable = false

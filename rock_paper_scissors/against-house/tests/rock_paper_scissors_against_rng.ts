@@ -1,5 +1,5 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchor from "@anchor-lang/core";
+import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
 import { RockPaperScissorsAgainstRng } from "../target/types/rock_paper_scissors_against_rng";
 import { randomBytes } from "crypto";

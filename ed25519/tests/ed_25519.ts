@@ -1,5 +1,5 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import * as anchor from "@anchor-lang/core";
+import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
 import { Ed25519 } from "../target/types/ed_25519";
 import { randomBytes } from "crypto";
@@ -24,11 +24,22 @@ import {
   getLookupTableAddress,
   getArciumProgram,
   x25519,
+  createPacker,
 } from "@arcium-hq/client";
-import { circuits } from "../build/circuits";
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
+
+const verifyingKeyPacker = createPacker<
+  { public_key_encoded: number[] },
+  { public_key_encoded: bigint[] }
+>(
+  Array.from({ length: 32 }, (_, index) => ({
+    name: `public_key_encoded[${index}]`,
+    type: { Integer: { signed: false, width: 8 } },
+  })),
+  "VerifyingKey"
+);
 
 describe("Ed25519", () => {
   // Configure the client to use the local cluster.
@@ -168,7 +179,7 @@ describe("Ed25519", () => {
     }
 
     // pack the verifying key
-    const verifyingKeyPacked = circuits.VerifyingKey.pack({
+    const verifyingKeyPacked = verifyingKeyPacker.pack({
       public_key_encoded: Array.from(verifyingKey),
     });
     const verifyingKeyEnc = oneTimeCipher.encrypt(

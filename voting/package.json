@@ -5,9 +5,10 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },
   "dependencies": {
-    "@arcium-hq/client": "0.9.6",
-    "@coral-xyz/anchor": "^0.32.1",
-    "tweetnacl": "^1.0.3"
+    "@arcium-hq/client": "0.12.0",
+    "tweetnacl": "^1.0.3",
+    "@anchor-lang/core": "^1.0.2",
+    "@arcium-hq/reader": "0.12.0"
   },
   "devDependencies": {
     "@types/bn.js": "^5.1.0",

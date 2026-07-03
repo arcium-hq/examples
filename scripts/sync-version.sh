@@ -20,6 +20,13 @@ if ! command -v jq &> /dev/null; then
   exit 1
 fi
 
+sed_in_place() {
+  local file=$1
+  shift
+  sed -i.bak "$@" "$file"
+  rm -f "$file.bak"
+}
+
 # Check arcium CLI version
 ARCIUM_VERSION=$(arcium --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "")
 if [ -z "$ARCIUM_VERSION" ]; then
@@ -45,26 +52,31 @@ for EXAMPLE in $EXAMPLES; do
   EXAMPLE_NAME=$(echo "$EXAMPLE" | sed "s|$REPO_ROOT/||")
   echo "Updating $EXAMPLE_NAME..."
 
-  # 1. Update package.json - @arcium-hq/client
+  # 1. Update package.json - @arcium-hq/client and @arcium-hq/reader
+  # Only rewrites keys that already exist (never injects a missing dep).
   if [ -f "$EXAMPLE/package.json" ]; then
-    jq ".dependencies[\"@arcium-hq/client\"] = \"$VERSION\"" "$EXAMPLE/package.json" > "$EXAMPLE/package.json.tmp"
+    jq --arg v "$VERSION" '.dependencies |= (
+        (if has("@arcium-hq/client") then .["@arcium-hq/client"] = $v else . end)
+        | (if has("@arcium-hq/reader") then .["@arcium-hq/reader"] = $v else . end)
+      )' "$EXAMPLE/package.json" > "$EXAMPLE/package.json.tmp"
     mv "$EXAMPLE/package.json.tmp" "$EXAMPLE/package.json"
   fi
 
   # 2. Update programs/*/Cargo.toml
   PROGRAM_CARGO=$(find "$EXAMPLE/programs" -name "Cargo.toml" 2>/dev/null | head -1)
   if [ -n "$PROGRAM_CARGO" ] && [ -f "$PROGRAM_CARGO" ]; then
-    # Handle arcium-client with both key orderings:
+    # Handle arcium-client with both key orderings and an optional "=" exact-pin:
     # - { version = "X.Y.Z", default-features = false }
     # - { default-features = false, version = "X.Y.Z" }
-    sed -i '' -E "s/(arcium-client = \{[^}]*version = \")[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/" "$PROGRAM_CARGO"
-    sed -i '' "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"$VERSION\"/" "$PROGRAM_CARGO"
-    sed -i '' "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"$VERSION\"/" "$PROGRAM_CARGO"
+    # - { default-features = false, version = "=X.Y.Z" }   (exact pin)
+    sed_in_place "$PROGRAM_CARGO" -E "s/(arcium-client = \{[^}]*version = \"=?)[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/"
+    sed_in_place "$PROGRAM_CARGO" "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"=$VERSION\"/"
+    sed_in_place "$PROGRAM_CARGO" "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"=$VERSION\"/"
   fi
 
   # 3. Update encrypted-ixs/Cargo.toml - arcis
   if [ -f "$EXAMPLE/encrypted-ixs/Cargo.toml" ]; then
-    sed -i '' "s/arcis = \"[^\"]*\"/arcis = \"$VERSION\"/" "$EXAMPLE/encrypted-ixs/Cargo.toml"
+    sed_in_place "$EXAMPLE/encrypted-ixs/Cargo.toml" "s/arcis = \"[^\"]*\"/arcis = \"=$VERSION\"/"
   fi
 done
 
@@ -72,7 +84,7 @@ done
 echo "Updating CI workflows..."
 for WORKFLOW in "$REPO_ROOT"/.github/workflows/*.yaml; do
   if [ -f "$WORKFLOW" ]; then
-    sed -i '' -E "s|setup-arcium@v[0-9]+\.[0-9]+\.[0-9]+|setup-arcium@v$VERSION|g" "$WORKFLOW"
+    sed_in_place "$WORKFLOW" -E "s|setup-arcium@v[0-9]+\.[0-9]+\.[0-9]+|setup-arcium@v$VERSION|g"
   fi
 done
 

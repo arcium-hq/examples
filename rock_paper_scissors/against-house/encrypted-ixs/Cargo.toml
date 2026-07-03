@@ -4,7 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis = "0.9.6"
-blake3 = "=1.8.2"
-# Pin to avoid toml_parser 1.1.0 (edition2024) which Anchor 0.32.1's Cargo 1.84 cannot build.
-proc-macro-crate = "=3.3.0"
+arcis = "=0.12.0"

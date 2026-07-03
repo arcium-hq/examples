@@ -6,10 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-coinflip = "AyXE8Npj6s3e74XhUoLu8WmnBGPfUcAjzG8oSyYBbnvP"
-
-[registry]
-url = "https://api.apr.dev"
+coinflip = "FV2cKbtxcazg36SYzTiyhzWPXsX7T3A7WtaJZGKfHhh7"
 
 [provider]
 cluster = "localnet"
@@ -17,8 +14,3 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
-
-[test]
-startup_wait = 20000
-shutdown_wait = 2000
-upgradeable = false
