@@ -4535,7 +4535,6 @@ dependencies = [
  "arcium-anchor",
  "arcium-client",
  "arcium-macros",
- "unicode-segmentation",
 ]
 
 [[package]]
