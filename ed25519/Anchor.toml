@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-ed_25519 = "Bxe5nHZGCNpcojBQr5LWGmbgEmo7MTCKwnzHDgtAWqzf"
+ed_25519 = "2DkHTVNv22UQVtQt1rSRa5SVFXLEepHoLSJv4p6g1Fcp"
 
 [provider]
 cluster = "localnet"

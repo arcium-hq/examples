@@ -583,7 +583,7 @@ describe("RockPaperScissors", () => {
         initComputationOffset3,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("Init game finalize signature:", initGameFinalizeSig);
 
@@ -643,7 +643,7 @@ describe("RockPaperScissors", () => {
         playerAMoveComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
@@ -703,7 +703,7 @@ describe("RockPaperScissors", () => {
         playerBMoveComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
@@ -751,7 +751,7 @@ describe("RockPaperScissors", () => {
         compareComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("Finalize signature:", finalizeSig);
 

@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_FLIP: u32 = comp_def_offset("flip");
 
-declare_id!("AyXE8Npj6s3e74XhUoLu8WmnBGPfUcAjzG8oSyYBbnvP");
+declare_id!("FV2cKbtxcazg36SYzTiyhzWPXsX7T3A7WtaJZGKfHhh7");
 
 #[arcium_program]
 pub mod coinflip {
@@ -51,6 +51,7 @@ pub mod coinflip {
                 &[],
             )?],
             1,
+            0,
             0,
         )?;
 

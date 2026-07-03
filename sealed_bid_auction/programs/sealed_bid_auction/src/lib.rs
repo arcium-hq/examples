@@ -12,7 +12,7 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine
 const ENCRYPTED_STATE_OFFSET: u32 = 77;
 const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
-declare_id!("CHFR2eD8dmZ5NM7UbwM7nWFVTfWPpdtKfv6H4Bgtha3e");
+declare_id!("HB2ec1r1gh7jSnKJ4T5Lfo3W2VDoLdtEV2cDq6gEGbxT");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
 pub enum AuctionType {
@@ -90,6 +90,7 @@ pub mod sealed_bid_auction {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
 
@@ -178,6 +179,7 @@ pub mod sealed_bid_auction {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
 
@@ -274,6 +276,7 @@ pub mod sealed_bid_auction {
             )?],
             1,
             0,
+            0,
         )?;
 
         Ok(())
@@ -360,6 +363,7 @@ pub mod sealed_bid_auction {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
 

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-share_medical_records = "NEnkfYAYz9epwXkXChP3hz2y1L8wUgf2xkrUKAmfxBD"
+share_medical_records = "6y77R41uE4M81huTxNsF7BVfSLJkUHyrxBGTTQCqR4MF"
 
 [provider]
 cluster = "localnet"

@@ -6,7 +6,7 @@ const COMP_DEF_OFFSET_INIT_VOTE_STATS: u32 = comp_def_offset("init_vote_stats");
 const COMP_DEF_OFFSET_VOTE: u32 = comp_def_offset("vote");
 const COMP_DEF_OFFSET_REVEAL: u32 = comp_def_offset("reveal_result");
 
-declare_id!("J7KTdhMTVhy7vtgyFSXi9SpptdTDmpg93pB53UdfuttF");
+declare_id!("4EyLaay39jEFPsaDpgqEZTWSJhKWvjVjQ19tojVGi9D3");
 
 #[arcium_program]
 pub mod voting {
@@ -59,6 +59,7 @@ pub mod voting {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
 
@@ -138,6 +139,7 @@ pub mod voting {
             )?],
             1,
             0,
+            0,
         )?;
         Ok(())
     }
@@ -214,6 +216,7 @@ pub mod voting {
                 &[],
             )?],
             1,
+            0,
             0,
         )?;
         Ok(())

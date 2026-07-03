@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_SHARE_PATIENT_DATA: u32 = comp_def_offset("share_patient_data");
 
-declare_id!("NEnkfYAYz9epwXkXChP3hz2y1L8wUgf2xkrUKAmfxBD");
+declare_id!("6y77R41uE4M81huTxNsF7BVfSLJkUHyrxBGTTQCqR4MF");
 
 #[arcium_program]
 pub mod share_medical_records {
@@ -96,6 +96,7 @@ pub mod share_medical_records {
                 &[],
             )?],
             1,
+            0,
             0,
         )?;
         Ok(())

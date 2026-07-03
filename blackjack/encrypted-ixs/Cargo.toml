@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-arcis = "0.10.4"
+arcis = "=0.12.0"

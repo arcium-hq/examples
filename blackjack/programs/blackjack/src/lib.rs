@@ -9,7 +9,7 @@ const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
 const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
 const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
-declare_id!("Ku4ygyvbN7UbezR3eNGBJMM5iGdM5dPtb23czFuenMK");
+declare_id!("EEcEHctTAbupPh43vJj6u7e5JDaWR6DB8otjB4gKR5LR");
 
 #[arcium_program]
 pub mod blackjack {
@@ -75,6 +75,7 @@ pub mod blackjack {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
         Ok(())
@@ -214,6 +215,7 @@ pub mod blackjack {
             )?],
             1,
             0,
+            0,
         )?;
         Ok(())
     }
@@ -321,6 +323,7 @@ pub mod blackjack {
             )?],
             1,
             0,
+            0,
         )?;
         Ok(())
     }
@@ -418,6 +421,7 @@ pub mod blackjack {
             )?],
             1,
             0,
+            0,
         )?;
         Ok(())
     }
@@ -501,6 +505,7 @@ pub mod blackjack {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
         Ok(())
@@ -592,6 +597,7 @@ pub mod blackjack {
                 }],
             )?],
             1,
+            0,
             0,
         )?;
         Ok(())

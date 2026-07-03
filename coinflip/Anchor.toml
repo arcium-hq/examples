@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-coinflip = "AyXE8Npj6s3e74XhUoLu8WmnBGPfUcAjzG8oSyYBbnvP"
+coinflip = "FV2cKbtxcazg36SYzTiyhzWPXsX7T3A7WtaJZGKfHhh7"
 
 [provider]
 cluster = "localnet"

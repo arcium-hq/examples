@@ -203,7 +203,7 @@ describe("SealedBidAuction", () => {
         createComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("   Finalize tx:", createFinalizeSig);
 
@@ -265,7 +265,7 @@ describe("SealedBidAuction", () => {
         bidComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("   Finalize tx:", bidFinalizeSig);
 
@@ -344,7 +344,7 @@ describe("SealedBidAuction", () => {
         resolveComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("   Finalize tx:", resolveFinalizeSig);
 
@@ -455,7 +455,7 @@ describe("SealedBidAuction", () => {
         createComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("   Finalize tx:", createFinalizeSig);
 
@@ -514,7 +514,7 @@ describe("SealedBidAuction", () => {
         bid1ComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
 
       const bidPlaced1Event = await bidPlaced1Promise;
@@ -575,7 +575,7 @@ describe("SealedBidAuction", () => {
         bid2ComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
 
       const bidPlaced2Event = await bidPlaced2Promise;
@@ -660,7 +660,7 @@ describe("SealedBidAuction", () => {
         resolveComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log("   Finalize tx:", resolveFinalizeSig);
 

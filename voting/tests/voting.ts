@@ -156,7 +156,7 @@ describe("Voting", () => {
         pollComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
     }
@@ -235,7 +235,7 @@ describe("Voting", () => {
         voteComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log(`Finalize vote for poll ${POLL_ID} sig is `, finalizeSig);
 
@@ -337,7 +337,7 @@ describe("Voting", () => {
         revealComputationOffset,
         program.programId,
         "confirmed",
-      300_000
+        300_000
       );
       console.log(
         `Reveal finalize for poll ${POLL_ID} sig is `,

@@ -70,13 +70,13 @@ for EXAMPLE in $EXAMPLES; do
     # - { default-features = false, version = "X.Y.Z" }
     # - { default-features = false, version = "=X.Y.Z" }   (exact pin)
     sed_in_place "$PROGRAM_CARGO" -E "s/(arcium-client = \{[^}]*version = \"=?)[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/"
-    sed_in_place "$PROGRAM_CARGO" "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"$VERSION\"/"
-    sed_in_place "$PROGRAM_CARGO" "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"$VERSION\"/"
+    sed_in_place "$PROGRAM_CARGO" "s/arcium-macros = \"[^\"]*\"/arcium-macros = \"=$VERSION\"/"
+    sed_in_place "$PROGRAM_CARGO" "s/arcium-anchor = \"[^\"]*\"/arcium-anchor = \"=$VERSION\"/"
   fi
 
   # 3. Update encrypted-ixs/Cargo.toml - arcis
   if [ -f "$EXAMPLE/encrypted-ixs/Cargo.toml" ]; then
-    sed_in_place "$EXAMPLE/encrypted-ixs/Cargo.toml" "s/arcis = \"[^\"]*\"/arcis = \"$VERSION\"/"
+    sed_in_place "$EXAMPLE/encrypted-ixs/Cargo.toml" "s/arcis = \"[^\"]*\"/arcis = \"=$VERSION\"/"
   fi
 done
 

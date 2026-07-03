@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-rock_paper_scissors_against_rng = "AU68jQVHrxf1XcYPEEu3nS9d6QQpVdpQ8SUsX6NofaX4"
+rock_paper_scissors_against_rng = "9GfCvW61FrDAJfU5mRVSGcUwY8NDERgrggGjs1Vrxmc8"
 
 [provider]
 cluster = "localnet"

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-blackjack = "Ku4ygyvbN7UbezR3eNGBJMM5iGdM5dPtb23czFuenMK"
+blackjack = "EEcEHctTAbupPh43vJj6u7e5JDaWR6DB8otjB4gKR5LR"
 
 [provider]
 cluster = "localnet"
