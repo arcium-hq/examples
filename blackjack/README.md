@@ -1,138 +1,65 @@
-# Blackjack - Hidden Game State
+# Blackjack — hidden game state
 
-Physical blackjack naturally hides the dealer's hole card. Digital blackjack has a different problem: the card's value must be stored somewhere - whether that's on a game server, in a database, or in code. Trusting a server to "hide" it just means betting they won't peek.
+A single-player blackjack game where the shuffled deck and the dealer's hole card exist only as ciphertext.
+MPC nodes shuffle and deal inside the computation; the player decrypts only their own hand and the dealer's
+face-up card, and no server, node, or chain observer can peek at undealt cards.
 
-This example shows how to implement blackjack where cards remain encrypted until they need to be revealed according to game rules.
+**Use this pattern when** encrypted state must persist on-chain across many turns with rule-driven selective
+reveals: card games, fog-of-war strategy, any turn-based game with private state.
 
-## Why is hidden information hard in digital card games?
+## How it works
 
-Physical blackjack maintains three types of hidden information: the dealer's hole card, undealt cards in the deck, and random shuffle order. In digital implementations, this information must be stored as data - whether on a server or on a public blockchain - where it becomes vulnerable to inspection or manipulation.
+1. `initialize_blackjack_game` creates the `BlackjackGame` PDA and queues `shuffle_and_deal_cards`, which
+   shuffles a 52-card deck with `ArcisRNG::shuffle` and deals two cards each: deck and dealer hand return as
+   `Enc<Mxe, ...>` (decryptable by no one), player hand and dealer face-up card as `Enc<Shared, ...>`
+   (decryptable only by the player).
+2. The callback stores every ciphertext in `BlackjackGame` and emits `CardsShuffledAndDealtEvent`; the
+   player decrypts their hand client-side.
+3. `player_hit` and `player_double_down` feed the stored deck and hand ciphertexts back into MPC by byte
+   offset (`ArgBuilder`), draw the next card, and reveal only a bust boolean. `player_stand` ends the turn.
+4. `dealer_play` draws against the encrypted deck inside MPC until reaching 17, then returns the dealer hand
+   re-encrypted to both the MXE and the player.
+5. `resolve_game` compares both hands inside MPC and reveals a single result code.
 
-Blockchain implementations face an additional challenge: transparent state. If card data is stored on-chain unencrypted, all participants can view the dealer's hidden cards and remaining deck order, completely breaking the game.
+Everyone sees hand sizes, `GameState` transitions, bust flags, and the final winner; only the player sees
+card values; nobody ever sees the undealt deck.
 
-## How Hidden Game State Works
+## Concepts demonstrated
 
-At game initialization, a 52-card deck is shuffled using Arcium's cryptographic randomness. The entire deck, including player cards and the dealer's hole card, remains encrypted throughout gameplay.
+- Packed encrypted state: `Pack<[u8; 52]>` fits the whole deck into two ciphertexts. Size math is in the
+  module header of `programs/blackjack/src/lib.rs`; see
+  [Data packing](https://docs.arcium.com/developers/arcis/primitives#data-packing).
+- Reading encrypted account state back into computations: each action passes stored ciphertexts via
+  `ArgBuilder` account references instead of re-uploading them.
+- A multi-computation state machine: `GameState` gates which of the six circuits may run.
+- [`ArcisRNG::shuffle`](https://docs.arcium.com/developers/arcis/primitives#shuffling): unbiased deck order
+  no party can predict.
 
-Information disclosure follows game rules: players view their own cards and the dealer's face-up card. Game actions (hit, stand, double down) are processed against encrypted hand values. The dealer's hole card and undealt cards remain encrypted until game resolution.
-
-## Running the Example
+## Run
 
 ```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite demonstrates a complete game flow: deck shuffling with secure randomness, dealing encrypted cards, processing game actions against hidden state, and verifying final game result.
+Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-The deck is stored as encrypted values, with multiple cards packed together for efficiency. Game logic processes encrypted hand values without ever decrypting them, using Arcium's confidential instructions.
+- `encrypted-ixs/src/lib.rs` — note how one circuit returns both `Enc<Mxe, ...>` and `Enc<Shared, ...>` outputs.
+- `programs/blackjack/src/lib.rs` — note how actions rebuild circuit inputs from stored ciphertexts by byte offset.
+- `tests/blackjack.ts` — note how `unpackHand` shifts cards out of a decrypted field element to read a `Pack`'d hand.
 
-The system works through three key mechanisms: network-generated randomness creates unpredictable deck order, selective disclosure reveals only authorized information per game rules, and the MPC protocol ensures no party can manipulate game state or outcomes even with a dishonest majority—game integrity is preserved as long as one node is honest.
+## Pitfalls
 
-## Implementation Details
+- `ArgBuilder` argument order and byte offsets must match the circuit signature and the `BlackjackGame`
+  field layout exactly; offsets count from the 8-byte discriminator (deck 8, player hand 72, dealer 104).
+- `InvalidGameState`: each action checks the state machine; `dealer_play` before a stand or bust is rejected.
+- `InvalidMove`: hitting after standing, or growing a hand past the 11-card `Hand` capacity.
 
-### The Encryption Size Problem
+## Limitations
 
-**Requirement**: Encrypt a deck of 52 playing cards for an on-chain Blackjack game.
+- Hand sizes, bust flags, and the winner are public: observers see exactly when the player busts.
+- The dealer's face-up card is encrypted to the player rather than published, unlike real blackjack.
+- No bets, splits, insurance, or multiplayer, and no timeout path for abandoned games.
 
-**Naive Approach**: Store each card as a separate encrypted value.
-
-- Each card can be represented as `u8` (values 0-51)
-- 52 cards = 52 `u8` values
-- After encryption: each `u8` becomes a 32-byte ciphertext
-- **Total size**: 52 x 32 bytes = **1,664 bytes**
-
-**The Problem**: Solana's transaction size limit is **1,232 bytes**, but our encrypted deck is 1,664 bytes. Whether returning the generated deck from initialization or passing it in transactions to deal more cards, the deck won't fit in a single transaction.
-
-### The Solution: `Pack<T>`
-
-Arcis provides `Pack<T>`, a built-in type that compresses byte arrays into fewer field elements for encryption. Instead of encrypting each card individually, `Pack` packs multiple bytes into a single field element.
-
-**How it works**:
-
-- Each field element holds up to 26 bytes (at 8 bits per byte)
-- `Pack<[u8; 52]>` = 52 bytes / 26 bytes per element = **2 field elements**
-- `Pack<[u8; 11]>` = 11 bytes / 26 bytes per element = **1 field element**
-
-**Usage in the circuit**:
-
-```rust
-type Deck = Pack<[u8; 52]>;
-type Hand = Pack<[u8; 11]>;
-
-let deck_packed: Deck = Pack::new(initial_deck);
-let deck = Mxe::get().from_arcis(deck_packed);
-```
-
-**After encryption**:
-
-- 2 field elements -> 2 x 32 bytes = **64 bytes**
-- **Savings**: 1,664 bytes -> 64 bytes (96% reduction)
-
-Accessing individual cards requires unpacking first:
-
-```rust
-let deck_array = deck_ctxt.to_arcis().unpack();
-let card = deck_array[index];
-```
-
-### Account Storage Structure
-
-On-chain storage uses serialized byte arrays. Encrypted `Pack` values are stored as `[u8; 32]` ciphertexts:
-
-```rust
-pub struct BlackjackGame {
-    pub deck: [[u8; 32]; 2],      // Pack<[u8; 52]> = 2 field elements
-    pub player_hand: [u8; 32],    // Pack<[u8; 11]> = 1 field element
-    pub dealer_hand: [u8; 32],    // Pack<[u8; 11]> = 1 field element
-    pub deck_nonce: u128,         // Nonce for deck encryption
-    pub client_nonce: u128,       // Nonce for player hand
-    pub dealer_nonce: u128,       // Nonce for dealer hand
-    pub player_hand_size: u8,     // How many cards actually in player_hand
-    pub dealer_hand_size: u8,     // How many cards actually in dealer_hand
-    // ... other game state
-}
-```
-
-**Why separate nonces?** Each encrypted value needs its own nonce for security.
-
-**Why track hand sizes?** The packed hand can hold up to 11 cards, but we need to know how many are actually present (could be 2, 3, 10, etc.).
-
-### The Result
-
-**Without packing**:
-
-- Deck: 52 encrypted values (1,664 bytes)
-- Player hand: 11 encrypted values (352 bytes)
-- Dealer hand: 11 encrypted values (352 bytes)
-- **Total**: 2,368 bytes (won't fit in Solana transaction or account efficiently)
-
-**With `Pack<T>`**:
-
-- Deck: 2 encrypted values (64 bytes)
-- Player hand: 1 encrypted value (32 bytes)
-- Dealer hand: 1 encrypted value (32 bytes)
-- **Total**: 128 bytes
-
-**Additional benefits**:
-
-- Fewer MPC operations (4 encryptions vs 74)
-- Faster computation (less encrypted data to process)
-- Lower costs (fewer computation units)
-- No manual encoding/decoding logic needed
-
-> For more optimization techniques, see [Best Practices](https://docs.arcium.com/developers/arcis/best-practices).
-
-### When to Use This Pattern
-
-Use `Pack<T>` when you have arrays of small values that are processed together. Arcis handles the packing and unpacking automatically — define a type alias, and the framework manages compression.
-
-Examples: game pieces, map tiles, bit flags, small integers, inventory items.
+See also: [Arcis best practices](https://docs.arcium.com/developers/arcis/best-practices) · **Next:** [Ed25519](../ed25519/)

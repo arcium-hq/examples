@@ -1,3 +1,13 @@
+/**
+ * Flow: create_auction (queues init_auction_state) -> bidders encrypt
+ * [bidder_lo, bidder_hi, amount] and call place_bid -> validator clock passes
+ * end_time -> close_auction -> determine_winner_first_price or
+ * determine_winner_vickrey -> AuctionResolvedEvent carries winner and price.
+ *
+ * Unique here: bidder pubkeys are split into lo/hi u128s to match
+ * SerializedSolanaPublicKey, and closing waits on the validator clock rather
+ * than wall time so the on-chain end_time check passes deterministically.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -28,16 +38,13 @@ import * as os from "os";
 import { expect } from "chai";
 
 /**
- * Splits a 32-byte public key into two u128 values (lo and hi parts).
- * This is required because Arcis encrypts each primitive separately.
+ * Splits a 32-byte pubkey into little-endian lo/hi u128s, matching the
+ * circuit's SerializedSolanaPublicKey field order.
  */
 function splitPubkeyToU128s(pubkey: Uint8Array): { lo: bigint; hi: bigint } {
-  // Lower 128 bits (first 16 bytes)
   const loBytes = pubkey.slice(0, 16);
-  // Upper 128 bits (last 16 bytes)
   const hiBytes = pubkey.slice(16, 32);
 
-  // Convert to bigint (little-endian)
   const lo = deserializeLE(loBytes);
   const hi = deserializeLE(hiBytes);
 
@@ -103,14 +110,13 @@ describe("SealedBidAuction", () => {
   before(async () => {
     owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-    // Get MXE public key for encryption
     mxePublicKey = await getMXEPublicKeyWithRetry(
       provider as anchor.AnchorProvider,
       program.programId
     );
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
-    // Initialize all computation definitions sequentially (like voting/ed25519)
+    // Comp defs must exist before any computation can be queued.
     if (!compDefsInitialized) {
       console.log("\n=== Initializing Computation Definitions ===\n");
 
@@ -138,18 +144,16 @@ describe("SealedBidAuction", () => {
     it("creates an auction, accepts bids, and determines winner (pays their bid)", async () => {
       console.log("\n=== First-Price Auction Test ===\n");
 
-      // Bidder setup - using owner as bidder for simplicity
       const bidder = owner;
       const bidderPubkey = bidder.publicKey.toBytes();
       const { lo: bidderLo, hi: bidderHi } = splitPubkeyToU128s(bidderPubkey);
 
-      // Create encryption keys for bidder
+      // x25519 ECDH with the MXE key; RescueCipher encrypts under the shared secret.
       const privateKey = x25519.utils.randomSecretKey();
       const publicKey = x25519.getPublicKey(privateKey);
       const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
       const cipher = new RescueCipher(sharedSecret);
 
-      // Step 1: Create First-Price Auction
       console.log("Step 1: Creating first-price auction...");
       const createComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -197,7 +201,6 @@ describe("SealedBidAuction", () => {
 
       console.log("   Create auction tx:", createSig);
 
-      // Wait for MPC computation to finalize
       const createFinalizeSig = await awaitComputationFinalization(
         provider as anchor.AnchorProvider,
         createComputationOffset,
@@ -213,7 +216,6 @@ describe("SealedBidAuction", () => {
       );
       expect(auctionCreatedEvent.minBid.toNumber()).to.equal(100);
 
-      // Step 2: Place a bid
       console.log("\nStep 2: Placing bid of 500 lamports...");
       const bidPlacedPromise = awaitEvent("bidPlacedEvent", auctionPDA);
       const bidComputationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -221,7 +223,7 @@ describe("SealedBidAuction", () => {
       const bidAmount = BigInt(500);
       const nonce = randomBytes(16);
 
-      // Encrypt bid data: [bidder_lo, bidder_hi, amount]
+      // Plaintext order must match the circuit's Bid struct: bidder lo, hi, amount.
       const bidPlaintext = [bidderLo, bidderHi, bidAmount];
       const bidCiphertext = cipher.encrypt(bidPlaintext, nonce);
 
@@ -271,7 +273,6 @@ describe("SealedBidAuction", () => {
       console.log("   Bid placed, count:", bidPlacedEvent.bidCount);
       expect(bidPlacedEvent.bidCount).to.equal(1);
 
-      // Step 3: Close auction
       console.log("\nStep 3: Waiting for auction to end...");
       const auctionAccount = await program.account.auction.fetch(auctionPDA);
       const endTime = auctionAccount.endTime.toNumber();
@@ -300,7 +301,6 @@ describe("SealedBidAuction", () => {
       const auctionClosedEvent = await auctionClosedPromise;
       console.log("   Auction closed, bid count:", auctionClosedEvent.bidCount);
 
-      // Step 4: Determine winner (first-price)
       console.log("\nStep 4: Determining winner (first-price)...");
       const auctionResolvedPromise = awaitEvent(
         "auctionResolvedEvent",
@@ -357,10 +357,9 @@ describe("SealedBidAuction", () => {
         "lamports"
       );
 
-      // Verify: In first-price, winner pays their bid (500)
+      // First-price: winner pays their own bid (500).
       expect(auctionResolvedEvent.paymentAmount.toNumber()).to.equal(500);
 
-      // Verify winner matches bidder
       const expectedWinner = Buffer.from(bidderPubkey).toString("hex");
       const actualWinner = Buffer.from(auctionResolvedEvent.winner).toString(
         "hex"
@@ -375,30 +374,26 @@ describe("SealedBidAuction", () => {
     it("creates an auction with multiple bids, winner pays second-highest", async () => {
       console.log("\n=== Vickrey Auction Test ===\n");
 
-      // Use a different seed for this auction to avoid PDA collision
-      // We'll use a separate keypair as authority
+      // The auction PDA is seeded by authority, so a fresh keypair avoids
+      // colliding with the first-price auction's PDA.
       const vickreyAuthority = anchor.web3.Keypair.generate();
 
-      // Fund the new authority
       const fundSig = await provider.connection.requestAirdrop(
         vickreyAuthority.publicKey,
         2 * anchor.web3.LAMPORTS_PER_SOL
       );
       await provider.connection.confirmTransaction(fundSig);
 
-      // Bidder setup
-      const bidder1 = owner; // Bid 1000
+      const bidder1 = owner;
       const bidder1Pubkey = bidder1.publicKey.toBytes();
       const { lo: bidder1Lo, hi: bidder1Hi } =
         splitPubkeyToU128s(bidder1Pubkey);
 
-      // Create encryption keys for bidder1
       const privateKey1 = x25519.utils.randomSecretKey();
       const publicKey1 = x25519.getPublicKey(privateKey1);
       const sharedSecret1 = x25519.getSharedSecret(privateKey1, mxePublicKey);
       const cipher1 = new RescueCipher(sharedSecret1);
 
-      // Step 1: Create Vickrey Auction
       console.log("Step 1: Creating Vickrey auction...");
       const createComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -461,7 +456,6 @@ describe("SealedBidAuction", () => {
         auctionCreatedEvent.auction.toBase58()
       );
 
-      // Step 2: Place first bid (1000 lamports)
       console.log("\nStep 2: Placing first bid of 1000 lamports...");
       const bidPlaced1Promise = awaitEvent("bidPlacedEvent", vickreyAuctionPDA);
       const bid1ComputationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -515,12 +509,11 @@ describe("SealedBidAuction", () => {
       const bidPlaced1Event = await bidPlaced1Promise;
       console.log("   First bid placed, count:", bidPlaced1Event.bidCount);
 
-      // Step 3: Place second bid (700 lamports) - this becomes second-highest
       console.log("\nStep 3: Placing second bid of 700 lamports...");
       const bidPlaced2Promise = awaitEvent("bidPlacedEvent", vickreyAuctionPDA);
       const bid2ComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
-      // Use same bidder but different bid amount
+      // Same bidder, lower amount: becomes the second-highest bid.
       const bid2Amount = BigInt(700);
       const nonce2 = randomBytes(16);
       const privateKey2 = x25519.utils.randomSecretKey();
@@ -576,7 +569,6 @@ describe("SealedBidAuction", () => {
       console.log("   Second bid placed, count:", bidPlaced2Event.bidCount);
       expect(bidPlaced2Event.bidCount).to.equal(2);
 
-      // Step 4: Close auction
       console.log("\nStep 4: Waiting for auction to end...");
       const vickreyAuctionAccount = await program.account.auction.fetch(
         vickreyAuctionPDA
@@ -611,7 +603,6 @@ describe("SealedBidAuction", () => {
       const auctionClosedEvent = await auctionClosedPromise;
       console.log("   Auction closed, bid count:", auctionClosedEvent.bidCount);
 
-      // Step 5: Determine winner (Vickrey)
       console.log("\nStep 5: Determining winner (Vickrey)...");
       const auctionResolvedPromise = awaitEvent(
         "auctionResolvedEvent",
@@ -669,11 +660,9 @@ describe("SealedBidAuction", () => {
         "lamports"
       );
 
-      // Verify: In Vickrey, winner pays second-highest bid (700)
-      // Winner bid 1000, but pays second-highest (700)
+      // Vickrey: winner bid 1000 but pays the second-highest bid (700).
       expect(auctionResolvedEvent.paymentAmount.toNumber()).to.equal(700);
 
-      // Verify winner matches highest bidder
       const expectedWinner = Buffer.from(bidder1Pubkey).toString("hex");
       const actualWinner = Buffer.from(auctionResolvedEvent.winner).toString(
         "hex"
@@ -701,7 +690,6 @@ describe("SealedBidAuction", () => {
       getArciumProgramId()
     )[0];
 
-    // Fetch MXE account for LUT address
     const arciumProgram = getArciumProgram(provider as anchor.AnchorProvider);
     const mxeAccount = getMXEAccAddress(program.programId);
     const mxeAcc = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
@@ -710,8 +698,7 @@ describe("SealedBidAuction", () => {
       mxeAcc.lutOffsetSlot
     );
 
-    // Map circuit name to the correct init method
-    // Using preflightCommitment to get fresh blockhash for each transaction
+    // preflightCommitment gets a fresh blockhash for each sequential init tx.
     let sig: string;
     switch (circuitName) {
       case "init_auction_state":

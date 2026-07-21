@@ -1,98 +1,48 @@
-# Medical Records - Privacy-Preserving Healthcare Data Sharing
+# Medical Records — re-encrypting data to a new owner
 
-Share your medical records with a new doctor and here's the problem: the platform operator, system administrators, database engineers, and cloud infrastructure provider all have access. You can't control who sees what.
+A patient stores an encrypted medical record on-chain and later shares it with a doctor: the record is decrypted only inside MPC and re-encrypted under the doctor's public key. No platform, node, or observer ever sees the plaintext.
 
-This example demonstrates patient-controlled selective disclosure where you specify exactly which medical information each provider can access.
+**Use this pattern when** data encrypted for one party must become readable by another without any intermediary seeing the plaintext: credential handoffs, compliance disclosures, encrypted data markets.
 
-## What's wrong with healthcare data sharing today?
+## How it works
 
-Medical records in centralized databases face multiple problems: patients have no control over who sees what, and every centralized database is a target for breaches. The system requires trusting multiple third parties not to misuse your data.
+1. `store_patient_data` writes eleven client-encrypted ciphertexts (id, age, gender, blood type, weight, height, five allergy flags) into the `PatientData` PDA — a plain Anchor write, no MPC involved.
+2. To share, the patient calls `share_patient_data` with the recipient's x25519 public key; the stored record is passed to the circuit by account reference.
+3. The `share_patient_data` circuit takes the record as `Enc<Shared, PatientData>` and the recipient as a bare `Shared` owner: `to_arcis()` decrypts inside MPC, `receiver.from_arcis()` re-encrypts.
+4. `share_patient_data_callback` verifies the signed output and emits `ReceivedPatientDataEvent`; the stored record is left untouched.
 
-The challenge is enabling healthcare data sharing while giving patients control over access permissions.
+The patient can still decrypt the stored record, the recipient can decrypt the event, and everyone else sees only ciphertext.
 
-## How Selective Data Sharing Works
+## Concepts demonstrated
 
-The protocol enables patient-controlled data disclosure:
+- [Sealing](https://docs.arcium.com/developers/encryption/sealing): a `Shared` parameter names the new owner; `from_arcis` seals the data to them.
+- On-chain ciphertext as circuit input: `ArgBuilder` `.account()` feeds stored account data to MPC by pubkey, offset, and length.
+- Event-based delivery: the callback emits the re-encrypted record instead of persisting it; the recipient collects it off-chain.
 
-1. **Encrypted storage**: Patient medical records are encrypted and stored on-chain
-2. **Access control**: Patient specifies which data fields to share with which providers
-3. **Selective disclosure**: Arcium network enables transfer of authorized data only
-4. **Provider access**: Authorized providers receive only the specific data fields granted access
-
-The patient maintains granular control over data access. Providers receive only authorized information, while the platform facilitating the transfer operates on encrypted data.
-
-## Running the Example
+## Run
 
 ```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite demonstrates patient data encryption, selective authorization configuration, and controlled data disclosure to authorized providers.
+Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-Medical records are encrypted and stored as patient data structures. Access control is enforced through encrypted authorization logic that determines which data fields specific providers can access.
+- `encrypted-ixs/src/lib.rs` — note how the circuit body is two lines; a pure ownership handoff needs no computation on the data.
+- `programs/share_medical_records/src/lib.rs` — note how `ArgBuilder` interleaves pubkeys and nonces to reconstruct both `Shared` values for the circuit.
+- `tests/share_medical_records.ts` — note how the receiver derives their own shared secret with the MXE and decrypts using the nonce carried in the event.
 
-## Implementation Details
+## Pitfalls
 
-### The Selective Sharing Problem
+- `ArgBuilder` order must mirror the circuit signature: receiver pubkey and nonce, then sender pubkey, nonce, and ciphertexts. Wrong order fails decryption inside MPC, not at submit time.
+- The account reference starts at offset 8 to skip Anchor's discriminator; reading from 0 feeds discriminator bytes into the circuit as ciphertext.
+- Decrypt the event with `ReceivedPatientDataEvent.nonce`, not the submitted `receiver_nonce` — the MXE assigns a fresh output nonce.
 
-**Conceptual Challenge**: You want to share medical records with a new doctor, but you want to control exactly who can decrypt your information.
+## Limitations
 
-**The Question**: Can you transfer encrypted data from your key to doctor's key without decrypting it in transit?
+- Sharing is all-or-nothing: the whole `PatientData` struct is re-encrypted. Per-field selective disclosure would need separate circuits.
+- Sharing metadata is public: anyone can see a record was shared and to which key.
+- Delivery is a one-shot event; a recipient not listening at callback time must replay transaction logs.
 
-### The Re-encryption Pattern
-
-```rust
-pub fn share_patient_data(
-    receiver: Shared,                      // Recipient's public key for re-encryption
-    input_ctxt: Enc<Shared, PatientData>,  // Your encrypted data
-) -> Enc<Shared, PatientData> {
-    let input = input_ctxt.to_arcis();     // Decrypt inside MPC
-    receiver.from_arcis(input)             // Re-encrypt for doctor
-}
-```
-
-**What happens**:
-
-1. Your encrypted data enters MPC
-2. Data is decrypted inside the MPC environment
-3. Data is re-encrypted using doctor's public key
-4. Re-encrypted data is emitted in event
-5. Only the doctor can decrypt (they have the private key)
-
-**Key insight**: Data is "handed over" inside MPC—re-encrypted from one key to another without intermediate plaintext exposure.
-
-> See [Input/Output Patterns](https://docs.arcium.com/developers/arcis/input-output) for more on encrypted data transfer.
-
-### Multi-field Encrypted Struct
-
-```rust
-pub struct PatientData {
-    patient_id: u64,
-    age: u8,
-    gender: bool,
-    blood_type: u8,
-    weight: u16,
-    height: u16,
-    allergies: [bool; 5],
-}
-```
-
-Stored as a single encrypted data structure containing 11 fields (352 bytes total). The entire record is encrypted together for on-chain storage.
-
-### When to Use Re-encryption
-
-Apply this pattern when:
-
-- Data encrypted under one key needs to be accessible to another party
-- No single party should see the unencrypted data during transfer
-- Selective disclosure (future: share only age + blood_type, not full record)
-- Examples: credential sharing, encrypted file transfer, confidential data markets
+See also: [Sealing (re-encryption)](https://docs.arcium.com/developers/encryption/sealing) · **Next:** [Sealed-Bid Auction](../sealed_bid_auction/)

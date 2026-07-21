@@ -1,3 +1,12 @@
+//! Confidential voting: yes/no tallies live in `PollAccount` as ciphertexts and are
+//! only ever updated inside MPC. Only the poll authority can reveal the boolean
+//! outcome. Walkthrough: README.md.
+//!
+//! Stateful: circuits read the tallies straight from `PollAccount` bytes via
+//! `ArgBuilder`'s account reference — 8-byte Anchor discriminator, 1-byte `bump`,
+//! then `vote_state` (two 32-byte ciphertexts: yes, no) at offset 9. The offset
+//! breaks if those fields are reordered.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
@@ -17,15 +26,8 @@ pub mod voting {
         Ok(())
     }
 
-    /// Creates a new confidential poll with the given question.
-    ///
-    /// This initializes a poll account and sets up the encrypted vote counters using MPC.
-    /// The vote tallies are stored in encrypted form and can only be revealed by the poll authority.
-    /// All individual votes remain completely confidential throughout the voting process.
-    ///
-    /// # Arguments
-    /// * `id` - Unique identifier for this poll
-    /// * `question` - The poll question voters will respond to
+    /// Creates a poll and queues `init_vote_stats` to produce encrypted zeroed
+    /// counters; the callback stores them in `poll_acc`.
     pub fn create_new_poll(
         ctx: Context<CreateNewPoll>,
         computation_offset: u64,
@@ -34,7 +36,6 @@ pub mod voting {
     ) -> Result<()> {
         msg!("Creating a new poll");
 
-        // Initialize the poll account with the provided parameters
         ctx.accounts.poll_acc.question = question;
         ctx.accounts.poll_acc.bump = ctx.bumps.poll_acc;
         ctx.accounts.poll_acc.id = id;
@@ -43,9 +44,10 @@ pub mod voting {
 
         let args = ArgBuilder::new().build();
 
+        // The MXE derives this PDA at runtime; the bump must be persisted before
+        // queue_computation.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
-        // Initialize encrypted vote counters (yes/no) through MPC
         queue_computation(
             ctx.accounts,
             computation_offset,
@@ -79,6 +81,8 @@ pub mod voting {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
+        // The MXE rotates the nonce every computation; persist it with the
+        // ciphertexts or the next computation cannot decrypt the tallies.
         ctx.accounts.poll_acc.vote_state = o.ciphertexts;
         ctx.accounts.poll_acc.nonce = o.nonce;
 
@@ -90,16 +94,8 @@ pub mod voting {
         Ok(())
     }
 
-    /// Submits an encrypted vote to the poll.
-    ///
-    /// This function allows a voter to cast their vote (yes/no) in encrypted form.
-    /// The vote is added to the running tally through MPC computation, ensuring
-    /// that individual votes remain confidential while updating the overall count.
-    ///
-    /// # Arguments
-    /// * `vote` - Encrypted vote (true for yes, false for no)
-    /// * `vote_encryption_pubkey` - Voter's public key for encryption
-    /// * `vote_nonce` - Cryptographic nonce for the vote encryption
+    /// Queues the `vote` circuit with the voter's encrypted ballot and the current
+    /// tallies. Initializing `voter_record` here blocks a second vote per voter.
     pub fn vote(
         ctx: Context<Vote>,
         computation_offset: u64,
@@ -108,6 +104,8 @@ pub mod voting {
         vote_encryption_pubkey: [u8; 32],
         vote_nonce: u128,
     ) -> Result<()> {
+        // Argument order must match the circuit signature: Enc<Shared, UserVote> is
+        // pubkey + nonce + ciphertext, then Enc<Mxe, VoteStats> is nonce + account data.
         let args = ArgBuilder::new()
             .x25519_pubkey(vote_encryption_pubkey)
             .plaintext_u128(vote_nonce)
@@ -174,14 +172,8 @@ pub mod voting {
         Ok(())
     }
 
-    /// Reveals the final result of the poll.
-    ///
-    /// Only the poll authority can call this function to decrypt and reveal the vote tallies.
-    /// The MPC computation compares the yes and no vote counts and returns whether
-    /// the majority voted yes (true) or no (false).
-    ///
-    /// # Arguments
-    /// * `id` - The poll ID to reveal results for
+    /// Queues `reveal_result`, which discloses only whether yes votes exceed no
+    /// votes. Restricted to the poll authority.
     pub fn reveal_result(
         ctx: Context<RevealVotingResult>,
         computation_offset: u64,

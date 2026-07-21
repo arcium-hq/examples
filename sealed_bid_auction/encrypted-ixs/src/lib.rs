@@ -1,3 +1,7 @@
+//! Sealed-bid auction circuits: maintain highest and second-highest bids in an
+//! MXE-encrypted `AuctionState`, then reveal only the winner and clearing price.
+//! Individual bid amounts never leave MPC. Walkthrough: ../../README.md.
+
 use arcis::*;
 
 #[encrypted]
@@ -21,6 +25,7 @@ mod circuits {
         pub payment_amount: u64,
     }
 
+    /// Produces a zeroed `AuctionState` encrypted for the MXE. Reveals nothing.
     #[instruction]
     pub fn init_auction_state() -> Enc<Mxe, AuctionState> {
         let initial_state = AuctionState {
@@ -32,6 +37,8 @@ mod circuits {
         Mxe::get().from_arcis(initial_state)
     }
 
+    /// Folds one bid into the highest/second-highest tracking. Reveals nothing;
+    /// the updated state is re-encrypted for the MXE.
     #[instruction]
     pub fn place_bid(
         bid_ctxt: Enc<Shared, Bid>,
@@ -53,7 +60,7 @@ mod circuits {
         state_ctxt.owner.from_arcis(state)
     }
 
-    /// Winner pays their bid.
+    /// Reveals the winner and their own bid as the price (first-price rule).
     #[instruction]
     pub fn determine_winner_first_price(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
         let state = state_ctxt.to_arcis();
@@ -65,7 +72,8 @@ mod circuits {
         .reveal()
     }
 
-    /// Winner pays second-highest bid (incentivizes truthful bidding).
+    /// Reveals the winner and the second-highest bid as the price (Vickrey rule);
+    /// the winning bid amount itself stays encrypted.
     #[instruction]
     pub fn determine_winner_vickrey(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
         let state = state_ctxt.to_arcis();

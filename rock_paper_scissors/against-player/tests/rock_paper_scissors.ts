@@ -1,3 +1,11 @@
+/**
+ * Flow: init comp defs -> init_game -> player A move -> player B move ->
+ * compare_moves -> CompareMovesEvent with the revealed outcome.
+ *
+ * Unique here: two players each derive their own x25519 shared secret with
+ * the MXE and update the same encrypted state, so every move must await
+ * finalization before the next is queued against the stored nonce.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey, Keypair } from "@solana/web3.js";
@@ -28,7 +36,6 @@ import * as os from "os";
 import { expect } from "chai";
 
 describe("RockPaperScissors", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace
     .RockPaperScissors as Program<RockPaperScissors>;
@@ -58,7 +65,6 @@ describe("RockPaperScissors", () => {
   const arciumEnv = getArciumEnv();
   const clusterAccount = getClusterAccAddress(arciumEnv.arciumClusterOffset);
 
-  // Combined test suite for Rock Paper Scissors game
   it("Tests the complete Rock Paper Scissors game flow", async () => {
     const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
     const playerA = Keypair.generate();
@@ -72,7 +78,6 @@ describe("RockPaperScissors", () => {
 
     console.log("MXE x25519 pubkey is", mxePublicKey);
 
-    // Step 1: Initialize computation definitions
     console.log("Initializing init_game computation definition");
     const initGameSig = await initInitGameCompDef(program, owner);
     console.log(
@@ -94,7 +99,6 @@ describe("RockPaperScissors", () => {
       compareMovesSig
     );
 
-    // Step 2: Play a complete game with two players
     console.log("\n--- Playing a complete game with two players ---");
 
     // Generate encryption keys for Player A
@@ -115,7 +119,6 @@ describe("RockPaperScissors", () => {
     );
     const playerBCipher = new RescueCipher(playerBSharedSecret);
 
-    // Initialize a new game
     const gameId = 1;
 
     const initComputationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -162,7 +165,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Init game finalize signature:", initGameFinalizeSig);
 
-    // Airdrop funds to Player A
     console.log("Airdropping funds to Player A");
     const airdropPlayerATx = await provider.connection.requestAirdrop(
       playerA.publicKey,
@@ -177,7 +179,6 @@ describe("RockPaperScissors", () => {
     });
     console.log("Funds airdropped to Player A");
 
-    // Player A makes a move (Rock)
     const playerAMove = 0; // Rock
     const playerAId = 0;
     const playerANonce = randomBytes(16);
@@ -238,7 +239,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
-    // Airdrop funds to Player B
     console.log("Airdropping funds to Player B");
     const airdropPlayerBTx = await provider.connection.requestAirdrop(
       playerB.publicKey,
@@ -253,7 +253,6 @@ describe("RockPaperScissors", () => {
     });
     console.log("Funds airdropped to Player B");
 
-    // Player B makes a move (Scissors)
     const playerBMove = 2; // Scissors
     const playerBId = 1;
     const playerBNonce = randomBytes(16);
@@ -314,7 +313,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
-    // Compare moves to determine the winner
     const gameEventPromise = awaitEvent("compareMovesEvent");
 
     const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -365,7 +363,6 @@ describe("RockPaperScissors", () => {
     // Verify the result (Rock beats Scissors, so Player A wins)
     expect(gameEvent.result).to.equal("Player A Wins");
 
-    // Step 3: Test unauthorized player trying to make a move
     console.log("\n--- Testing unauthorized player ---");
 
     // Generate new encryption keys for this test
@@ -381,7 +378,6 @@ describe("RockPaperScissors", () => {
     );
     const unauthorizedCipher = new RescueCipher(unauthorizedSharedSecret);
 
-    // Initialize a new game
     const gameId2 = new anchor.BN(Date.now());
 
     const initComputationOffset2 = new anchor.BN(randomBytes(8), "hex");
@@ -428,7 +424,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Init game finalize signature:", initGameFinalizeSig2);
 
-    // Airdrop funds to unauthorized player
     console.log("Airdropping funds to unauthorized player");
     const airdropUnauthorizedTx = await provider.connection.requestAirdrop(
       unauthorizedPlayer.publicKey,
@@ -443,7 +438,6 @@ describe("RockPaperScissors", () => {
     });
     console.log("Funds airdropped to unauthorized player");
 
-    // Unauthorized player tries to make a move
     const unauthorizedMove = 1; // Paper
     const unauthorizedNonce = randomBytes(16);
     const unauthorizedCiphertext = unauthorizedCipher.encrypt(
@@ -493,15 +487,12 @@ describe("RockPaperScissors", () => {
           commitment: "confirmed",
         });
 
-      // If we get here, the test should fail because unauthorized player should not be able to make a move
       expect.fail("Unauthorized player was able to make a move");
     } catch (error) {
       console.log("Expected error caught:", error.message);
-      // Test passes if we catch an error
       expect(error).to.be.an("error");
     }
 
-    // Step 4: Test multiple game scenarios
     console.log("\n--- Testing multiple game scenarios ---");
 
     // Generate encryption keys for multiple game scenarios
@@ -517,7 +508,6 @@ describe("RockPaperScissors", () => {
     );
     const scenarioCipher = new RescueCipher(scenarioSharedSecret);
 
-    // Play multiple games
     const games = [
       { player: 0, house: 0 }, // Rock vs Rock (Tie)
       { player: 0, house: 2 }, // Rock vs Scissors (Win)
@@ -532,7 +522,6 @@ describe("RockPaperScissors", () => {
         `\n--- Testing game scenario: Player ${game.player} vs House ${game.house} ---`
       );
 
-      // Initialize a new game for this scenario
       const scenarioGameId = new anchor.BN(
         Date.now() + Math.floor(Math.random() * 1000)
       );
@@ -581,7 +570,6 @@ describe("RockPaperScissors", () => {
       );
       console.log("Init game finalize signature:", initGameFinalizeSig);
 
-      // Player A makes a move
       const playerAMoveNonce = randomBytes(16);
       const playerAMoveCiphertext = playerACipher.encrypt(
         [BigInt(0), BigInt(game.player)],
@@ -640,7 +628,6 @@ describe("RockPaperScissors", () => {
       );
       console.log("Player A move finalize signature:", playerAMoveFinalizeSig);
 
-      // Player B makes a move
       const playerBMoveNonce = randomBytes(16);
       const playerBMoveCiphertext = playerBCipher.encrypt(
         [BigInt(1), BigInt(game.house)],
@@ -699,7 +686,6 @@ describe("RockPaperScissors", () => {
       );
       console.log("Player B move finalize signature:", playerBMoveFinalizeSig);
 
-      // Compare moves to determine the winner
       const gameEventPromise = awaitEvent("compareMovesEvent");
 
       const compareComputationOffset = new anchor.BN(randomBytes(8), "hex");
@@ -749,7 +735,6 @@ describe("RockPaperScissors", () => {
       const gameEvent = await gameEventPromise;
       console.log(`Game result: ${gameEvent.result}`);
 
-      // Verify the result based on the expected outcome
       let expectedResult: string;
       if (game.player === game.house) {
         expectedResult = "Tie";
@@ -766,10 +751,8 @@ describe("RockPaperScissors", () => {
       expect(gameEvent.result).to.equal(expectedResult);
     }
 
-    // Step 5: Test invalid move scenario
     console.log("\n--- Testing invalid move scenario ---");
 
-    // Initialize a new game for this scenario
     const gameId3 = new anchor.BN(
       Date.now() + Math.floor(Math.random() * 1000)
     );
@@ -821,7 +804,6 @@ describe("RockPaperScissors", () => {
       initGameFinalizeSig3
     );
 
-    // Player A makes a valid move (Rock = 0)
     const playerAValidMove = 0;
     const playerAId3 = 0;
     const playerANonce3 = randomBytes(16);
@@ -879,7 +861,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Player A move finalize signature:", playerAMoveFinalizeSig3);
 
-    // Player B makes an invalid move (4)
     const playerBInvalidMove = 4;
     const playerBId3 = 1;
     const playerBNonce3 = randomBytes(16);
@@ -937,7 +918,6 @@ describe("RockPaperScissors", () => {
     );
     console.log("Player B move finalize signature:", playerBMoveFinalizeSig3);
 
-    // Compare moves
     const gameEventPromise3 = awaitEvent("compareMovesEvent");
 
     const compareComputationOffset3 = new anchor.BN(randomBytes(8), "hex");
@@ -984,12 +964,10 @@ describe("RockPaperScissors", () => {
     const gameEvent3 = await gameEventPromise3;
     console.log(`Game result for invalid move test: ${gameEvent3.result}`);
 
-    // Verify the result is "Invalid Move"
     expect(gameEvent3.result).to.equal("Invalid Move");
   });
 });
 
-// Helper function to read keypair from JSON file
 function readKpJson(path: string): anchor.web3.Keypair {
   const file = fs.readFileSync(path);
   return anchor.web3.Keypair.fromSecretKey(
@@ -997,7 +975,6 @@ function readKpJson(path: string): anchor.web3.Keypair {
   );
 }
 
-// Separate functions for each computation definition type
 async function initInitGameCompDef(
   program: Program<RockPaperScissors>,
   owner: anchor.web3.Keypair

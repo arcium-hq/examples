@@ -1,3 +1,13 @@
+/**
+ * Flow: init comp defs -> create polls (init_vote_stats zeroes encrypted
+ * counters) -> encrypt ballot client-side -> vote -> await finalization (callback
+ * updates encrypted tallies) -> attempt double vote (rejected: VoterRecord PDA
+ * exists) -> reveal_result publishes only the boolean outcome.
+ *
+ * Unique here: the x25519 encryption key is derived from the Solana
+ * wallet (sign a fixed message, SHA-256 the signature), so voters can recover
+ * their encryption key from their wallet alone.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -50,7 +60,6 @@ function deriveEncryptionKey(
 }
 
 describe("Voting", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Voting as Program<Voting>;
   const provider = anchor.getProvider();
@@ -118,7 +127,6 @@ describe("Voting", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    // Create multiple polls
     for (const POLL_ID of POLL_IDS) {
       const pollComputationOffset = new anchor.BN(randomBytes(8), "hex");
 
@@ -160,8 +168,7 @@ describe("Voting", () => {
       console.log(`Finalize poll ${POLL_ID} sig is `, finalizePollSig);
     }
 
-    // Cast votes for each poll with different outcomes
-    const voteOutcomes = [true, false, true]; // Different outcomes for each poll
+    const voteOutcomes = [true, false, true];
     let firstPollPDA: PublicKey;
     let firstVoterRecordPDA: PublicKey;
     for (let i = 0; i < POLL_IDS.length; i++) {
@@ -244,8 +251,7 @@ describe("Voting", () => {
       );
     }
 
-    // Test double-vote prevention: attempt to vote again on the first poll
-    // Reuse firstPollPDA and firstVoterRecordPDA derived during the voting loop
+    // A second vote on the same poll must fail: the VoterRecord PDA already exists.
     console.log("\n--- Testing double-vote prevention ---");
     const DOUBLE_VOTE_POLL_ID = POLL_IDS[0];
     const doubleVoteNonce = randomBytes(16);
@@ -297,7 +303,6 @@ describe("Voting", () => {
       );
     }
 
-    // Reveal results for each poll
     for (let i = 0; i < POLL_IDS.length; i++) {
       const POLL_ID = POLL_IDS[i];
       const expectedOutcome = voteOutcomes[i];

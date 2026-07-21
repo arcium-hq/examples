@@ -1,3 +1,12 @@
+/**
+ * Flow: init comp defs -> initializeBlackjackGame (shuffle_and_deal_cards) ->
+ * decrypt player hand + dealer face-up card -> hit/stand loop playing basic
+ * strategy -> dealerPlay -> resolveGame.
+ *
+ * Unique here: hands come back as Pack'd ciphertexts, so the client
+ * decrypts a single field element and shifts out 8-bit lanes (unpackHand)
+ * instead of using generated circuit types.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey, Keypair } from "@solana/web3.js";
@@ -26,7 +35,7 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import { expect } from "chai";
-// Helper function to calculate Blackjack hand value
+
 function calculateHandValue(cards: number[]): {
   value: number;
   isSoft: boolean;
@@ -36,28 +45,23 @@ function calculateHandValue(cards: number[]): {
   let isSoft = false;
 
   for (const cardIndex of cards) {
-    // Map card index (0-51) to value (Ace=11/1, K/Q/J=10, 2-10=face value)
     const rank = cardIndex % 13; // 0=Ace, 1=2, ..., 9=10, 10=J, 11=Q, 12=K
     if (rank === 0) {
-      // Ace
       aceCount++;
       value += 11;
     } else if (rank >= 10) {
-      // K, Q, J
       value += 10;
     } else {
-      // 2-10
       value += rank + 1;
     }
   }
 
-  // Adjust for Aces if value > 21
   while (value > 21 && aceCount > 0) {
     value -= 10;
     aceCount--;
   }
 
-  // Check if the hand is "soft" (contains an Ace counted as 11)
+  // A hand is "soft" while an Ace still counts as 11.
   isSoft = aceCount > 0 && value <= 21;
 
   return { value, isSoft };
@@ -77,7 +81,6 @@ function unpackHand(packed: bigint[], handSize: number): number[] {
 describe("Blackjack", () => {
   const owner = readKpJson(`${os.homedir()}/.config/solana/id.json`);
 
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Blackjack as Program<Blackjack>;
   const provider = anchor.getProvider() as anchor.AnchorProvider;
@@ -213,8 +216,7 @@ describe("Blackjack", () => {
     let gameState = await program.account.blackjackGame.fetch(blackjackGamePDA);
     expect(gameState.gameState).to.deep.equal({ playerTurn: {} });
 
-    // Decrypt initial hands
-    // Convert anchor.BN to Uint8Array (16 bytes for u128) - manual conversion
+    // Nonces are u128s emitted as anchor.BN; the cipher needs 16 little-endian bytes.
     let currentClientNonce = Uint8Array.from(
       cardsShuffledAndDealtEvent.clientNonce.toArray("le", 16)
     );

@@ -1,111 +1,48 @@
-# Rock Paper Scissors - Player vs Player
+# Rock Paper Scissors vs Player — asynchronous hidden moves
 
-Player-versus-player asynchronous games require encrypted moves to prevent information advantages. Without cryptographic enforcement, players may observe opponent moves before finalizing their own, or modify submitted moves retroactively.
+Two players submit rock paper scissors moves at different times, each encrypted client-side and merged into MXE-owned game state that no individual party can decrypt. Neither player, the program, nor any single node ever sees a move; only the final outcome is revealed.
 
-This example demonstrates a player-versus-player protocol where both players submit encrypted moves asynchronously - neither can see the other's choice until both are submitted.
+**Use this pattern when** multiple parties submit hidden inputs asynchronously and only the result of comparing them should become public: sealed matches, blind negotiations, simultaneous-commitment games.
 
-## Why do public blockchains break asynchronous gameplay?
+## How it works
 
-Blockchains make everything public - which breaks games where information needs to stay hidden. Public blockchain state allows participants to observe transaction data before submitting their own moves, creating information advantages.
+1. `init_game` creates the `RPSGame` PDA with both players' public keys and queues the `init_game` circuit, which returns `Enc<Mxe, GameMoves>` with both move slots set to the sentinel `3` (valid moves are 0-2). The callback stores the two ciphertexts and the nonce in `RPSGame`.
+2. Each player encrypts a `PlayersMove` (slot index plus move) client-side and calls `player_move`. The program checks the signer is `player_a` or `player_b`, then passes the client-encrypted input and the ciphertexts stored in `RPSGame` into the `player_move` circuit.
+3. Inside MPC, the circuit writes the move into its slot only if the slot is still empty and the move is valid, then returns re-encrypted state; the callback overwrites `RPSGame` with the new ciphertexts and nonce.
+4. Once both slots are filled, anyone calls `compare_moves`. The circuit reveals a single `u8` outcome and the callback emits it as a `CompareMovesEvent` ("Tie", "Player A Wins", "Player B Wins", or "Invalid Move" if a slot was still empty).
 
-Traditional approaches have limitations: unencrypted storage makes moves visible to all participants immediately, decryption requires someone to view moves sequentially, and trusted referees who decrypt moves can potentially favor specific players.
+Moves stay MXE-owned end to end: each player knows only their own move, and the public learns only the outcome.
 
-The requirement is encrypted asynchronous submission where each player finalizes their choice before learning their opponent's move.
+## Concepts demonstrated
 
-## How Encrypted Asynchronous Gameplay Works
+- Client-encrypted input merged into MXE-owned state: `player_move` takes `Enc<Shared, PlayersMove>` alongside `Enc<Mxe, GameMoves>`, the same shape as the order book in [Input/output](https://docs.arcium.com/developers/arcis/input-output).
+- Passing stored ciphertexts back into MPC: `ArgBuilder`'s `account` method references the `RPSGame` account so the circuit computes over previously stored encrypted state ([Invoking computations](https://docs.arcium.com/developers/program)).
+- Sentinel-guarded writes: "has this player already moved" is decided inside the circuit by comparing against the sentinel, so submission status never leaks.
 
-The protocol enforces fairness through encrypted move submission and secure comparison:
-
-1. **Player 1 encrypted submission**: First player's move is encrypted and recorded on-chain
-2. **Player 2 encrypted submission**: Second player's move is encrypted and recorded on-chain
-3. **Verification**: System confirms both encrypted moves are submitted
-4. **Encrypted comparison**: Arcium nodes jointly compute the outcome
-5. **Result disclosure**: Only the game outcome (player 1 wins/player 2 wins/tie) is revealed
-
-The comparison occurs on encrypted values throughout. Only the final game outcome is revealed.
-
-## Running the Example
+## Run
 
 ```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite simulates two-player gameplay with encrypted move submissions, demonstrating the complete protocol from move submission through outcome determination.
+Setup and troubleshooting: [repo README](../../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-Both player moves are encrypted and submitted on-chain. The game outcome is computed using Arcium's confidential instructions, which process encrypted moves without decryption.
+- `encrypted-ixs/src/lib.rs` — note how `player_move` validates slot and move entirely inside MPC and returns the state unchanged when the guard fails.
+- `programs/rock_paper_scissors/src/lib.rs` — note how `player_move` orders its `ArgBuilder` arguments: the shared input's pubkey, nonce, and ciphertexts before the MXE state's nonce and account slice.
+- `tests/rock_paper_scissors.ts` — note how each player derives their own x25519 shared secret with the MXE, and how every move awaits finalization before the next is queued.
 
-Key properties:
-- **Asynchronous encrypted commitment**: Both moves locked in before comparison, despite asynchronous submission
-- **Minimal revelation**: Only the game result is disclosed, not individual moves
-- **Integrity**: The MPC protocol ensures correct game resolution even with a dishonest majority—neither player can manipulate the outcome as long as one node is honest
+## Pitfalls
 
-## Implementation Details
+- `NotAuthorized`: `player_move` requires the signer to be the `player_a` or `player_b` recorded at `init_game`; signing with any other keypair fails on-chain.
+- `ArgBuilder` order must mirror the circuit signature: for `Enc<Shared, PlayersMove>`, pubkey then nonce then ciphertexts in struct field order (`player` before `player_move`); for `Enc<Mxe, GameMoves>`, the stored nonce then the account slice. The slice starts at offset 8 to skip the Anchor discriminator, so `moves` must remain the first field of `RPSGame`.
+- Rejected submissions are silent: a move above 2 or a write to an already-filled slot leaves state unchanged with no error; the problem only surfaces when `compare_moves` reports "Invalid Move".
 
-### The Asynchronous Information Hiding Problem
+## Limitations
 
-**Conceptual Challenge**: Rock Paper Scissors requires both players to commit to moves without seeing the opponent's choice. Online, players submit asynchronously - Player 1 first, then Player 2. On public blockchains, Player 2 can see Player 1's move before submitting their own.
+- The signer check does not bind a signer to a slot: the slot claimed comes from the encrypted `player` field, so either registered player could fill the opponent's empty slot.
+- Moves must finalize sequentially: queuing captures the current nonce and ciphertexts, so a second move queued before the first finalizes computes over stale state.
+- No timeout or account closure: if one player never moves, the game stays open indefinitely, and the pairing (`player_a`, `player_b`, game id) is public.
 
-**Traditional solutions**:
-- **Commit-reveal**: Submit hash of move, then reveal. Problem: With only 3 options (rock/paper/scissors), attackers can precompute all possible hashes and reverse them.
-- **Trusted referee**: Third party collects moves. Problem: Referee can peek or leak.
-- **Time locks**: Strict submission windows. Problem: Network latency, timezone issues.
-
-**The Question**: Can we hide moves on a public blockchain to enable fair asynchronous gameplay?
-
-### The Encrypted State Pattern
-
-```rust
-pub struct GameMoves {
-    player_a_move: u8,  // 0=Rock, 1=Paper, 2=Scissors, 3=Not submitted yet
-    player_b_move: u8,
-}
-```
-
-Stored on-chain as `Enc<Mxe, GameMoves>` - network-encrypted, no one can decrypt.
-
-**Phase 1 - Initialization**:
-```rust
-GameMoves { player_a_move: 3, player_b_move: 3 }  // Both "empty"
-```
-
-**Phase 2 - Player submits move** (inside MPC):
-```rust
-pub fn player_move(
-    players_move_ctxt: Enc<Shared, PlayersMove>,
-    game_ctxt: Enc<Mxe, GameMoves>,
-) -> Enc<Mxe, GameMoves> {
-    let players_move = players_move_ctxt.to_arcis();
-    let mut game_moves = game_ctxt.to_arcis();
-
-    // Validate: player hasn't moved yet (3 = invalid move, used as "empty" marker)
-    if players_move.player == 0 && game_moves.player_a_move == 3 && players_move.player_move < 3 {
-        game_moves.player_a_move = players_move.player_move;  // Update encrypted state
-    }
-    // Similar logic for player B...
-
-    game_ctxt.owner.from_arcis(game_moves)  // Return updated encrypted moves
-}
-```
-
-**Phase 3 - Comparison** (only after both submitted):
-```rust
-pub fn compare_moves(game_ctxt: Enc<Mxe, GameMoves>) -> u8 {
-    let game_moves = game_ctxt.to_arcis();
-
-    if game_moves.player_a_move == 3 || game_moves.player_b_move == 3 {
-        return 3;  // Error: incomplete game
-    }
-
-    // Determine winner based on Rock-Paper-Scissors logic...
-    result.reveal()  // Only reveal winner (0=tie, 1=A wins, 2=B wins)
-}
-```
+See also: [Input/output](https://docs.arcium.com/developers/arcis/input-output) · **Next:** [Rock Paper Scissors vs House](../against-house/)

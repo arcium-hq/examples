@@ -1,3 +1,11 @@
+/**
+ * Flow: init comp def -> x25519 shared secret with MXE -> encrypt
+ * guess (RescueCipher) -> queue `flip` -> await finalization -> read win/loss
+ * from `FlipEvent`.
+ *
+ * Unique here: the result is delivered only as an event, so the listener is
+ * registered before the computation is queued.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -27,7 +35,6 @@ import * as fs from "fs";
 import * as os from "os";
 
 describe("Coinflip", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Coinflip as Program<Coinflip>;
   const provider = anchor.getProvider();
@@ -73,6 +80,7 @@ describe("Coinflip", () => {
       initFlipSig
     );
 
+    // Shared secret with the MXE cluster; RescueCipher encrypts under it.
     const privateKey = x25519.utils.randomSecretKey();
     const publicKey = x25519.getPublicKey(privateKey);
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);

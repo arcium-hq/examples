@@ -1,59 +1,66 @@
-# Ed25519 Signatures - Confidential Key Management
+# Ed25519 — distributed key management
 
-This example demonstrates Ed25519 signing and verification using distributed key management through multi-party computation. The private key is split across multiple nodes and never exists in a single location.
+An MXE signs messages with an Ed25519 key that exists only as secret shares across the cluster's
+nodes: MPC among the shares produces a standard signature without the key ever being assembled.
+A second circuit verifies a signature against an encrypted public key, hiding the checked identity.
 
-## How It Works
+**Use this pattern when** you need standard signatures (attestations, cross-chain messages)
+without any single party ever holding the key, or checks that hide whose key was verified.
 
-**Message Signing**: A message is sent to the Arcium network where MPC nodes collectively generate a valid Ed25519 signature using their key shares. The signature can be verified by anyone using the public key.
+## How it works
 
-**Signature Verification with Confidential Public Key**: The verifying key (public key) is provided in encrypted form, and the signature is verified within MPC. Only the verification result (valid/invalid) is revealed to a designated observer.
+1. `sign_message` queues a plaintext 5-byte message; inside MPC, `MXESigningKey::sign` signs
+   over the nodes' key shares and reveals the resulting `ArcisEd25519Signature`.
+2. `sign_message_callback` reassembles the 64-byte signature from the two halves (r, s) the
+   circuit outputs and emits `SignMessageEvent`, verifiable by anyone against the MXE's key.
+3. For blind verification, the client encrypts a packed key (`Enc<Shared, Pack<VerifyingKey>>`)
+   under a one-time x25519 key and calls `verify_signature` with plaintext message and signature.
+4. The circuit checks the signature inside MPC and encrypts the boolean verdict for the
+   `observer`; `verify_signature_callback` emits it in `VerifySignatureEvent`.
 
-## Running the Example
+Signed messages and signatures are public by design; in verification only the verifying key
+stays hidden, and only the observer can read the verdict.
+
+## Concepts demonstrated
+
+- Distributed signing with [`MXESigningKey`](https://docs.arcium.com/developers/arcis/primitives#mxe-cluster-signing):
+  the key already lives inside the MXE, and the signature is deliberately revealed — it is only
+  useful when public.
+- [Data packing](https://docs.arcium.com/developers/arcis/primitives#data-packing):
+  `Pack<VerifyingKey>` fits the 32-byte key into two field elements, hence exactly two
+  `encrypted_u128` ciphertexts.
+- Mixed plaintext and encrypted arguments in one `ArgBuilder` chain, including the dedicated
+  `arcis_ed25519_signature` argument type.
+
+## Run
 
 ```bash
-# Install dependencies
-yarn install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite demonstrates both signing and verification flows with the MPC-managed key.
+Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-### MPC Signing
+- `encrypted-ixs/src/lib.rs` — note how `sign_message` takes no encrypted inputs at all, yet
+  its output depends on a secret no one holds.
+- `programs/ed_25519/src/lib.rs` — note how `verify_signature` assembles arguments in exactly
+  the order the circuit signature dictates.
+- `tests/ed_25519.ts` — note how `createPacker` builds the `VerifyingKey` packer by hand and
+  how the test randomly corrupts inputs to exercise the invalid path.
 
-Arcium's `MXESigningKey` enables signing through distributed key shares:
+## Pitfalls
 
-```rust
-pub fn sign_message(message: [u8; 5]) -> ArcisEd25519Signature {
-    let signature = MXESigningKey::sign(&message);
-    signature.reveal()
-}
-```
+- `ArgBuilder` order must mirror the circuit signature: the encrypted key param expands to
+  `x25519_pubkey` + nonce + two `encrypted_u128` ciphertexts, `observer: Shared` to pubkey + nonce last.
+- The client packer's field name must match the Arcis struct field (`public_key_encoded`)
+  exactly; a mismatch corrupts data silently.
+- Results arrive only via events; this program stores nothing on chain.
 
-Each MPC node holds a share of the private key and executes a distributed signing protocol to produce a standard Ed25519 signature without reconstructing the complete key.
+## Limitations
 
-> See [Arcis Primitives](https://docs.arcium.com/developers/arcis/primitives) for the full cryptographic API.
+- Messages are fixed at 5 bytes by the circuit signatures; other lengths need their own circuits.
+- `verify_signature` hides only the key and the verdict; the message and signature are public.
+- One signing key per MXE — no rotation, no per-user keys; every caller signs as the same identity.
 
-### Confidential Public Key Verification
-
-```rust
-pub fn verify_signature(
-    verifying_key_enc: Enc<Shared, Pack<VerifyingKey>>,
-    message: [u8; 5],
-    signature: [u8; 64],
-    observer: Shared,
-) -> Enc<Shared, bool> {
-    let verifying_key = verifying_key_enc.to_arcis().unpack();
-    let signature = ArcisEd25519Signature::from_bytes(signature);
-    let is_valid = verifying_key.verify(&message, &signature);
-    observer.from_arcis(is_valid)
-}
-```
-
-In some scenarios, revealing which public key is being verified could leak sensitive information (identity, organizational affiliations). This pattern enables verification without public key disclosure.
+See also: [Arcis cryptographic operations](https://docs.arcium.com/developers/arcis/primitives#cryptographic-operations)

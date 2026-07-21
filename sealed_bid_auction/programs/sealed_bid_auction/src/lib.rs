@@ -1,3 +1,16 @@
+//! Sealed-bid auction program: first-price and Vickrey auctions over an
+//! encrypted `AuctionState` persisted in the `Auction` PDA. Bids are compared
+//! inside MPC; the chain only ever learns the winner and the clearing price.
+//!
+//! Byte layout of `Auction`: the encrypted state starts at offset 77 =
+//! 8 (discriminator) + 1 (bump) + 32 (authority) + 1 (auction_type) +
+//! 1 (status) + 8 (min_bid) + 8 (end_time) + 2 (bid_count) + 16 (state_nonce),
+//! followed by five 32-byte ciphertexts, one per Arcis field element:
+//! highest_bid, highest_bidder lo/hi, second_highest_bid, bid_count.
+//! `place_bid` and both winner instructions pass this range to the circuit via
+//! `ArgBuilder::account`, so the cluster reads the state in place.
+//! Walkthrough: ../../../README.md.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
@@ -8,7 +21,7 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_FIRST_PRICE: u32 =
     comp_def_offset("determine_winner_first_price");
 const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine_winner_vickrey");
 
-// Auction account byte offset: 8 (discriminator) + 1 + 32 + 1 + 1 + 8 + 8 + 2 + 16 = 77
+// See the module header for the field-by-field derivation of this offset.
 const ENCRYPTED_STATE_OFFSET: u32 = 77;
 const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
@@ -55,6 +68,8 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
+    /// Creates the `Auction` PDA and queues `init_auction_state` to produce the
+    /// initial encrypted state.
     pub fn create_auction(
         ctx: Context<CreateAuction>,
         computation_offset: u64,
@@ -73,6 +88,7 @@ pub mod sealed_bid_auction {
         auction.bid_count = 0;
         auction.encrypted_state = [[0u8; 32]; 5];
 
+        // Arcium signs the callback with this PDA; persist the bump before queueing.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         let args = ArgBuilder::new().build();
@@ -131,6 +147,8 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
+    /// Queues the `place_bid` circuit with the bidder's ciphertexts and the
+    /// current encrypted auction state.
     pub fn place_bid(
         ctx: Context<PlaceBid>,
         computation_offset: u64,
@@ -152,6 +170,8 @@ pub mod sealed_bid_auction {
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
+        // Order must match the circuit signature: Enc<Shared, Bid> = pubkey +
+        // nonce + ciphertexts, then Enc<Mxe, AuctionState> = nonce + account data.
         let args = ArgBuilder::new()
             .x25519_pubkey(bidder_pubkey)
             .plaintext_u128(nonce)
@@ -201,6 +221,8 @@ pub mod sealed_bid_auction {
 
         let auction_key = ctx.accounts.auction.key();
         let auction = &mut ctx.accounts.auction;
+        // The state was re-encrypted under a fresh nonce; persisting it is what
+        // lets the next computation decrypt the account data.
         auction.encrypted_state = o.ciphertexts;
         auction.state_nonce = o.nonce;
         auction.bid_count = auction
@@ -216,6 +238,7 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
+    /// Marks the auction `Closed` once `end_time` has passed; no MPC involved.
     pub fn close_auction(ctx: Context<CloseAuction>) -> Result<()> {
         let auction = &mut ctx.accounts.auction;
         require!(
@@ -236,6 +259,7 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
+    /// Queues the first-price winner circuit; the winner pays their own bid.
     pub fn determine_winner_first_price(
         ctx: Context<DetermineWinnerFirstPrice>,
         computation_offset: u64,
@@ -305,6 +329,7 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
+        // SerializedSolanaPublicKey arrives as lo/hi u128 halves, little-endian.
         let mut winner = [0u8; 32];
         winner[..16].copy_from_slice(&winner_lo.to_le_bytes());
         winner[16..].copy_from_slice(&winner_hi.to_le_bytes());
@@ -324,6 +349,7 @@ pub mod sealed_bid_auction {
         Ok(())
     }
 
+    /// Queues the Vickrey winner circuit; the winner pays the second-highest bid.
     pub fn determine_winner_vickrey(
         ctx: Context<DetermineWinnerVickrey>,
         computation_offset: u64,
@@ -393,6 +419,7 @@ pub mod sealed_bid_auction {
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
+        // SerializedSolanaPublicKey arrives as lo/hi u128 halves, little-endian.
         let mut winner = [0u8; 32];
         winner[..16].copy_from_slice(&winner_lo.to_le_bytes());
         winner[16..].copy_from_slice(&winner_hi.to_le_bytes());

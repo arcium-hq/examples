@@ -1,3 +1,8 @@
+//! Blackjack circuits: shuffle and deal an encrypted 52-card deck, apply player
+//! actions and dealer play against it, and resolve the winner. The deck and the
+//! dealer's hand stay encrypted to the MXE; the player learns only their own hand,
+//! the dealer's face-up card, and revealed bust/result flags. See README.md.
+
 use arcis::*;
 
 #[encrypted]
@@ -14,15 +19,17 @@ mod circuits {
     type Deck = Pack<[u8; 52]>;
     type Hand = Pack<[u8; 11]>;
 
+    /// Shuffles the deck and deals two cards each. The deck and dealer hand are
+    /// encrypted to the MXE; the player receives their hand and the dealer's face-up card.
     #[instruction]
     pub fn shuffle_and_deal_cards(
         client: Shared,
         client_again: Shared,
     ) -> (
-        Enc<Mxe, Deck>,    // 16 + 32 x 2
-        Enc<Mxe, Hand>,    // 16 + 32
-        Enc<Shared, Hand>, // 32 + 16 + 32
-        Enc<Shared, u8>,   // 32 + 16 + 32
+        Enc<Mxe, Deck>,
+        Enc<Mxe, Hand>,
+        Enc<Shared, Hand>,
+        Enc<Shared, u8>,
     ) {
         let mut initial_deck: [u8; 52] = INITIAL_DECK;
         ArcisRNG::shuffle(&mut initial_deck);
@@ -30,6 +37,7 @@ mod circuits {
         let deck_packed: Deck = Pack::new(initial_deck);
         let deck = Mxe::get().from_arcis(deck_packed);
 
+        // 53 marks an empty slot; only indices 0-51 count toward hand value.
         let mut dealer_cards = [53u8; 11];
         dealer_cards[0] = initial_deck[1];
         dealer_cards[1] = initial_deck[3];
@@ -50,6 +58,8 @@ mod circuits {
         )
     }
 
+    /// Draws the next card from the encrypted deck into the player's hand.
+    /// Reveals only whether the player busted.
     #[instruction]
     pub fn player_hit(
         deck_ctxt: Enc<Mxe, Deck>,
@@ -72,7 +82,7 @@ mod circuits {
         )
     }
 
-    // Returns true if the player has busted
+    /// Reveals only whether the player's final hand is a bust.
     #[instruction]
     pub fn player_stand(player_hand_ctxt: Enc<Shared, Hand>, player_hand_size: u8) -> bool {
         let player_hand = player_hand_ctxt.to_arcis().unpack();
@@ -80,7 +90,8 @@ mod circuits {
         (value > 21).reveal()
     }
 
-    // Returns true if the player has busted, if not, returns the new card
+    /// Same draw as `player_hit`; the program marks the player as stood afterward.
+    /// Reveals only whether the player busted.
     #[instruction]
     pub fn player_double_down(
         deck_ctxt: Enc<Mxe, Deck>,
@@ -103,7 +114,8 @@ mod circuits {
         )
     }
 
-    // Function for dealer to play (reveal hole card and follow rules)
+    /// Dealer draws from the encrypted deck until reaching 17. Returns the hand
+    /// re-encrypted to the MXE and to the player, and reveals only the final hand size.
     #[instruction]
     pub fn dealer_play(
         deck_ctxt: Enc<Mxe, Deck>,
@@ -132,17 +144,8 @@ mod circuits {
         )
     }
 
-    /// Calculates the blackjack value of a hand according to standard rules.
-    ///
-    /// Card values: Ace = 1 or 11 (whichever is better), Face cards = 10, Others = face value.
-    /// Aces are initially valued at 11, but automatically reduced to 1 if the hand would bust.
-    ///
-    /// # Arguments
-    /// * `hand` - Array of up to 11 cards (more than enough for blackjack)
-    /// * `hand_length` - Number of actual cards in the hand
-    ///
-    /// # Returns
-    /// The total value of the hand (1-21, or >21 if busted)
+    /// Standard blackjack hand value: aces count 11 then drop to 1 while the hand
+    /// would bust; face cards count 10. Slots beyond `hand_length` are ignored.
     fn calculate_hand_value(hand: &[u8; 11], hand_length: u8) -> u8 {
         let mut value: u8 = 0;
         let mut ace_count: u8 = 0;
@@ -174,18 +177,8 @@ mod circuits {
         value
     }
 
-    /// Determines the final winner of the blackjack game.
-    ///
-    /// Compares the final hand values according to blackjack rules and returns
-    /// a numeric result indicating the outcome. Both hands are evaluated for busts
-    /// and compared for the winner.
-    ///
-    /// # Returns
-    /// * 0 = Player busts (dealer wins)
-    /// * 1 = Dealer busts (player wins)
-    /// * 2 = Player wins (higher value, no bust)
-    /// * 3 = Dealer wins (higher value, no bust)
-    /// * 4 = Push/tie (same value, no bust)
+    /// Compares final hands and reveals only a result code: 0 player bust,
+    /// 1 dealer bust, 2 player wins, 3 dealer wins, 4 push.
     #[instruction]
     pub fn resolve_game(
         player_hand: Enc<Shared, Hand>,
@@ -196,21 +189,19 @@ mod circuits {
         let player_hand = player_hand.to_arcis().unpack();
         let dealer_hand = dealer_hand.to_arcis().unpack();
 
-        // Calculate final hand values
         let player_value = calculate_hand_value(&player_hand, player_hand_length);
         let dealer_value = calculate_hand_value(&dealer_hand, dealer_hand_length);
 
-        // Apply blackjack rules to determine winner
         let result = if player_value > 21 {
-            0 // Player busts - dealer wins automatically
+            0 // player bust
         } else if dealer_value > 21 {
-            1 // Dealer busts - player wins automatically
+            1 // dealer bust
         } else if player_value > dealer_value {
-            2 // Player has higher value without busting
+            2 // player wins
         } else if dealer_value > player_value {
-            3 // Dealer has higher value without busting
+            3 // dealer wins
         } else {
-            4 // Equal values - push (tie)
+            4 // push
         };
 
         result.reveal()

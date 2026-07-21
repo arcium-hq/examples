@@ -1,3 +1,9 @@
+//! Stateless rock-paper-scissors program with an MPC-generated house move.
+//! `play_rps` queues a computation with the player's encrypted move; the
+//! cluster draws the house move inside MPC and `play_rps_callback` emits the
+//! outcome as a `PlayRpsEvent`. No game state is stored on chain.
+//! Circuit: `encrypted-ixs/src/lib.rs`. Walkthrough: README.md.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -9,11 +15,15 @@ declare_id!("CsfnLykGNvdHgAT58B75MKCz3yX4FDhwRsYFKq9wtmyN");
 pub mod rock_paper_scissors_against_rng {
     use super::*;
 
+    /// Registers the `play_rps` computation definition with the MXE.
     pub fn init_play_rps_comp_def(ctx: Context<InitPlayRpsCompDef>) -> Result<()> {
         init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
+    /// Queues the game computation with the player's encrypted move
+    /// (0 = rock, 1 = paper, 2 = scissors). The result arrives via
+    /// `play_rps_callback`.
     pub fn play_rps(
         ctx: Context<PlayRps>,
         computation_offset: u64,
@@ -21,12 +31,15 @@ pub mod rock_paper_scissors_against_rng {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
+        // Argument order must match the circuit signature: Enc<Shared, PlayerMove>
+        // is supplied as pubkey, then nonce, then ciphertext.
         let args = ArgBuilder::new()
             .x25519_pubkey(pub_key)
             .plaintext_u128(nonce)
             .encrypted_u8(player_move)
             .build();
 
+        // Persist the bump before queue_computation so the callback can sign.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -45,6 +58,7 @@ pub mod rock_paper_scissors_against_rng {
         Ok(())
     }
 
+    /// Verifies the MPC output and emits the game result as a `PlayRpsEvent`.
     #[arcium_callback(encrypted_ix = "play_rps")]
     pub fn play_rps_callback(
         ctx: Context<PlayRpsCallback>,
