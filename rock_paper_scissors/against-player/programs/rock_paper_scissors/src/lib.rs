@@ -6,7 +6,7 @@ const COMP_DEF_OFFSET_INIT_GAME: u32 = comp_def_offset("init_game");
 const COMP_DEF_OFFSET_PLAYER_MOVE: u32 = comp_def_offset("player_move");
 const COMP_DEF_OFFSET_COMPARE_MOVES: u32 = comp_def_offset("compare_moves");
 
-declare_id!("R8TiuzNjD6APFeL3mcDZQYntfDV4iBobt3wjvsV9kts");
+declare_id!("3xe7NfvBrEe4wmKuhhnoRFdyscf13LVNDBqruFmjPPtz");
 
 #[arcium_program]
 pub mod rock_paper_scissors {

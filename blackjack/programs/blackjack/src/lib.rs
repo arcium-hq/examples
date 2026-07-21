@@ -9,7 +9,7 @@ const COMP_DEF_OFFSET_PLAYER_STAND: u32 = comp_def_offset("player_stand");
 const COMP_DEF_OFFSET_DEALER_PLAY: u32 = comp_def_offset("dealer_play");
 const COMP_DEF_OFFSET_RESOLVE_GAME: u32 = comp_def_offset("resolve_game");
 
-declare_id!("EEcEHctTAbupPh43vJj6u7e5JDaWR6DB8otjB4gKR5LR");
+declare_id!("62gnbWAVJ1FUA5umak7kjGu4t4THWw7Zo1AZo6q5Tgb8");
 
 #[arcium_program]
 pub mod blackjack {

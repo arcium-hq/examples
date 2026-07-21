@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-ed_25519 = "2DkHTVNv22UQVtQt1rSRa5SVFXLEepHoLSJv4p6g1Fcp"
+ed_25519 = "BVDLKuPHre5sThUJVCG5Get4nEeBvki4hy3ZxFdpGu2p"
 
 [provider]
 cluster = "localnet"
@@ -14,3 +14,5 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+
+[hooks]
