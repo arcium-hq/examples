@@ -4,7 +4,7 @@ use arcium_anchor::prelude::*;
 const COMP_DEF_OFFSET_SIGN_MESSAGE: u32 = comp_def_offset("sign_message");
 const COMP_DEF_OFFSET_VERIFY_SIGNATURE: u32 = comp_def_offset("verify_signature");
 
-declare_id!("2DkHTVNv22UQVtQt1rSRa5SVFXLEepHoLSJv4p6g1Fcp");
+declare_id!("BVDLKuPHre5sThUJVCG5Get4nEeBvki4hy3ZxFdpGu2p");
 
 #[arcium_program]
 pub mod ed_25519 {

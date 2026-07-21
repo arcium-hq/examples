@@ -12,7 +12,7 @@ const COMP_DEF_OFFSET_DETERMINE_WINNER_VICKREY: u32 = comp_def_offset("determine
 const ENCRYPTED_STATE_OFFSET: u32 = 77;
 const ENCRYPTED_STATE_SIZE: u32 = 32 * 5;
 
-declare_id!("HB2ec1r1gh7jSnKJ4T5Lfo3W2VDoLdtEV2cDq6gEGbxT");
+declare_id!("DR3ooHHe22Ufk7mcbtFDuHZf3aQ3t7B6Z6gPTr6N2yR5");
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
 pub enum AuctionType {

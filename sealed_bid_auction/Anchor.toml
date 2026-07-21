@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-sealed_bid_auction = "HB2ec1r1gh7jSnKJ4T5Lfo3W2VDoLdtEV2cDq6gEGbxT"
+sealed_bid_auction = "DR3ooHHe22Ufk7mcbtFDuHZf3aQ3t7B6Z6gPTr6N2yR5"
 
 [provider]
 cluster = "localnet"
@@ -14,3 +14,5 @@ wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 \"tests/**/*.ts\""
+
+[hooks]
