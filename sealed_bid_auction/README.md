@@ -1,6 +1,6 @@
 # Sealed-Bid Auction — private bids, public winner
 
-First-price and Vickrey (second-price) auctions where bid amounts stay encrypted end to end. MPC nodes compare each incoming bid against encrypted running state, and only the winner's public key and the payment amount are ever revealed — losing bids stay hidden from other bidders, the auctioneer, and the nodes themselves.
+First-price and Vickrey (second-price) auctions where MPC nodes compare each incoming bid against encrypted running state. The winner's public key and clearing price are revealed; all other bid amounts remain encrypted.
 
 **Use this pattern when** you need to select a maximum (or ranking) over private inputs and reveal only the outcome: auctions, procurement, hiring, matching markets.
 
@@ -11,7 +11,7 @@ First-price and Vickrey (second-price) auctions where bid amounts stay encrypted
 3. After `end_time` the authority calls `close_auction`, then `determine_winner_first_price` or `determine_winner_vickrey` to match the auction type.
 4. The winner circuit decrypts inside MPC and reveals only the winner's pubkey and the clearing price — the top bid in first-price mode, the second-highest bid in Vickrey mode — which the callback emits as `AuctionResolvedEvent`.
 
-Only the winner and the price they pay become public; losing bids, and in Vickrey mode even the winning bid amount, stay encrypted forever.
+The winner and clearing price become public. In a Vickrey auction that price is the second-highest, losing bid; the winning bid and all non-clearing bid amounts remain encrypted.
 
 ## Concepts demonstrated
 
@@ -43,6 +43,9 @@ Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
 - `min_bid` is stored and emitted but never enforced: the program cannot compare an encrypted amount, and the circuit is never given `min_bid`. A production version would pass it to `place_bid` as a plaintext argument and reject low bids in-circuit.
 - No per-bidder limit or deposit: `bid_count` counts bids, not bidders, and in Vickrey mode a bidder's own extra bid can raise the price they pay.
+- Participation and `bid_count` are public through transaction accounts and events, even though bid amounts are encrypted.
+- The encrypted bidder key is not bound to the transaction signer, and the example has no escrow or settlement; it reports a claimed winner but transfers nothing.
+- Bids must finalize sequentially: the state nonce is fixed when queueing while account ciphertexts are fetched during computation, so overlapping bids can use incompatible state versions or overwrite an update.
 - One auction per authority: the `Auction` PDA is seeded only by the authority key, so a second `create_auction` from the same key fails.
 
 See also: [invoking circuits with ArgBuilder](https://docs.arcium.com/developers/program) · **Next:** [Blackjack](../blackjack/)

@@ -1,6 +1,7 @@
 //! Circuits for two-player rock paper scissors. Game state lives in
-//! `Enc<Mxe, GameMoves>`, so neither player can read the other's move;
-//! only `compare_moves` reveals anything. See README.md for the full flow.
+//! `Enc<Mxe, GameMoves>`, so neither player can read the other's move before
+//! commitment. `compare_moves` reveals an outcome from which each player can infer
+//! the other move. See README.md for the full flow.
 
 use arcis::*;
 

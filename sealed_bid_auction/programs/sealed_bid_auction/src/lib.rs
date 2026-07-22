@@ -1,6 +1,7 @@
 //! Sealed-bid auction program: first-price and Vickrey auctions over an
 //! encrypted `AuctionState` persisted in the `Auction` PDA. Bids are compared
-//! inside MPC; the chain only ever learns the winner and the clearing price.
+//! inside MPC; the circuits reveal the winner and clearing price, while ordinary
+//! transaction metadata also exposes participants and the number of bids.
 //!
 //! Byte layout of `Auction`: the encrypted state starts at offset 77 =
 //! 8 (discriminator) + 1 (bump) + 32 (authority) + 1 (auction_type) +

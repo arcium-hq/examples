@@ -2,7 +2,8 @@
 
 The player encrypts a heads-or-tails guess, the MPC cluster flips a coin using
 randomness no individual node can predict or bias, and only the win/loss bit becomes
-public. The guess and the toss stay encrypted end to end.
+public. The guess and toss are never published directly, though the player can infer
+the toss from their guess and the public outcome.
 
 **Use this pattern when** no party (operator, player, or any single node) may
 predict or influence a random outcome: lotteries, random drops, fair matchmaking.
@@ -17,8 +18,8 @@ predict or influence a random outcome: lotteries, random drops, fair matchmaking
    its comparison against the guess; both operands remain secret shares throughout.
 4. `flip_callback` verifies the signed output and emits `FlipEvent`; nothing is stored.
 
-Anyone can see the win/loss bit; the guess and the toss are visible to no one, not
-even the nodes.
+Anyone can see the win/loss bit. The guess remains known only to the player, and no
+node sees either operand; the player can derive the toss from their guess and outcome.
 
 ## Concepts demonstrated
 
@@ -53,7 +54,8 @@ Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
 ## Limitations
 
-- Only the guess and the toss are private; the outcome is public to any observer.
+- The outcome is public. It does not reveal the guess to observers, but it lets the
+  player infer the toss because they already know their guess.
 - The result lives only in `FlipEvent`; nothing persists on chain, so other programs
   cannot consume the outcome. A production game would also need a wager and payout.
 

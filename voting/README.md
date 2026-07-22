@@ -63,5 +63,8 @@ Setup and troubleshooting: [repo README](../README.md#running-an-example).
   when; only the ballot content is hidden.
 - No poll close: the authority can reveal at any time, and small tallies leak
   ballots (a one-vote poll's result is that voter's ballot). Ties reveal as `false`.
+- Votes must finalize sequentially: the tally nonce is fixed when queueing while
+  account ciphertexts are fetched during computation, so overlapping votes can use
+  incompatible state versions or overwrite an update.
 
 See also: [Shared vs MXE encryption](https://docs.arcium.com/developers/program/callback-type-generation#encryption-types-shared-vs-mxe) · **Next:** [Medical Records](../share_medical_records/)

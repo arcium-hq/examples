@@ -1,6 +1,7 @@
 //! Sealed-bid auction circuits: maintain highest and second-highest bids in an
 //! MXE-encrypted `AuctionState`, then reveal only the winner and clearing price.
-//! Individual bid amounts never leave MPC. Walkthrough: ../../README.md.
+//! Bid amounts other than the revealed clearing price never leave MPC.
+//! Walkthrough: ../../README.md.
 
 use arcis::*;
 

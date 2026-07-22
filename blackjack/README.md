@@ -11,7 +11,7 @@ reveals: card games, fog-of-war strategy, any turn-based game with private state
 
 1. `initialize_blackjack_game` creates the `BlackjackGame` PDA and queues `shuffle_and_deal_cards`, which
    shuffles a 52-card deck with `ArcisRNG::shuffle` and deals two cards each: deck and dealer hand return as
-   `Enc<Mxe, ...>` (decryptable by no one), player hand and dealer face-up card as `Enc<Shared, ...>`
+   `Enc<Mxe, ...>` (not decryptable by any single party), player hand and dealer face-up card as `Enc<Shared, ...>`
    (decryptable only by the player).
 2. The callback stores every ciphertext in `BlackjackGame` and emits `CardsShuffledAndDealtEvent`; the
    player decrypts their hand client-side.
@@ -60,6 +60,7 @@ Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
 - Hand sizes, bust flags, and the winner are public: observers see exactly when the player busts.
 - The dealer's face-up card is encrypted to the player rather than published, unlike real blackjack.
+- Actions must finalize sequentially: their nonces and hand sizes are fixed when queueing while account ciphertexts are fetched during computation, so overlapping actions can use incompatible state versions or overwrite an update.
 - No bets, splits, insurance, or multiplayer, and no timeout path for abandoned games.
 
 See also: [Arcis best practices](https://docs.arcium.com/developers/arcis/best-practices) · **Next:** [Ed25519](../ed25519/)

@@ -1,6 +1,6 @@
 # Rock Paper Scissors vs Player — asynchronous hidden moves
 
-Two players submit rock paper scissors moves at different times, each encrypted client-side and merged into MXE-owned game state that no individual party can decrypt. Neither player, the program, nor any single node ever sees a move; only the final outcome is revealed.
+Two players submit rock paper scissors moves at different times, each encrypted client-side and merged into MXE-owned game state that no individual party can decrypt. Neither player can see the other's move before both commit; the final outcome lets each infer the other's move.
 
 **Use this pattern when** multiple parties submit hidden inputs asynchronously and only the result of comparing them should become public: sealed matches, blind negotiations, simultaneous-commitment games.
 
@@ -11,13 +11,13 @@ Two players submit rock paper scissors moves at different times, each encrypted 
 3. Inside MPC, the circuit writes the move into its slot only if the slot is still empty and the move is valid, then returns re-encrypted state; the callback overwrites `RPSGame` with the new ciphertexts and nonce.
 4. Once both slots are filled, anyone calls `compare_moves`. The circuit reveals a single `u8` outcome and the callback emits it as a `CompareMovesEvent` ("Tie", "Player A Wins", "Player B Wins", or "Invalid Move" if a slot was still empty).
 
-Moves stay MXE-owned end to end: each player knows only their own move, and the public learns only the outcome.
+Moves stay MXE-owned end to end and are never published directly. The public learns only the outcome; each player can combine it with their own move to infer the other's.
 
 ## Concepts demonstrated
 
 - Client-encrypted input merged into MXE-owned state: `player_move` takes `Enc<Shared, PlayersMove>` alongside `Enc<Mxe, GameMoves>`, the same shape as the order book in [Input/output](https://docs.arcium.com/developers/arcis/input-output).
 - Passing stored ciphertexts back into MPC: `ArgBuilder`'s `account` method references the `RPSGame` account so the circuit computes over previously stored encrypted state ([Invoking computations](https://docs.arcium.com/developers/program)).
-- Sentinel-guarded writes: "has this player already moved" is decided inside the circuit by comparing against the sentinel, so submission status never leaks.
+- Sentinel-guarded writes: "has this player already moved" is decided inside the circuit by comparing against the sentinel, so slot occupancy and guarded-write success remain hidden.
 
 ## Run
 
@@ -42,7 +42,7 @@ Setup and troubleshooting: [repo README](../../README.md#running-an-example).
 ## Limitations
 
 - The signer check does not bind a signer to a slot: the slot claimed comes from the encrypted `player` field, so either registered player could fill the opponent's empty slot.
-- Moves must finalize sequentially: queuing captures the current nonce and ciphertexts, so a second move queued before the first finalizes computes over stale state.
+- Moves must finalize sequentially: the nonce is fixed when queueing while account ciphertexts are fetched during computation, so overlapping moves can use incompatible state versions or overwrite an update.
 - No timeout or account closure: if one player never moves, the game stays open indefinitely, and the pairing (`player_a`, `player_b`, game id) is public.
 
 See also: [Input/output](https://docs.arcium.com/developers/arcis/input-output) · **Next:** [Rock Paper Scissors vs House](../against-house/)

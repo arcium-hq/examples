@@ -2,15 +2,15 @@
 
 Example applications built with [Arcium](https://arcium.com), the encrypted compute
 network on Solana. Each example computes on encrypted data using multi-party
-computation (MPC): inputs stay encrypted end to end, and no single party, including
-the nodes running the computation, ever sees them.
+computation (MPC): confidential inputs stay encrypted end to end, and no compute
+node sees them in plaintext.
 
 ## How Arcium works
 
-Every example follows the same lifecycle:
+The examples share the same computation lifecycle:
 
-1. The client encrypts inputs locally (x25519 key exchange + RescueCipher) and
-   submits them in a Solana transaction.
+1. The client submits plaintext or locally encrypted inputs. Confidential client
+   inputs use x25519 key exchange and `RescueCipher`.
 2. The Anchor program queues a computation with the Arcium program.
 3. An MPC cluster executes the encrypted instruction defined in `encrypted-ixs/`.
 4. The result returns on-chain via a callback instruction, which stores or reveals it.
@@ -30,9 +30,9 @@ Recommended path: work through them in order. Each introduces one new pattern.
 | [Rock Paper Scissors](./rock_paper_scissors/) | Hidden moves | Yes ([vs player](./rock_paper_scissors/against-player/)), No ([vs house](./rock_paper_scissors/against-house/)) | `Enc<Shared, T>` inputs, RNG opponent |
 | [Voting](./voting/) | Private aggregation | Yes | `Enc<Mxe, T>` accumulators, callbacks |
 | [Medical Records](./share_medical_records/) | Controlled sharing | Yes | Re-encryption to a new owner |
-| [Sealed-Bid Auction](./sealed_bid_auction/) | Encrypted comparison | Yes | First-price and Vickrey settlement |
+| [Sealed-Bid Auction](./sealed_bid_auction/) | Encrypted comparison | Yes | First-price and Vickrey clearing prices |
 | [Blackjack](./blackjack/) | Hidden game state | Yes | `Pack<T>` storage efficiency |
-| [Ed25519 Signatures](./ed25519/) | Distributed signing | Yes | Keys that never exist in one place |
+| [Ed25519 Signatures](./ed25519/) | Distributed signing | No | Keys that never exist in one place |
 
 ## Running an example
 

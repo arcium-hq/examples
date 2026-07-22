@@ -1,6 +1,6 @@
 //! Coinflip circuit: draws an MPC random boolean and compares it against the
-//! player's encrypted guess. Only the win/loss bit is revealed; the guess and
-//! the toss stay secret. See README.md for the full flow.
+//! player's encrypted guess. Only the win/loss bit is revealed directly; combined
+//! with their guess, it lets the player infer the toss. See README.md for the flow.
 
 use arcis::*;
 
@@ -20,7 +20,7 @@ mod circuits {
 
         let toss = ArcisRNG::bool();
 
-        // Reveal only the comparison; the guess and the toss remain secret.
+        // Reveal only the comparison; neither operand is revealed directly.
         (input.choice == toss).reveal()
     }
 }

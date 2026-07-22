@@ -3,7 +3,8 @@
 Rock-paper-scissors against a house whose move is drawn inside the MPC computation
 itself. The player's move is encrypted client-side, the house move is sampled from
 cluster randomness, and only a result code becomes public — neither move is ever
-visible to the operator, observers, or any individual node.
+published directly or visible to any individual node. The player can infer the house
+move afterward from their own move and the result.
 
 **Use this pattern when** a secret user input must be judged against randomness no
 party can predict or bias: casino-style games, random rewards on a private choice.
@@ -21,8 +22,8 @@ party can predict or bias: casino-style games, random rewards on a private choic
 4. `play_rps_callback` verifies the signed output and emits `PlayRpsEvent`; no game
    state is written.
 
-Anyone watching the chain sees the outcome; the program, observers, and individual
-nodes see neither the player's move nor the house's.
+Anyone watching the chain sees the outcome but cannot derive either move without
+knowing one of them. The player knows their move and can therefore derive the house's.
 
 ## Concepts demonstrated
 
@@ -61,6 +62,8 @@ Setup and troubleshooting: [repo README](../../README.md#running-an-example).
 ## Limitations
 
 - The outcome is public to every observer, not just the player.
+- The player can infer the house move from their own move and the outcome; it is
+  hidden before commitment, not after resolution.
 - If all 16 sampling rounds reject (probability 4^-16), `house_move` silently stays
   `0` and the house plays rock — negligible, but a production version should handle
   that case explicitly.

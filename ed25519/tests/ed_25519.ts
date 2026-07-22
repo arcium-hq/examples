@@ -5,8 +5,8 @@
  * -> observer decrypts the verdict.
  *
  * Unique here: the VerifyingKey packer is built by hand with createPacker, and
- * the test randomly corrupts message, key, or signature so the encrypted
- * verdict exercises both the valid and invalid paths.
+ * each run randomly chooses a valid case or corrupts the message, key, or
+ * signature for an invalid case.
  */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
