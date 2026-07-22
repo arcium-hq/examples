@@ -1,3 +1,12 @@
+//! Two-player rock paper scissors with MXE-encrypted moves. Stateful: the
+//! `RPSGame` PDA holds the player pubkeys plus the encrypted `GameMoves`
+//! ciphertexts, which `player_move` and `compare_moves` pass back into MPC
+//! by account reference.
+//!
+//! Byte layout read via `ArgBuilder::account`: offset 8 skips the Anchor
+//! discriminator; the next 64 bytes are `moves` (two 32-byte ciphertexts),
+//! so `moves` must stay the first field of `RPSGame`.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
@@ -17,6 +26,8 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Creates the `RPSGame` PDA for the two players and queues the
+    /// `init_game` circuit to produce empty encrypted game state.
     pub fn init_game(
         ctx: Context<InitGame>,
         computation_offset: u64,
@@ -53,6 +64,7 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Stores the initial `GameMoves` ciphertexts and nonce in `RPSGame`.
     #[arcium_callback(encrypted_ix = "init_game")]
     pub fn init_game_callback(
         ctx: Context<InitGameCallback>,
@@ -82,6 +94,8 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Submits one player's encrypted move; only `player_a` or `player_b`
+    /// may sign. Queues the `player_move` circuit over the stored state.
     pub fn player_move(
         ctx: Context<PlayerMove>,
         computation_offset: u64,
@@ -96,6 +110,9 @@ pub mod rock_paper_scissors {
             ErrorCode::NotAuthorized
         );
 
+        // Arg order mirrors the circuit signature: the Enc<Shared, PlayersMove>
+        // input (pubkey, nonce, ciphertexts in field order), then the
+        // Enc<Mxe, GameMoves> state (stored nonce, `moves` bytes at offset 8).
         let args = ArgBuilder::new()
             .x25519_pubkey(pub_key)
             .plaintext_u128(nonce)
@@ -126,6 +143,7 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Overwrites `RPSGame` with the re-encrypted moves and the new nonce.
     #[arcium_callback(encrypted_ix = "player_move")]
     pub fn player_move_callback(
         ctx: Context<PlayerMoveCallback>,
@@ -155,6 +173,8 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Queues the `compare_moves` circuit over the stored state; the outcome
+    /// is revealed in the callback.
     pub fn compare_moves(ctx: Context<CompareMoves>, computation_offset: u64) -> Result<()> {
         let args = ArgBuilder::new()
             .plaintext_u128(ctx.accounts.rps_game.nonce)
@@ -178,6 +198,7 @@ pub mod rock_paper_scissors {
         Ok(())
     }
 
+    /// Emits the revealed outcome as a `CompareMovesEvent`.
     #[arcium_callback(encrypted_ix = "compare_moves")]
     pub fn compare_moves_callback(
         ctx: Context<CompareMovesCallback>,

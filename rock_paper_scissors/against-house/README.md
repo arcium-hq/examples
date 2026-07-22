@@ -1,47 +1,73 @@
-# Rock Paper Scissors vs House - Fair Gaming
+# Rock Paper Scissors vs House — hidden move, unbiased opponent
 
-Player-versus-house games require trust that the house algorithm operates fairly. In traditional implementations, the house can observe player moves before generating responses, or use biased random number generation to favor house outcomes.
+Rock-paper-scissors against a house whose move is drawn inside the MPC computation
+itself. The player's move is encrypted client-side, the house move is sampled from
+cluster randomness, and only a result code becomes public — neither move is ever
+published directly or visible to any individual node. The player can infer the house
+move afterward from their own move and the result.
 
-This example demonstrates fair gaming where the house cannot access player moves before generating its response, and randomness generation is cryptographically secure.
+**Use this pattern when** a secret user input must be judged against randomness no
+party can predict or bias: casino-style games, random rewards on a private choice.
 
-## Why can't you trust the house?
+## How it works
 
-Traditional house games have multiple trust problems: the house can see player moves before responding, bias the random number generator, or modify game behavior without transparency. Every layer requires trusting the operator not to cheat, creating information asymmetry that favors the house.
+1. The client derives a shared secret with the MXE via x25519, encrypts the move
+   (`0` rock, `1` paper, `2` scissors) with `RescueCipher`, and calls `play_rps`,
+   which packs the arguments with `ArgBuilder` and queues the computation.
+2. The `play_rps` circuit receives the move as `Enc<Shared, PlayerMove>` and draws
+   the house move inside MPC: 16 rounds of rejection sampling over two
+   `ArcisRNG::bool()` bits, discarding value 3 so all three moves are equally likely.
+3. The circuit compares the moves and reveals only a result code: `0` tie, `1`
+   player wins, `2` house wins, `3` invalid move.
+4. `play_rps_callback` verifies the signed output and emits `PlayRpsEvent`; no game
+   state is written.
 
-## How Provably Fair Gaming Works
+Anyone watching the chain sees the outcome but cannot derive either move without
+knowing one of them. The player knows their move and can therefore derive the house's.
 
-The protocol ensures fairness through cryptographic isolation:
+## Concepts demonstrated
 
-1. **Player encrypted submission**: The player's move is encrypted and submitted to the blockchain
-2. **Random house move**: Arcium nodes generate a random house move using cryptographic randomness
-3. **Encrypted comparison**: Both moves are compared in encrypted form
-4. **Result disclosure**: Only the game outcome (win/loss/tie) is revealed
+- Client secret meets cluster randomness: the `play_rps` circuit combines a
+  client-encrypted input with `ArcisRNG` output in one computation, so neither side
+  can react to the other.
+- Rejection sampling under circuit constraints: the loop runs a fixed 16 iterations
+  and latches the first valid candidate with a `selected` flag, because circuits
+  cannot `break` or return early
+  ([Arcis language constraints](https://docs.arcium.com/developers/limitations#arcis-language-constraints)).
 
-Random number generation uses cryptographic primitives that no single party can predict or bias.
-
-## Running the Example
+## Run
 
 ```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite demonstrates the complete protocol: player move encryption, house random response generation, encrypted comparison, and outcome verification.
+Setup and troubleshooting: [repo README](../../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-The player's move is encrypted on the client and stored on-chain as a ciphertext. The house move is generated using Arcium's cryptographic randomness (similar to Coinflip), where Arcium nodes contribute entropy that no single node can predict or control.
+- `encrypted-ixs/src/lib.rs` — note how uniformity comes from discarding candidate
+  value 3 rather than taking a modulo, which would make rock twice as likely.
+- `programs/rock_paper_scissors_against_rng/src/lib.rs` — note how `ArgBuilder`
+  supplies `Enc<Shared, PlayerMove>` as pubkey, nonce, then ciphertext, exactly the
+  order the circuit expects.
+- `tests/rock_paper_scissors_against_rng.ts` — note how the client never decrypts
+  anything: the outcome arrives as plaintext in `PlayRpsEvent`.
 
-Both moves are compared inside MPC on encrypted values.
+## Pitfalls
 
-Key properties:
+- Move encoding is `0`/`1`/`2`. An out-of-range value cannot be rejected on-chain
+  (it is ciphertext there) and is not an error: the game completes and publicly
+  reveals result `3`, telling every observer the move was invalid.
 
-- **Cryptographic randomness**: Arcium nodes contribute entropy; no single node or subset can predict or bias the outcome
-- **Fair comparison**: Both moves processed in encrypted form throughout game resolution
-- **Integrity**: The MPC protocol ensures correct game resolution even with a dishonest majority—neither the house nor the player can manipulate the outcome as long as at least one node is honest
+## Limitations
+
+- The outcome is public to every observer, not just the player.
+- The player can infer the house move from their own move and the outcome; it is
+  hidden before commitment, not after resolution.
+- If all 16 sampling rounds reject (probability 4^-16), `house_move` silently stays
+  `0` and the house plays rock — negligible, but a production version should handle
+  that case explicitly.
+- Each call is an independent round: no wager, no score, no persistent state.
+
+See also: [Random number generation](https://docs.arcium.com/developers/arcis/primitives#random-number-generation) ·
+**Next:** [Voting](../../voting/)

@@ -1,14 +1,20 @@
+//! Rock-paper-scissors circuit against a house move drawn inside MPC. The
+//! player's move stays encrypted; the house move comes from `ArcisRNG` via
+//! rejection sampling. Only the result code is revealed. See README.md.
+
 use arcis::*;
 
 #[encrypted]
 mod circuits {
     use arcis::*;
 
-    // Consider 0 - Rock, 1 - Paper, 2 - Scissors
+    /// The player's move: 0 = rock, 1 = paper, 2 = scissors.
     pub struct PlayerMove {
         player_move: u8,
     }
 
+    /// Draws a uniform random house move and reveals only the result code:
+    /// 0 = tie, 1 = player wins, 2 = house wins, 3 = invalid move.
     #[instruction]
     pub fn play_rps(player_move_ctxt: Enc<Shared, PlayerMove>) -> u8 {
         let player_move = player_move_ctxt.to_arcis();
@@ -16,6 +22,10 @@ mod circuits {
         let mut house_move: u8 = 0;
         let mut selected = false;
 
+        // Two random bits give a candidate in 0..=3; 3 is rejected so the
+        // three moves stay uniform (a modulo would bias rock to 50%). Circuits
+        // cannot break, so all 16 rounds run and `selected` latches the first
+        // accepted candidate.
         for _ in 0..16 {
             let b0 = ArcisRNG::bool();
             let b1 = ArcisRNG::bool();
@@ -39,7 +49,6 @@ mod circuits {
             selected = selected | candidate_valid;
         }
 
-        // 0 - tie, 1 - player wins, 2 - house wins, 3 - invalid move
         let result = if player_move.player_move > 2 {
             3
         } else if player_move.player_move == house_move {

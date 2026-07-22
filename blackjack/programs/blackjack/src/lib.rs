@@ -1,3 +1,10 @@
+//! Single-player blackjack against an MPC dealer. Stateful: each `BlackjackGame` PDA
+//! stores the encrypted deck and hands, and every action feeds those ciphertexts back
+//! into circuits with `ArgBuilder` account references addressed by byte offset.
+//! Layout after the 8-byte discriminator: deck at offset 8 (2 x 32-byte ciphertexts,
+//! since `Pack<[u8; 52]>` packs 26 bytes per field element), player_hand at 72
+//! (32 bytes), dealer_hand at 104 (32 bytes). `GameState` gates instruction order.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::types::CallbackAccount;
@@ -15,8 +22,6 @@ declare_id!("62gnbWAVJ1FUA5umak7kjGu4t4THWw7Zo1AZo6q5Tgb8");
 pub mod blackjack {
     use super::*;
 
-    /// Initializes the computation definition for shuffling and dealing cards.
-    /// This sets up the MPC environment for the initial deck shuffle and card dealing operation.
     pub fn init_shuffle_and_deal_cards_comp_def(
         ctx: Context<InitShuffleAndDealCardsCompDef>,
     ) -> Result<()> {
@@ -24,16 +29,8 @@ pub mod blackjack {
         Ok(())
     }
 
-    /// Creates a new blackjack game session and initiates the deck shuffle.
-    ///
-    /// This function sets up a new game account with initial state and triggers the MPC computation
-    /// to shuffle a standard 52-card deck and deal the opening hands (2 cards each to player and dealer).
-    /// The actual shuffling and dealing happens confidentially within the Arcium network.
-    ///
-    /// # Arguments
-    /// * `game_id` - Unique identifier for this game session
-    /// * `client_pubkey` - Player's encryption public key for receiving encrypted cards
-    /// * `client_nonce` - Player's cryptographic nonce for encryption operations
+    /// Creates the `BlackjackGame` PDA and queues `shuffle_and_deal_cards`,
+    /// which shuffles the deck and deals the opening hands inside MPC.
     pub fn initialize_blackjack_game(
         ctx: Context<InitializeBlackjackGame>,
         computation_offset: u64,
@@ -42,7 +39,6 @@ pub mod blackjack {
         client_nonce: u128,
         client_again_nonce: u128,
     ) -> Result<()> {
-        // Initialize the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.bump = ctx.bumps.blackjack_game;
         blackjack_game.game_id = game_id;
@@ -52,7 +48,8 @@ pub mod blackjack {
         blackjack_game.player_hand_size = 0;
         blackjack_game.dealer_hand_size = 0;
 
-        // Queue the shuffle and deal cards computation
+        // Argument order must match the circuit signature: one pubkey/nonce pair
+        // per `Shared` parameter of shuffle_and_deal_cards.
         let args = ArgBuilder::new()
             .x25519_pubkey(client_pubkey)
             .plaintext_u128(client_nonce)
@@ -60,6 +57,7 @@ pub mod blackjack {
             .plaintext_u128(client_again_nonce)
             .build();
 
+        // Persist the bump before queue_computation; the callback signs with this PDA.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -81,11 +79,7 @@ pub mod blackjack {
         Ok(())
     }
 
-    /// Handles the result of the shuffle and deal cards MPC computation.
-    ///
-    /// This callback processes the shuffled deck and dealt cards from the MPC computation.
-    /// It updates the game state with the new deck, initial hands, and sets the game to PlayerTurn.
-    /// The player receives their encrypted hand while the dealer gets one face-up card visible to the player.
+    /// Stores the shuffled deck and opening hands, then moves the game to `PlayerTurn`.
     #[arcium_callback(encrypted_ix = "shuffle_and_deal_cards")]
     pub fn shuffle_and_deal_cards_callback(
         ctx: Context<ShuffleAndDealCardsCallback>,
@@ -127,23 +121,20 @@ pub mod blackjack {
 
         let dealer_face_up_card: [u8; 32] = o.3.ciphertexts[0];
 
-        // Update the blackjack game account
         let blackjack_game = &mut ctx.accounts.blackjack_game;
         blackjack_game.deck = deck;
         blackjack_game.deck_nonce = deck_nonce;
         blackjack_game.client_nonce = client_nonce;
         blackjack_game.dealer_nonce = dealer_nonce;
         blackjack_game.player_enc_pubkey = client_pubkey;
-        blackjack_game.game_state = GameState::PlayerTurn; // It is now the player's turn
+        blackjack_game.game_state = GameState::PlayerTurn;
 
         require!(
             dealer_client_pubkey == blackjack_game.player_enc_pubkey,
             ErrorCode::InvalidDealerClientPubkey
         );
 
-        // Initialize player hand with first two cards
         blackjack_game.player_hand = player_hand;
-        // Initialize dealer hand with face up card and face down card
         blackjack_game.dealer_hand = dealer_hand;
         blackjack_game.player_hand_size = 2;
         blackjack_game.dealer_hand_size = 2;
@@ -162,11 +153,7 @@ pub mod blackjack {
         Ok(())
     }
 
-    /// Allows the player to request an additional card (hit).
-    ///
-    /// This triggers an MPC computation that draws the next card from the shuffled deck
-    /// and adds it to the player's hand. The computation also checks if the player busts (exceeds 21)
-    /// and returns this information while keeping the actual card values encrypted.
+    /// Draws the next card into the player's hand inside MPC; only the bust flag is revealed.
     pub fn player_hit(
         ctx: Context<PlayerHit>,
         computation_offset: u64,
@@ -185,6 +172,8 @@ pub mod blackjack {
             ErrorCode::InvalidMove
         );
 
+        // Ciphertexts are read directly from the game account by byte offset
+        // (see module header); nonces must be the ones stored alongside them.
         let args = ArgBuilder::new()
             // Deck
             .plaintext_u128(ctx.accounts.blackjack_game.deck_nonce)
@@ -275,6 +264,7 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Draws one final card like `player_hit`, then the player automatically stands.
     pub fn player_double_down(
         ctx: Context<PlayerDoubleDown>,
         computation_offset: u64,
@@ -382,6 +372,7 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Ends the player's turn; the circuit reveals only whether the final hand busted.
     pub fn player_stand(
         ctx: Context<PlayerStand>,
         computation_offset: u64,
@@ -463,6 +454,8 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Runs the dealer's draw-to-17 inside MPC; `nonce` re-encrypts the final
+    /// dealer hand to the player.
     pub fn dealer_play(
         ctx: Context<DealerPlay>,
         computation_offset: u64,
@@ -558,6 +551,7 @@ pub mod blackjack {
         Ok(())
     }
 
+    /// Compares both hands inside MPC; only the result code is revealed.
     pub fn resolve_game(
         ctx: Context<ResolveGame>,
         computation_offset: u64,
@@ -1333,12 +1327,8 @@ pub struct InitResolveGameCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Represents a single blackjack game session.
-///
-/// This account stores all the game state including encrypted hands, deck information,
-/// and game progress. The deck is stored as two 32-byte encrypted chunks (Pack<[u8; 52]>)
-/// that together represent all 52 cards in shuffled order. Hands are stored encrypted and only
-/// decryptable by their respective owners (player) or the MPC network (dealer).
+/// A single blackjack game session. Ciphertext fields are fed back into circuits by
+/// byte offset, so their order here must match the offsets in the module header.
 #[account]
 #[derive(InitSpace)]
 pub struct BlackjackGame {

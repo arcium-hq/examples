@@ -1,3 +1,8 @@
+//! Stateless program for MPC Ed25519: `sign_message` produces a signature from
+//! the MXE's share-split key, `verify_signature` checks a signature against an
+//! encrypted verifying key. Results are delivered via events (`SignMessageEvent`,
+//! `VerifySignatureEvent`); no application state is stored on chain. See README.md.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -10,29 +15,20 @@ declare_id!("BVDLKuPHre5sThUJVCG5Get4nEeBvki4hy3ZxFdpGu2p");
 pub mod ed_25519 {
     use super::*;
 
-    /// Initializes the computation definition for Ed25519 message signing.
-    /// This sets up the MPC environment for performing distributed key signing operations.
+    /// Initializes the computation definition for the `sign_message` circuit.
     pub fn init_sign_message_comp_def(ctx: Context<InitSignMessageCompDef>) -> Result<()> {
         init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
-    /// Signs a message using the MXE's distributed Ed25519 private key.
-    ///
-    /// The message is signed within the MPC environment using the Arcium network's
-    /// collective signing key. The private key never exists in a single location,
-    /// yet a valid Ed25519 signature is produced through multi-party computation.
-    ///
-    /// # Arguments
-    /// * `message` - The 5-byte message to be signed
-    ///
-    /// # Returns
-    /// Returns the 64-byte Ed25519 signature via the SignMessageEvent
+    /// Queues MPC signing of `message` with the MXE's distributed Ed25519 key.
+    /// The 64-byte signature is emitted via `SignMessageEvent`.
     pub fn sign_message(
         ctx: Context<SignMessage>,
         computation_offset: u64,
         message: [u8; 5],
     ) -> Result<()> {
+        // The Arcium signer PDA bump must be persisted before queue_computation.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
         let mut builder = ArgBuilder::new();
         for byte in message {
@@ -54,10 +50,8 @@ pub mod ed_25519 {
         Ok(())
     }
 
-    /// Handles the result of the MPC signing computation.
-    ///
-    /// This callback receives the Ed25519 signature components (r and s) from the
-    /// completed MPC computation and emits them as a standard 64-byte signature.
+    /// Reassembles the signature from the two 32-byte halves (r, s) the circuit
+    /// outputs and emits it as a standard 64-byte Ed25519 signature.
     #[arcium_callback(encrypted_ix = "sign_message")]
     pub fn sign_message_callback(
         ctx: Context<SignMessageCallback>,
@@ -86,28 +80,14 @@ pub mod ed_25519 {
         Ok(())
     }
 
-    /// Initializes the computation definition for Ed25519 signature verification.
-    /// This sets up the MPC environment for verifying signatures against encrypted public keys.
+    /// Initializes the computation definition for the `verify_signature` circuit.
     pub fn init_verify_signature_comp_def(ctx: Context<InitVerifySignatureCompDef>) -> Result<()> {
         init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
-    /// Verifies an Ed25519 signature against an encrypted verifying key.
-    ///
-    /// This function allows signature verification where the public key remains encrypted
-    /// throughout the verification process. The verification happens within the MPC environment,
-    /// and only the boolean result (valid/invalid) is revealed.
-    ///
-    /// # Arguments
-    /// * `verifying_key_enc_lo` - Lower 128 bits of the encrypted packed verifying key
-    /// * `verifying_key_enc_hi` - Upper 128 bits of the encrypted packed verifying key
-    /// * `message` - The 5-byte message that was signed
-    /// * `signature` - The 64-byte Ed25519 signature to verify
-    /// * `observer_pub_key` - Public key for encrypting the verification result
-    ///
-    /// # Returns
-    /// Returns encrypted verification result via VerifySignatureEvent
+    /// Queues MPC verification of `signature` against an encrypted verifying key.
+    /// The encrypted boolean verdict is emitted via `VerifySignatureEvent`.
     pub fn verify_signature(
         ctx: Context<VerifySignature>,
         computation_offset: u64,
@@ -121,6 +101,9 @@ pub mod ed_25519 {
         observer_nonce: u128,
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+        // Argument order must match the circuit signature: Enc<Shared, Pack<VerifyingKey>>
+        // expands to pubkey + nonce + two ciphertexts (a packed 32-byte key spans two
+        // field elements), and the trailing `observer: Shared` to pubkey + nonce.
         let mut builder = ArgBuilder::new()
             .x25519_pubkey(one_time_pub_key)
             .plaintext_u128(one_time_nonce)
@@ -150,10 +133,7 @@ pub mod ed_25519 {
         Ok(())
     }
 
-    /// Handles the result of the MPC signature verification computation.
-    ///
-    /// This callback receives the encrypted verification result and emits it for the observer
-    /// to decrypt. The verification outcome remains encrypted until the observer decrypts it.
+    /// Emits the encrypted verification verdict for the observer to decrypt.
     #[arcium_callback(encrypted_ix = "verify_signature")]
     pub fn verify_signature_callback(
         ctx: Context<VerifySignatureCallback>,

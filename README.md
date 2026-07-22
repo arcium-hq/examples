@@ -1,42 +1,79 @@
-# Arcium Examples 
+# Arcium Examples
 
-Applications built on public blockchains face a fundamental limitation: all computation is transparent. These examples demonstrate how to build applications that can compute on confidential data.
+Example applications built with [Arcium](https://arcium.com), the encrypted compute
+network on Solana. Each example computes on encrypted data using multi-party
+computation (MPC): confidential inputs stay encrypted end to end, and no compute
+node sees them in plaintext.
 
-## Getting Started
+## How Arcium works
 
-For installation instructions and setup, see the [Installation Guide](https://docs.arcium.com/developers/installation).
+The examples share the same computation lifecycle:
+
+1. The client submits plaintext or locally encrypted inputs. Confidential client
+   inputs use x25519 key exchange and `RescueCipher`.
+2. The Anchor program queues a computation with the Arcium program.
+3. An MPC cluster executes the encrypted instruction defined in `encrypted-ixs/`.
+4. The result returns on-chain via a callback instruction, which stores or reveals it.
+
+Data stays private as long as one node in the cluster is honest; the protocol
+tolerates a dishonest majority. See [Core Concepts](https://docs.arcium.com/developers/core-concepts)
+and [Computation Lifecycle](https://docs.arcium.com/developers/computation-lifecycle)
+for the full picture.
 
 ## Examples
 
-New to Arcium? Start with Coinflip and progress through the tiers in order. For conceptual background, see [Mental Model](https://docs.arcium.com/developers/arcis/mental-model).
+Recommended path: work through them in order. Each introduces one new pattern.
 
-### Getting Started
+| Example | Pattern | Encrypted on-chain state | Main concept |
+|---|---|---|---|
+| [Coinflip](./coinflip/) | Trustless randomness | No | `ArcisRNG`, revealing results |
+| [Rock Paper Scissors](./rock_paper_scissors/) | Hidden moves | Yes ([vs player](./rock_paper_scissors/against-player/)), No ([vs house](./rock_paper_scissors/against-house/)) | `Enc<Shared, T>` inputs, RNG opponent |
+| [Voting](./voting/) | Private aggregation | Yes | `Enc<Mxe, T>` accumulators, callbacks |
+| [Medical Records](./share_medical_records/) | Controlled sharing | Yes | Re-encryption to a new owner |
+| [Sealed-Bid Auction](./sealed_bid_auction/) | Encrypted comparison | Yes | First-price and Vickrey clearing prices |
+| [Blackjack](./blackjack/) | Hidden game state | Yes | `Pack<T>` storage efficiency |
+| [Ed25519 Signatures](./ed25519/) | Distributed signing | No | Keys that never exist in one place |
 
-**[Coinflip](./coinflip/)** - Generate trustless randomness using `ArcisRNG`. Stateless design, simplest example.
+## Running an example
 
-**[Rock Paper Scissors](./rock_paper_scissors/)** - Encrypted asynchronous gameplay with hidden moves.
-- [Player vs Player](./rock_paper_scissors/against-player/) - Two encrypted submissions
-- [Player vs House](./rock_paper_scissors/against-house/) - Provably fair randomized opponent
+Prerequisites: the [Arcium CLI](https://docs.arcium.com/developers/installation),
+which requires Rust, the Solana CLI, Anchor, and Docker. Toolchain versions are
+pinned per example in `Cargo.toml` and `rust-toolchain.toml`.
 
-### Intermediate
+Every example builds and tests the same way:
 
-**[Voting](./voting/)** - Private ballots with public results. Encrypted state accumulation and callbacks.
+```bash
+cd voting        # or any example
+yarn install
+arcium build     # compiles the encrypted circuit and the Anchor program
+arcium test      # runs the tests against a local Arcium cluster
+```
 
-**[Medical Records](./share_medical_records/)** - Patient-controlled data sharing via re-encryption.
+Each example has the same layout:
 
-**[Sealed-Bid Auction](./sealed_bid_auction/)** - Encrypted bid comparison with first-price and Vickrey mechanisms.
+```
+encrypted-ixs/   # Arcis circuit: the code that runs inside MPC
+programs/        # Anchor program: queues computations, handles callbacks
+tests/           # TypeScript tests: encryption happens client-side here
+```
 
-### Advanced
+## Troubleshooting
 
-**[Blackjack](./blackjack/)** - Hidden deck state with `Pack<T>` for efficient encrypted storage.
-
-**[Ed25519 Signatures](./ed25519/)** - Distributed key management. Private keys never exist in single location.
+- **`arcium test` hangs at keygen after a version bump**: stale localnet cache.
+  Remove `artifacts/localnet/mxe_utility_pubkeys.bin` and
+  `artifacts/localnet/private_shares_node_*`, then rerun.
+- **Computation stuck in `queued`**: the local cluster did not finalize; rerun the
+  test. Persistent failures usually mean the circuit and program are out of sync:
+  run `arcium build` again.
+- **`AbortedComputation` in a callback**: the MPC output failed verification. Check
+  that the argument order in the queue call matches the circuit signature exactly.
 
 ## Documentation
 
-- [Mental Model](https://docs.arcium.com/developers/arcis/mental-model) - Conceptual foundation
-- [Computation Lifecycle](https://docs.arcium.com/developers/computation-lifecycle) - How MPC computations execute
-- [Arcis Framework](https://docs.arcium.com/developers/arcis) - Programming model reference
-- [Best Practices](https://docs.arcium.com/developers/arcis/best-practices) - Performance optimization
+[Mental Model](https://docs.arcium.com/developers/arcis/mental-model) ·
+[Arcis reference](https://docs.arcium.com/developers/arcis) ·
+[Best Practices](https://docs.arcium.com/developers/arcis/best-practices) ·
+[Discord](https://discord.com/invite/arcium)
 
-For questions and support, join the [Discord community](https://discord.com/invite/arcium).
+These examples are for learning. They are not audited and cut corners a production
+deployment must not; see each example's Limitations section.

@@ -1,3 +1,11 @@
+//! Stores a patient's encrypted medical record on-chain and re-encrypts it for
+//! a chosen recipient via MPC, emitting the result as an event.
+//!
+//! The `share_patient_data` circuit reads the record directly from the
+//! `PatientData` account: 8-byte Anchor discriminator, then eleven `[u8; 32]`
+//! ciphertexts (patient_id, age, gender, blood_type, weight, height, five
+//! allergy flags) — 352 bytes of ciphertext starting at offset 8.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -9,20 +17,8 @@ declare_id!("671bRuGEhWu7N9tsc38xE9Zp8ABAJaBcZRo29UzsftHg");
 pub mod share_medical_records {
     use super::*;
 
-    /// Stores encrypted patient medical data on-chain.
-    ///
-    /// This function stores patient medical information in encrypted form. All data fields
-    /// are provided as encrypted 32-byte arrays that can only be decrypted by authorized parties.
-    /// The data remains confidential while being stored on the public Solana blockchain.
-    ///
-    /// # Arguments
-    /// * `patient_id` - Encrypted unique identifier for the patient
-    /// * `age` - Encrypted patient age
-    /// * `gender` - Encrypted patient gender information
-    /// * `blood_type` - Encrypted blood type information
-    /// * `weight` - Encrypted patient weight
-    /// * `height` - Encrypted patient height
-    /// * `allergies` - Array of encrypted allergy information (up to 5 entries)
+    /// Stores the patient's client-encrypted record in the `PatientData` PDA.
+    /// A plain Anchor write; no MPC computation is queued.
     pub fn store_patient_data(
         ctx: Context<StorePatientData>,
         patient_id: [u8; 32],
@@ -52,18 +48,8 @@ pub mod share_medical_records {
         Ok(())
     }
 
-    /// Initiates confidential sharing of patient data with a specified receiver.
-    ///
-    /// This function triggers an MPC computation that re-encrypts the patient's medical data
-    /// for a specific receiver. The receiver will be able to decrypt the data using their
-    /// private key, while the data remains encrypted for everyone else. The original
-    /// stored data is not modified and remains encrypted for the original owner.
-    ///
-    /// # Arguments
-    /// * `receiver` - Public key of the authorized recipient
-    /// * `receiver_nonce` - Cryptographic nonce for the receiver's encryption
-    /// * `sender_pub_key` - Sender's public key for the operation
-    /// * `nonce` - Cryptographic nonce for the sender's encryption
+    /// Queues the MPC computation that re-encrypts the stored record for
+    /// `receiver`. The stored data is not modified.
     pub fn share_patient_data(
         ctx: Context<SharePatientData>,
         computation_offset: u64,
@@ -72,6 +58,10 @@ pub mod share_medical_records {
         sender_pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
+        // Argument order must match the circuit signature: `receiver: Shared`
+        // expands to pubkey + nonce, then `Enc<Shared, PatientData>` expands to
+        // pubkey + nonce + ciphertexts. The ciphertexts are read from the
+        // account, starting at offset 8 to skip the Anchor discriminator.
         let args = ArgBuilder::new()
             .x25519_pubkey(receiver)
             .plaintext_u128(receiver_nonce)
@@ -84,6 +74,7 @@ pub mod share_medical_records {
             )
             .build();
 
+        // Persist the bump before queueing so the callback can verify the signer PDA.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -102,11 +93,8 @@ pub mod share_medical_records {
         Ok(())
     }
 
-    /// Handles the result of the patient data sharing MPC computation.
-    ///
-    /// This callback processes the re-encrypted patient data that has been prepared for
-    /// the specified receiver. It emits an event containing all the medical data fields
-    /// encrypted specifically for the receiver's public key.
+    /// Emits the re-encrypted record as `ReceivedPatientDataEvent`; only the
+    /// receiver can decrypt the ciphertexts, using the nonce from the event.
     #[arcium_callback(encrypted_ix = "share_patient_data")]
     pub fn share_patient_data_callback(
         ctx: Context<SharePatientDataCallback>,

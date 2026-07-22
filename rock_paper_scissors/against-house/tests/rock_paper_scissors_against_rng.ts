@@ -1,3 +1,11 @@
+/**
+ * Flow: init comp def -> x25519 shared secret with MXE ->
+ * encrypt move (RescueCipher) -> queue `play_rps` -> await finalization ->
+ * read outcome from `PlayRpsEvent`.
+ *
+ * Unique here: the opponent is the MXE itself, so the client encrypts its
+ * input but never decrypts anything; the outcome arrives as a plain string.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -78,7 +86,7 @@ describe("RockPaperScissorsAgainstRng", () => {
     const sharedSecret = x25519.getSharedSecret(privateKey, mxePublicKey);
     const cipher = new RescueCipher(sharedSecret);
 
-    const playerMove = BigInt(2); // 1 = rock, 2 = paper, 3 = scissors
+    const playerMove = BigInt(2); // 0 = rock, 1 = paper, 2 = scissors
     const plaintext = [playerMove];
 
     const nonce = randomBytes(16);

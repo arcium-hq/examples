@@ -1,164 +1,51 @@
-# Sealed-Bid Auction - Private Bids, Fair Outcomes
+# Sealed-Bid Auction — private bids, public winner
 
-Traditional auction platforms have access to all bids. Even "sealed" bids are only sealed from other bidders - the platform sees everything. This creates opportunities for bid manipulation, information leakage, and requires trusting the auctioneer not to exploit their privileged position.
+First-price and Vickrey (second-price) auctions where MPC nodes compare each incoming bid against encrypted running state. The winner's public key and clearing price are revealed; all other bid amounts remain encrypted.
 
-This example demonstrates sealed-bid auctions where bid amounts remain encrypted throughout the auction. The platform never sees individual bid values - only the final winner and payment amount are revealed.
+**Use this pattern when** you need to select a maximum (or ranking) over private inputs and reveal only the outcome: auctions, procurement, hiring, matching markets.
 
-## Why are sealed-bid auctions hard?
+## How it works
 
-Transparent blockchain architectures conflict with bid privacy requirements:
+1. `create_auction` stores the type (`FirstPrice` or `Vickrey`), `min_bid`, and `end_time` in the `Auction` PDA and queues the `init_auction_state` circuit, whose callback writes a zeroed, MXE-encrypted `AuctionState` into `encrypted_state`.
+2. Each bidder encrypts `{bidder, amount}` client-side and calls `place_bid`. The `place_bid` circuit takes the bid (`Enc<Shared, Bid>`) plus the auction state read straight from the account bytes (`Enc<Mxe, AuctionState>`), updates the highest and second-highest bids inside MPC, and the callback writes the re-encrypted state and fresh `state_nonce` back.
+3. After `end_time` the authority calls `close_auction`, then `determine_winner_first_price` or `determine_winner_vickrey` to match the auction type.
+4. The winner circuit decrypts inside MPC and reveals only the winner's pubkey and the clearing price — the top bid in first-price mode, the second-highest bid in Vickrey mode — which the callback emits as `AuctionResolvedEvent`.
 
-1. **Bid visibility**: All blockchain data is publicly accessible by default - competitors see your bid
-2. **Strategic manipulation**: Visible bids enable last-minute sniping and bid shading
-3. **Platform trust**: Traditional sealed-bid auctions require trusting the auctioneer to not peek at bids or collude with bidders
-4. **Winner determination**: Computing the highest bid without revealing all bid amounts is non-trivial
-5. **Pricing mechanisms**: Supporting different auction types (first-price vs Vickrey) requires tracking both highest and second-highest bids privately
+The winner and clearing price become public. In a Vickrey auction that price is the second-highest, losing bid; the winning bid and all non-clearing bid amounts remain encrypted.
 
-The requirement is determining the auction winner and payment amount without revealing individual bids, while ensuring the process is verifiable and tamper-resistant.
+## Concepts demonstrated
 
-## How Sealed-Bid Auctions Work
+- Encrypted state in an ordinary Anchor account: `Auction.encrypted_state` holds five 32-byte ciphertexts that the cluster reads in place via `ArgBuilder`'s `.account(pubkey, offset, size)` — the byte layout lives in the program module header.
+- `SerializedSolanaPublicKey`: a 32-byte Solana pubkey carried as lo/hi `u128` halves so it fits Arcis field elements ([public key types](https://docs.arcium.com/developers/arcis/types#public-key-types)).
+- Two reveal policies over one encrypted state: `determine_winner_first_price` and `determine_winner_vickrey` read the same `AuctionState` but disclose different fields as the price.
 
-The protocol maintains bid privacy while providing accurate winner determination:
-
-1. **Auction creation**: Authority creates an auction specifying the type (first-price or Vickrey), minimum bid, and end time
-2. **Bid encryption**: Bidders encrypt their bid amounts locally before submission using the MXE public key
-3. **Encrypted comparison**: Arcium nodes compare new bids against the encrypted auction state without decrypting
-4. **State update**: Highest and second-highest bids are tracked in encrypted form on-chain
-5. **Winner revelation**: After the auction closes, only the winner identity and payment amount are revealed - not individual bid values
-6. **Security guarantee**: Arcium's MPC protocol ensures auction integrity even with a dishonest majority - bid values remain private as long as one node is honest
-
-## Running the Example
+## Run
 
 ```bash
-# Install dependencies
-yarn install  # or npm install or pnpm install
-
-# Build the program
-arcium build
-
-# Run tests
-arcium test
+yarn install && arcium build && arcium test
 ```
 
-The test suite demonstrates complete auction flows for both first-price and Vickrey auction types, including auction creation, encrypted bid submission, and winner determination.
+Setup and troubleshooting: [repo README](../README.md#running-an-example).
 
-## Technical Implementation
+## Key files
 
-Bids are encrypted using X25519 key exchange with the MXE public key before submission. The auction state stores five encrypted values on-chain: highest bid, highest bidder (as `SerializedSolanaPublicKey`), second-highest bid, and bid count.
+- `encrypted-ixs/src/lib.rs` — note how `place_bid` keeps highest and second-highest with plain Rust comparisons; MPC evaluates both branches without learning which was taken.
+- `programs/sealed_bid_auction/src/lib.rs` — note how `ENCRYPTED_STATE_OFFSET` pins the ciphertext location and how every state-mutating callback also persists the new `state_nonce`.
+- `tests/sealed_bid_auction.ts` — note how `splitPubkeyToU128s` prepares the bidder key for encryption and how the test waits on the validator clock, not wall time, before `close_auction`.
 
-Key properties:
+## Pitfalls
 
-- **Bid secrecy**: Individual bid amounts remain encrypted throughout the auction lifecycle
-- **Distributed computation**: Arcium nodes jointly compare and update encrypted auction state
-- **Selective revelation**: Only the winner and payment amount are revealed, not the losing bids
+- `place_bid`'s argument order is fixed by the circuit signature: bidder x25519 pubkey, bid nonce, the two bidder-pubkey ciphertexts, the amount ciphertext, then the state nonce and account reference. A reordering fails at decryption time, not at build time.
+- The lifecycle guards are strict: `AuctionNotOpen` and `AuctionEnded` gate `place_bid`, `AuctionNotEnded` gates `close_auction`, and `AuctionNotClosed`, `WrongAuctionType`, and `NoBids` gate the winner instructions.
+- If you reorder or resize `Auction` fields, recompute `ENCRYPTED_STATE_OFFSET`: the cluster reads ciphertexts by raw byte offset, and a stale offset hands the circuit garbage.
 
-## Implementation Details
+## Limitations
 
-### The Sealed Bid Problem
+- `min_bid` is stored and emitted but never enforced: the program cannot compare an encrypted amount, and the circuit is never given `min_bid`. A production version would pass it to `place_bid` as a plaintext argument and reject low bids in-circuit.
+- No per-bidder limit or deposit: `bid_count` counts bids, not bidders, and in Vickrey mode a bidder's own extra bid can raise the price they pay.
+- Participation and `bid_count` are public through transaction accounts and events, even though bid amounts are encrypted.
+- The encrypted bidder key is not bound to the transaction signer, and the example has no escrow or settlement; it reports a claimed winner but transfers nothing.
+- Bids must finalize sequentially: the state nonce is fixed when queueing while account ciphertexts are fetched during computation, so overlapping bids can use incompatible state versions or overwrite an update.
+- One auction per authority: the `Auction` PDA is seeded only by the authority key, so a second `create_auction` from the same key fails.
 
-**Conceptual Challenge**: How do you find the maximum value in a set without revealing any individual values?
-
-Traditional approaches all fail:
-
-- **Encrypt then decrypt**: Someone holds the decryption key and can see all bids
-- **Trusted auctioneer**: Requires trusting the platform not to leak or exploit bid information
-- **Commit-reveal**: Bidders can see others' bids before revealing, enabling strategic behavior
-
-**The Question**: Can we compare encrypted bids and track the highest one without ever decrypting individual values?
-
-### The Encrypted Auction State Pattern
-
-Sealed-bid auction demonstrates storing encrypted comparison state in Anchor accounts:
-
-```rust
-pub struct AuctionState {
-    pub highest_bid: u64,
-    pub highest_bidder: SerializedSolanaPublicKey,  // Winner pubkey (lo/hi u128 pair)
-    pub second_highest_bid: u64,  // Required for Vickrey auctions
-    pub bid_count: u16,
-}
-```
-
-**Why `SerializedSolanaPublicKey`?** Solana public keys are 32 bytes, but Arcis field elements are smaller. `SerializedSolanaPublicKey` is a built-in type that handles the lo/hi u128 splitting automatically.
-
-**On-chain storage**: The encrypted state is stored as `[[u8; 32]; 5]` - five 32-byte ciphertexts representing each field.
-
-> Learn more about [Arcis Types](https://docs.arcium.com/developers/arcis/types) for encrypted value handling.
-
-### The Bid Comparison Logic
-
-**MPC instruction** (runs inside encrypted computation):
-
-```rust
-pub fn place_bid(
-    bid_ctxt: Enc<Shared, Bid>,       // Bidder's encrypted bid
-    state_ctxt: Enc<Mxe, AuctionState>, // Current encrypted auction state
-) -> Enc<Mxe, AuctionState> {
-    let bid = bid_ctxt.to_arcis();      // Decrypt in MPC (never exposed)
-    let mut state = state_ctxt.to_arcis();
-
-    if bid.amount > state.highest_bid {
-        // New highest bid - shift current highest to second place
-        state.second_highest_bid = state.highest_bid;
-        state.highest_bid = bid.amount;
-        state.highest_bidder = bid.bidder;
-    } else if bid.amount > state.second_highest_bid {
-        // New second-highest bid
-        state.second_highest_bid = bid.amount;
-    }
-
-    state.bid_count += 1;
-    state_ctxt.owner.from_arcis(state)  // Re-encrypt updated state
-}
-```
-
-**Key insight**: The comparison `bid.amount > state.highest_bid` happens inside MPC - decrypted values never leave the secure environment.
-
-### First-Price vs Vickrey Auctions
-
-This example supports two auction mechanisms with different economic properties:
-
-**First-price auction**: Winner pays their bid amount.
-
-```rust
-pub fn determine_winner_first_price(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
-    let state = state_ctxt.to_arcis();
-    AuctionResult {
-        winner: state.highest_bidder,
-        payment_amount: state.highest_bid,  // Pay your bid
-    }.reveal()
-}
-```
-
-**Vickrey (second-price) auction**: Winner pays the second-highest bid.
-
-```rust
-pub fn determine_winner_vickrey(state_ctxt: Enc<Mxe, AuctionState>) -> AuctionResult {
-    let state = state_ctxt.to_arcis();
-    AuctionResult {
-        winner: state.highest_bidder,
-        payment_amount: state.second_highest_bid,  // Pay second-highest
-    }.reveal()
-}
-```
-
-**Why Vickrey matters**: In a Vickrey auction, bidding your true valuation is the dominant strategy - you can't benefit from bidding lower (you might lose) or higher (you'd overpay). This incentive-compatibility property, discovered by economist William Vickrey (Nobel Prize 1996), is widely used in ad auctions (Google, Meta) and spectrum auctions.
-
-### When to Use This Pattern
-
-Apply sealed-bid auctions when:
-
-- **Bid privacy is critical**: Prevent competitors from seeing and reacting to bids
-- **Strategic behavior is harmful**: Eliminate sniping, bid shading, and collusion
-- **Verifiable fairness is required**: Prove the winner determination was correct without revealing losing bids
-- **Multiple pricing mechanisms**: Need flexibility between first-price and second-price rules
-
-**Example applications**: NFT auctions, ad bidding systems, procurement contracts, treasury bond auctions, spectrum license sales.
-
-This pattern extends to any scenario requiring private comparison and selection: hiring decisions, grant allocations, or matching markets where selection criteria should remain confidential.
-
-## Known Limitations
-
-**`min_bid` not enforced against encrypted bids.** The `min_bid` field is stored on-chain but never checked -- on-chain validation is impossible (the bid is encrypted), and circuit-side validation would require passing `min_bid` as a plaintext argument. For production, pass `min_bid` into the circuit and compare before updating state.
-
-**No per-bidder deduplication.** A bidder can submit multiple bids. This is non-exploitable: in Vickrey mode, duplicate bids can only increase the second-highest price (hurting the bidder). In first-price mode, the bidder always pays their highest bid regardless. The `bid_count` field reflects total bids, not unique bidders.
+See also: [invoking circuits with ArgBuilder](https://docs.arcium.com/developers/program) · **Next:** [Blackjack](../blackjack/)

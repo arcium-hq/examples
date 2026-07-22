@@ -1,3 +1,13 @@
+/**
+ * Flow: init comp defs -> sign_message (plaintext message) -> SignMessageEvent
+ * -> verify the MPC signature locally against the MXE verifying key -> encrypt
+ * a locally generated verifying key -> verify_signature -> VerifySignatureEvent
+ * -> observer decrypts the verdict.
+ *
+ * Unique here: the VerifyingKey packer is built by hand with createPacker, and
+ * each run randomly chooses a valid case or corrupts the message, key, or
+ * signature for an invalid case.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -42,7 +52,6 @@ const verifyingKeyPacker = createPacker<
 );
 
 describe("Ed25519", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Ed25519 as Program<Ed25519>;
   const provider = anchor.getProvider();
@@ -178,7 +187,6 @@ describe("Ed25519", () => {
       }
     }
 
-    // pack the verifying key
     const verifyingKeyPacked = verifyingKeyPacker.pack({
       public_key_encoded: Array.from(verifyingKey),
     });

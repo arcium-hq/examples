@@ -1,3 +1,8 @@
+//! Stateless coinflip program. `flip` queues an MPC computation with the
+//! player's encrypted guess; the cluster flips a coin, and `flip_callback`
+//! emits the win/loss result as a `FlipEvent`. No game state is stored on
+//! chain. Circuit: `encrypted-ixs/src/lib.rs`. Walkthrough: README.md.
+
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -9,23 +14,14 @@ declare_id!("3oizgCNBwGM9ceRk2sJ45cknkCMN5nSKRHaEWKESzHQj");
 pub mod coinflip {
     use super::*;
 
-    /// Initializes the computation definition for the coin flip operation.
-    /// This sets up the MPC environment for generating secure randomness and comparing it with the player's choice.
+    /// Registers the `flip` computation definition with the MXE.
     pub fn init_flip_comp_def(ctx: Context<InitFlipCompDef>) -> Result<()> {
         init_computation_def(ctx.accounts, None)?;
         Ok(())
     }
 
-    /// Initiates a coin flip game with the player's encrypted choice.
-    ///
-    /// The player submits their choice (heads or tails) in encrypted form along with their
-    /// public key and nonce. The MPC computation will generate a cryptographically secure
-    /// random boolean and compare it with the player's choice to determine if they won.
-    ///
-    /// # Arguments
-    /// * `user_choice` - Player's encrypted choice (true for heads, false for tails)
-    /// * `pub_key` - Player's public key for encryption operations
-    /// * `nonce` - Cryptographic nonce for the encryption
+    /// Queues the coin flip computation with the player's encrypted guess
+    /// (true = heads, false = tails). The result arrives via `flip_callback`.
     pub fn flip(
         ctx: Context<Flip>,
         computation_offset: u64,
@@ -33,12 +29,15 @@ pub mod coinflip {
         pub_key: [u8; 32],
         nonce: u128,
     ) -> Result<()> {
+        // Argument order must match the circuit signature: Enc<Shared, UserChoice>
+        // is supplied as pubkey, then nonce, then ciphertext.
         let args = ArgBuilder::new()
             .x25519_pubkey(pub_key)
             .plaintext_u128(nonce)
             .encrypted_u8(user_choice)
             .build();
 
+        // Persist the bump before queue_computation so the callback can sign.
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
         queue_computation(
@@ -58,11 +57,7 @@ pub mod coinflip {
         Ok(())
     }
 
-    /// Handles the result of the coin flip MPC computation.
-    ///
-    /// This callback receives the result of comparing the player's choice with the
-    /// randomly generated coin flip. The result is a boolean indicating whether
-    /// the player won (true) or lost (false).
+    /// Verifies the MPC output and emits the win/loss result as a `FlipEvent`.
     #[arcium_callback(encrypted_ix = "flip")]
     pub fn flip_callback(
         ctx: Context<FlipCallback>,
@@ -189,7 +184,7 @@ pub struct InitFlipCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Event emitted when a coin flip game completes.
+/// Emitted when a coin flip completes; the only place the result is delivered.
 #[event]
 pub struct FlipEvent {
     /// Whether the player won the coin flip (true = won, false = lost)

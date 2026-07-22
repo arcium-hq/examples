@@ -1,3 +1,12 @@
+/**
+ * Flow: encrypt 11 record fields with the patient's shared secret ->
+ * storePatientData -> sharePatientData(receiver pubkey) -> MPC re-encrypts ->
+ * callback emits receivedPatientDataEvent -> receiver decrypts.
+ *
+ * Unique here: two independent x25519 identities. The receiver
+ * derives their own shared secret with the MXE and decrypts ciphertexts the
+ * patient encrypted, without ever seeing the patient's key.
+ */
 import * as anchor from "@anchor-lang/core";
 import { Program } from "@anchor-lang/core";
 import { PublicKey } from "@solana/web3.js";
@@ -28,7 +37,6 @@ import * as os from "os";
 import { expect } from "chai";
 
 describe("ShareMedicalRecords", () => {
-  // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace
     .ShareMedicalRecords as Program<ShareMedicalRecords>;
@@ -176,6 +184,7 @@ describe("ShareMedicalRecords", () => {
     );
     console.log("Finalize sig is ", finalizeSig);
 
+    // The receiver's own key exchange with the MXE; the patient's key plays no part.
     const receiverSharedSecret = x25519.getSharedSecret(
       receiverSecretKey,
       mxePublicKey
@@ -184,7 +193,7 @@ describe("ShareMedicalRecords", () => {
 
     const receivedPatientDataEvent = await receivedPatientDataEventPromise;
 
-    // Decrypt all patient data fields
+    // Decrypt with the nonce from the event: the MXE assigns a fresh output nonce.
     const decryptedFields = receiverCipher.decrypt(
       [
         receivedPatientDataEvent.patientId,
@@ -198,7 +207,6 @@ describe("ShareMedicalRecords", () => {
       new Uint8Array(receivedPatientDataEvent.nonce)
     );
 
-    // Verify all fields match the original data
     expect(decryptedFields[0]).to.equal(patientData[0], "Patient ID mismatch");
     expect(decryptedFields[1]).to.equal(patientData[1], "Age mismatch");
     expect(decryptedFields[2]).to.equal(patientData[2], "Gender mismatch");
@@ -206,7 +214,6 @@ describe("ShareMedicalRecords", () => {
     expect(decryptedFields[4]).to.equal(patientData[4], "Weight mismatch");
     expect(decryptedFields[5]).to.equal(patientData[5], "Height mismatch");
 
-    // Verify allergies
     for (let i = 0; i < 5; i++) {
       expect(decryptedFields[6 + i]).to.equal(
         patientData[6 + i],
